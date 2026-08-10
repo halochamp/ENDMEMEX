@@ -1,0 +1,41 @@
+#!/bin/sh
+# Source of truth: hooks/pre-commit (git-tracked). The live
+# copy in .git/hooks/ is untracked by nature; a fresh clone installs it with
+#   python3 endeavor_db.py install-hooks
+# and `doctor` reports installed/differs/missing so drift can't stay silent.
+#
+# Auto-sync any staged Markdown that is part of this commit into
+# endeavor_memory.sqlite3. Advisory only — ingest failures never block the
+# commit; sync_tracked.py's ingest is hash-based/idempotent, so this is
+# always safe to run.
+#
+# This hook does not decide which docs are "tracked knowledge" itself — it
+# hands every staged *.md path to sync_tracked.py and lets that script's own
+# discover_knowledge_docs() manifest filter and classify them. A hardcoded
+# filename pattern here would silently drift from that manifest.
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+if [ -f "$REPO_ROOT/sync_tracked.py" ]; then
+  SYNC_SCRIPT="$REPO_ROOT/sync_tracked.py"
+else
+  SYNC_SCRIPT="$REPO_ROOT/ENDMEMEX/sync_tracked.py"
+fi
+
+[ -f "$SYNC_SCRIPT" ] || exit 0
+
+# Filter ACMR (not ACM): git reports a rename as status R, which ACM excludes,
+# so a renamed doc's NEW name would never be ingested. ACMR includes it. The
+# --prune-renames flag then removes ONLY the OLD orphan of a git-detected
+# rename; a staged DELETE (status D) is intentionally excluded here and never
+# pruned, so a deleted doc keeps its indexed snapshot in SQLite.
+STAGED_MD_COUNT=$(git diff --cached --name-only -z --diff-filter=ACMR -- '*.md' | tr -cd '\0' | wc -c | tr -d ' ')
+
+if [ "$STAGED_MD_COUNT" -gt 0 ]; then
+  echo "[pre-commit] staged Markdown, handing to sync_tracked.py (unrecognized paths are skipped there):"
+  git diff --cached --name-only -z --diff-filter=ACMR -- '*.md' | tr '\0' '\n' | sed 's/^/  /'
+  git diff --cached --name-only -z --diff-filter=ACMR -- '*.md' \
+    | xargs -0 python3 "$SYNC_SCRIPT" --prune-renames \
+    || echo "[pre-commit] ENDMEMEX sync failed — commit continues anyway"
+fi
+
+exit 0

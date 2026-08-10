@@ -1,0 +1,25 @@
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+*.sqlite3-journal
+__pycache__/
+.pytest_cache/
+.DS_Store
+*.log
+embed_server.log
+.embed_start.lock
+# Generated human-readable digest — derived from activity_log and refreshed on
+# every write command; tracking it would dirty every commit.
+ACTIVITY.md
+
+# Local runtime/state artifacts. Keep this policy here (rather than only in
+# the monorepo root ignore file) because ENDMEMEX is also released as a
+# standalone Public repository.
+.agent_token
+.agent_delegate_log.jsonl
+.agent_delegate_runs/
+.agent_mcp_admission.lock
+.agent_mcp_start_history.json
+.presence/
+.sync_freshness/
+graphify-out/
