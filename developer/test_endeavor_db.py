@@ -140,6 +140,53 @@ class EndeavorDatabaseTest(unittest.TestCase):
 
         self.assertEqual(docs["AWAKE/PROJECT_MEMORY.md"], ("AWAKE", "project_memory"))
 
+    def test_discover_knowledge_docs_includes_external_tracked_roots(self):
+        # A sibling of self.root, NOT nested inside it -- matching the real
+        # configuration (a standalone-fork checkout next to this repo, not
+        # inside it). An external root nested inside ROOT is the overlap case
+        # covered separately below and must NOT be used here.
+        with tempfile.TemporaryDirectory() as external_tmp:
+            external = Path(external_tmp)
+            (external / "sub-project").mkdir(parents=True)
+            (external / "sub-project" / "README.md").write_text("# hi\n", encoding="utf-8")
+            (external / "TOPLEVEL.md").write_text("# top\n", encoding="utf-8")
+            (external / "sub-project" / ".pytest_cache").mkdir()
+            (external / "sub-project" / ".pytest_cache" / "README.md").write_text("junk\n", encoding="utf-8")
+
+            with mock.patch.object(sync_tracked, "_git_tracked_markdown", return_value=[]), \
+                 mock.patch.object(sync_tracked, "ROOT", self.root), \
+                 mock.patch.object(sync_tracked, "EXTERNAL_TRACKED_ROOTS", (external,)):
+                docs = sync_tracked.discover_knowledge_docs(self.root)
+
+            sub_key = str((external / "sub-project" / "README.md").resolve())
+            top_key = str((external / "TOPLEVEL.md").resolve())
+            self.assertEqual(docs[sub_key], ("sub-project", "project_memory"))
+            self.assertEqual(docs[top_key], (external.resolve().name, "project_memory"))
+            self.assertNotIn(
+                str((external / "sub-project" / ".pytest_cache" / "README.md").resolve()), docs,
+            )
+
+    def test_discover_knowledge_docs_excludes_external_root_overlapping_root(self):
+        # An EXTERNAL_TRACKED_ROOTS entry equal to, containing, or contained by
+        # ROOT would otherwise rediscover the same file under two different
+        # source_path keys (relative via Git, absolute via the filesystem
+        # walk), double-indexing it without this guard.
+        (self.root / "already-tracked.md").write_text("# x\n", encoding="utf-8")
+        nested = self.root / "nested"
+        nested.mkdir()
+        (nested / "x.md").write_text("# x\n", encoding="utf-8")
+
+        for overlapping in (self.root, nested, self.root.parent):
+            with mock.patch.object(sync_tracked, "_git_tracked_markdown", return_value=["already-tracked.md"]), \
+                 mock.patch.object(sync_tracked, "ROOT", self.root), \
+                 mock.patch.object(sync_tracked, "EXTERNAL_TRACKED_ROOTS", (overlapping,)):
+                docs = sync_tracked.discover_knowledge_docs(self.root)
+            with self.subTest(overlapping=overlapping):
+                self.assertEqual(
+                    [key for key in docs if key.startswith("/")], [],
+                    f"external root {overlapping} overlaps ROOT and must be excluded, not walked",
+                )
+
     def test_sync_tracked_labels_standalone_public_markdown_as_endmemex(self):
         self.assertEqual(
             sync_tracked._project_for("developer/audit.md", standalone=True), "ENDMEMEX"

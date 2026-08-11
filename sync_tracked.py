@@ -116,6 +116,24 @@ def _sanitize_project_label(name: str) -> str:
     return "_".join(name.split())
 
 
+def _overlaps_root(external_root: Path, primary_root: Path) -> bool:
+    """True if `external_root` is `primary_root`, contains it, or is inside it.
+
+    Any of these would make the filesystem walk in `_external_markdown`
+    rediscover files the Git-tracked pass over `primary_root` already found,
+    each time under a *different* `source_path` key (relative vs. absolute)
+    -- silently double-indexing every affected document instead of erroring,
+    since `dict.update()` cannot tell the two keys refer to the same file.
+    """
+    external_resolved = external_root.resolve()
+    primary_resolved = primary_root.resolve()
+    return (
+        external_resolved == primary_resolved
+        or primary_resolved in external_resolved.parents
+        or external_resolved in primary_resolved.parents
+    )
+
+
 def _external_markdown(root: Path) -> dict[str, tuple[str, str]]:
     """Filesystem-walk discovery for an `EXTERNAL_TRACKED_ROOTS` entry.
 
@@ -197,6 +215,8 @@ def discover_knowledge_docs(
         documents[rel] = (_project_for(rel, standalone=root == DB_SCRIPT.parent), _kind_for(rel))
     if tracked_paths is None and root == ROOT:
         for external_root in EXTERNAL_TRACKED_ROOTS:
+            if _overlaps_root(external_root, root):
+                continue
             documents.update(_external_markdown(external_root))
     return dict(sorted(documents.items()))
 
