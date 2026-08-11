@@ -4,7 +4,6 @@ from __future__ import annotations
 import inspect
 import argparse
 import contextlib
-import hashlib
 import io
 import json
 import os
@@ -161,12 +160,14 @@ AGENT_MCP_CONSTANTS = {
 
 GOLDEN_FIXTURE = Path(__file__).with_name("phase0_golden_contract.json")
 _GOLDEN = json.loads(GOLDEN_FIXTURE.read_text(encoding="utf-8"))
-PARSER_GOLDEN_SHA256 = _GOLDEN["endeavor_db_parser_sha256"]
 PARSER_ERROR_CHOICE_BY_MINOR = _GOLDEN["parser_error_choice_by_python_minor"]
-MCP_GOLDEN_SHA256 = _GOLDEN["mcp_contract_sha256"]
-MCP_INSTRUCTIONS_SHA256 = _GOLDEN["mcp_instructions_sha256"]
-AGENT_MCP_GOLDEN_SHA256 = _GOLDEN["agent_mcp_golden_sha256"]
-AGENT_DELEGATE_GOLDEN_BY_MINOR = _GOLDEN["agent_delegate_contract_sha256_by_python_minor"]
+# Stored as full structural payloads, not opaque hashes: a future drift shows
+# unittest's own dict diff (which field changed) instead of two hex strings
+# that give no signal about what broke or where.
+ENDEAVOR_DB_PARSER_CONTRACT_BY_MINOR = _GOLDEN["endeavor_db_parser_contract_by_python_minor"]
+MCP_CONTRACT = _GOLDEN["mcp_contract"]
+AGENT_MCP_CONTRACT = _GOLDEN["agent_mcp_contract"]
+AGENT_DELEGATE_CONTRACT_BY_MINOR = _GOLDEN["agent_delegate_contract_by_python_minor"]
 
 
 def _stable(value):
@@ -354,11 +355,6 @@ def _agent_delegate_contract_payload():
     }
 
 
-def _sha256_json(payload) -> str:
-    encoded = json.dumps(payload, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
-    return hashlib.sha256(encoded.encode()).hexdigest()
-
-
 def _assert_cli_stdout_contract(test, actual, contract):
     if contract["format"] == "text":
         expected = endeavor_db.AGENT_HELP_TEXT if contract["exact"] == "AGENT_HELP_TEXT" else contract["exact"]
@@ -543,7 +539,13 @@ class CompatibilityContractTest(unittest.TestCase):
             sorted(set(payload["help"]) - {"root"}),
             _GOLDEN["endeavor_db_commands"],
         )
-        self.assertEqual(_sha256_json(payload), PARSER_GOLDEN_SHA256)
+        minor = f"{sys.version_info.major}.{sys.version_info.minor}"
+        self.assertIn(
+            minor, ENDEAVOR_DB_PARSER_CONTRACT_BY_MINOR,
+            f"unsupported Python minor for endeavor_db parser contract: {minor}",
+        )
+        self.maxDiff = None
+        self.assertEqual(payload, ENDEAVOR_DB_PARSER_CONTRACT_BY_MINOR[minor])
         # The root parser must retain argparse's required-command failure shape;
         # this catches an accidental optional subcommand even if help is unchanged.
         with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as raised:
@@ -554,12 +556,13 @@ class CompatibilityContractTest(unittest.TestCase):
         minor = f"{sys.version_info.major}.{sys.version_info.minor}"
         self.assertIn(
             minor,
-            AGENT_DELEGATE_GOLDEN_BY_MINOR,
+            AGENT_DELEGATE_CONTRACT_BY_MINOR,
             f"unsupported Python minor for agent_delegate contract: {minor}",
         )
+        self.maxDiff = None
         self.assertEqual(
-            _sha256_json(_agent_delegate_contract_payload()),
-            AGENT_DELEGATE_GOLDEN_BY_MINOR[minor],
+            _agent_delegate_contract_payload(),
+            AGENT_DELEGATE_CONTRACT_BY_MINOR[minor],
         )
 
     def test_agent_delegate_management_runtime_cases_are_side_effect_free(self):
@@ -599,11 +602,8 @@ class CompatibilityContractTest(unittest.TestCase):
 
     def test_mcp_schema_and_instructions_are_complete_golden_contracts(self):
         payload = {"tools": mcp_server.TOOLS, "server_instructions": mcp_server.SERVER_INSTRUCTIONS}
-        self.assertEqual(_sha256_json(payload), MCP_GOLDEN_SHA256)
-        self.assertEqual(
-            hashlib.sha256(mcp_server.SERVER_INSTRUCTIONS.encode()).hexdigest(),
-            MCP_INSTRUCTIONS_SHA256,
-        )
+        self.maxDiff = None
+        self.assertEqual(payload, MCP_CONTRACT)
         self.assertEqual(
             set(mcp_server.TOOL_BY_NAME), {tool["name"] for tool in mcp_server.TOOLS},
         )
@@ -623,7 +623,8 @@ class CompatibilityContractTest(unittest.TestCase):
                 "cancel": agent_mcp_server.CANCEL_ANNOTATIONS,
             },
         }
-        self.assertEqual(_sha256_json(payload), AGENT_MCP_GOLDEN_SHA256)
+        self.maxDiff = None
+        self.assertEqual(payload, AGENT_MCP_CONTRACT)
 
     def test_external_paths_have_distinct_stable_tokens(self):
         external_root = CONTRACT_ROOT.parent / "_endmemex_contract_external"

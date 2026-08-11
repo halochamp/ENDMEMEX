@@ -318,9 +318,11 @@ def flush_outbox(conn: sqlite3.Connection, url: str, token: str) -> dict[str, in
             counts["remaining"] += 1
             continue
         counts["remaining"] += 1
-    counts["remaining"] += conn.execute(
+    # Re-derive from the table rather than trust the loop tally: a concurrent
+    # `enqueue()` during this flush would otherwise be missing from "remaining".
+    counts["remaining"] = conn.execute(
         "SELECT COUNT(*) FROM gateway_outbox WHERE status = 'queued'"
-    ).fetchone()[0] - counts["remaining"]
+    ).fetchone()[0]
     return counts
 
 
