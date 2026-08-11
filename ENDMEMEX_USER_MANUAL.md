@@ -28,10 +28,8 @@ rationale for each feature.
 ## Quick Reference
 
 Every `python3 ENDMEMEX/endeavor_db.py <command>` subcommand (43 total),
-grouped by workflow. The `ENDMEMEX/` prefix in examples is for a monorepo
-checkout; from this standalone release, omit it (for example,
-`python3 endeavor_db.py doctor`). `<command> --help` always has the exact
-flags; this table is for finding which command/section you need. Prefer the `endmemex`
+grouped by workflow. `<command> --help` always has the exact flags; this
+table is for finding which command/section you need. Prefer the `endmemex`
 MCP tools when connected — the last column names the matching tool where one
 exists; commands with no MCP entry are CLI/human-only (usually because they
 touch the filesystem, are destructive, or are meant for a human to read).
@@ -41,7 +39,7 @@ touch the filesystem, are destructive, or are meant for a human to read).
 | `init` | Create or migrate the database | — | [README §Start a project session](README.md#start-a-project-session) |
 | `agent-help` | Print a CLI cheat sheet, no DB access | — | — |
 | `bootstrap` | One-call session start: handoff + embedding backfill + doc freshness + hooks | `endeavor_memory_bootstrap` | [§Session Briefing](#session-briefing-pack) |
-| `readiness` | One read-only preflight: local host + DB + embeddings + ANN + docs + ordered next actions | `endeavor_memory_readiness` | [§Readiness preflight](#readiness-preflight-readiness) |
+| `readiness` | One read-only preflight: machine role + DB + embeddings + ANN + docs + ordered next actions | `endeavor_memory_readiness` | [§Readiness preflight](#readiness-preflight-readiness) |
 | `pack` | Wider session briefing: handoff + open records + knowledge + activity, budget-bounded | `endeavor_memory_pack` | [§Session Briefing](#session-briefing-pack) |
 | `pending` | Lifecycle-aware pending work (presence + resumable/blocked sessions + open records) | `endeavor_memory_pending` | [README §Inspecting all pending work](README.md#inspecting-all-pending-work--mandatory-procedure) |
 | `seed` | Ingest/refresh the training-summary and core project-memory sources | — | [§Activity Digest](#human-readable-activity-digest) |
@@ -67,7 +65,7 @@ touch the filesystem, are destructive, or are meant for a human to read).
 | `handoff` | Read the latest resumable checkpoint (single session, or `--all-paused` queue) | `endeavor_memory_handoff` | [§Checkpoint Workflow](#shared-session-and-checkpoint-workflow) |
 | `timeline` | Read-only checkpoint-by-checkpoint history across sessions (who did what) | `endeavor_memory_timeline` | [§Checkpoint Timeline](#checkpoint-timeline-who-did-what-read-only) |
 | `session-close` | Mark a session `completed` or `blocked` | `endeavor_memory_session_close` | [§Checkpoint Workflow](#shared-session-and-checkpoint-workflow) |
-| `event-poll` / `event-ack` | Consume durable completion events | `endeavor_memory_event_poll` / `endeavor_memory_event_ack` | [§Remote Write Gateway](#remote-write-gateway-and-durable-events) |
+| `event-poll` / `event-ack` | Consume durable completion events | `endeavor_memory_event_poll` / `endeavor_memory_event_ack` | [§Cross-Mac Gateway](#cross-mac-write-gateway-and-durable-events) |
 | `presence-start` / `-heartbeat` / `-stop` | Announce/refresh/clear live "who's working on what" (**opt-in**, see below) | `endeavor_presence_start` / `_heartbeat` / `_stop` | [§Agent Presence](#agent-presence-whos-working-right-now) |
 | `presence` | List active presence rows (this machine live + other machines last-known) | `endeavor_presence_list` | [§Agent Presence](#agent-presence-whos-working-right-now) |
 | `sync-status` | Last-known write time per machine (informational, not a lock) | `endeavor_sync_status` | [§Sync Freshness Signal](#sync-freshness-signal-informational-not-a-lock) |
@@ -95,8 +93,8 @@ doesn't auto-reload edited code.
 ### MCP tools (23, `endmemex` server)
 
 Every tool name below is the exact string an MCP client sees (with the
-`mcp__endmemex__` prefix Claude Code adds). Keep direct writes local to the
-host that owns the database; use the authenticated gateway for remote writes.
+`mcp__endmemex__` prefix Claude Code adds). Backup Mac write tools are
+rejected with `[read-only-backup]`; only the Main Mac may write ENDMEMEX.
 
 | Tool | R/W | Gated | Maps to |
 |---|---|---|---|
@@ -136,14 +134,14 @@ you whether ENDMEMEX is usable and exactly what to do next:
 python3 ENDMEMEX/endeavor_db.py readiness --project <PROJECT>
 ```
 
-It is read-only. It never runs `bootstrap`, starts or backfills
+It is read-only on both Macs. It never runs `bootstrap`, starts or backfills
 the embedding companion, builds ANN, changes hooks, or prunes documents.
 `--json` returns the complete report for automation or the matching
 `endeavor_memory_readiness` MCP tool.
 
 The report has `overall` (`ready`, `attention`, or `blocked`) plus:
 
-- `machine`: the local host identity and write capability.
+- `machine`: Main-Mac writer vs Backup-Mac read-only role.
 - `database`: schema, SQLite integrity, foreign keys, FTS identity, record
   lifecycle, and hook state.
 - `embedding`: coverage for Markdown knowledge and native record chunks.
@@ -160,8 +158,10 @@ produced; consume `overall` and `next_actions` rather than treating an
 actionable health finding as an MCP transport error.
 
 If the database is missing or cannot be opened, readiness still returns a
-`blocked` report and does not create a file. It offers the explicit `init`
-command for the local database.
+`blocked` report and does not create a file. On the Main Mac it offers the
+explicit `init` command; the Backup Mac has no supported write path (see
+[§Cross-Mac Write Gateway](#cross-mac-write-gateway-and-durable-events) —
+archived).
 
 ## Human-Readable Activity Digest
 
@@ -197,9 +197,12 @@ python3 ENDMEMEX/endeavor_db.py activity --follow --interval 1          # defaul
 ```
 
 New rows print as `TIMESTAMP · agent · action · project — description`
-(Ctrl-C to stop); nothing is written. Latency is bounded by `--interval` only
-for agents connected to the same local database. Do not treat it as a
-cross-host real-time channel.
+(Ctrl-C to stop); nothing is written. Latency is bounded by `--interval`
+only when both agents are on the same Mac — across the Main/Backup Mac pair
+it's bounded by however long iCloud actually takes to sync the database
+file, which this tool has no way to detect (see README §Urgent rules), so
+don't read a fast poll interval as a promise of cross-Mac
+near-real-time.
 
 `seed` imports or refreshes these authoritative sources and is idempotent:
 
@@ -225,26 +228,27 @@ documents are re-indexed. Pass one or more repository-relative paths to sync
 a specific eligible document.
 
 **Tracking Markdown outside `ROOT`:** `sync_tracked.py`'s
-`EXTERNAL_TRACKED_ROOTS` tuple names folders to also index that are not
-inside this Git repository at all -- e.g. a sibling checkout directory
-holding several independent repos as immediate subfolders. It ships empty by
-default; add absolute paths to it for your own layout. Unlike the discovery
-above, an external root is walked by plain filesystem glob rather than
-`git ls-files` -- there is no requirement that the root itself be a single
-Git repository, or a Git repository at all -- so it also picks up files a
-fresh clone or an in-progress, not-yet-committed checkout would have. Each
+`EXTERNAL_TRACKED_ROOTS` list names folders to also index that are not
+inside this Git repository at all (e.g. a sibling standalone-fork checkout
+directory holding several independent repos as immediate subfolders).
+Unlike the discovery above, an external root is walked by plain filesystem
+glob rather than `git ls-files` -- there is no requirement that the root
+itself be a single Git repository -- so it also picks up files a fresh
+clone or an in-progress, not-yet-committed checkout would have. Each
 discovered file's `--project` label is its path's first component under
-that external root (`<root>/some-project/x.md` -> project `some-project`);
-a file directly at the external root's top level, with no subfolder, is
-labeled with the root folder's own name instead (spaces become underscores).
-Every other command (`--check`, `--propose-prune`, `readiness`, `doctor`)
-already treats these the same as any other tracked document once
+that external root (`<root>/ENDMEMEX/x.md` -> project `ENDMEMEX`); a file
+directly at the external root's top level, with no subfolder, is labeled
+with the root folder's own name instead (spaces become underscores, e.g.
+`Project Public/CLAUDE.md` -> project `Project_Public`). Add or remove
+entries by editing the tuple directly (repo-relative source, no config
+file); every other command (`--check`, `--propose-prune`, `readiness`,
+`doctor`) already treats these the same as any other tracked document once
 discovered, since the stored `source_path` falls back to an absolute path
 string whenever the file isn't under `ROOT` -- the same fallback
 `display_path()`/`ingest_markdown()` already use for any out-of-tree source.
-A project label reused by both the in-repo tree and an external root is
-intentional, not a collision to fix: a query scoped to that project returns
-matches from both.
+A project label reused by both the in-repo tree and an external root (e.g.
+`ENDMEMEX` existing both here and in a public fork) is intentional, not a
+collision to fix: a query scoped to that project returns matches from both.
 
 After changing a tracked document, verify its source hash without writing to
 SQLite:
@@ -518,10 +522,10 @@ followed straight to that file, the same convention `knowledge` chunks use
 for their own `source_path`:
 
 ```bash
-python3 endeavor_db.py record-add \
-  --id AUDIT-MEM-002 --project DEMO --type audit \
-  --title "Full bug audit" --content-file developer/audit.md \
-  --source developer/audit.md --agent claude
+python3 ENDMEMEX/endeavor_db.py record-add \
+  --id AUDIT-MEM-002 --project ENDMEMEX --type audit \
+  --title "Full bug audit" --content-file developer/audit_2026-07-16.md \
+  --source ENDMEMEX/developer/audit_2026-07-16.md --agent claude
 ```
 
 After implementing the fix, create the fix and its relation atomically. If a
@@ -655,8 +659,8 @@ speaking ID (`KNOW-<TOPIC>-001`) and the project label the content belongs to
 — not `ENDMEMEX`, unless the content really is about this database.
 
 Worked example: `KNOW-STATUSLINE-001` (2026-07-25) archived
-`STATUSLINE_SETUP.md`, a Claude Code status-line guide, after it had been
-verified in its target environment. Its `statusLine` shell command was
+`STATUSLINE_SETUP.md`, a per-machine Claude Code status-line guide, after the
+Backup Mac had been set up from it. Its `statusLine` shell command was
 compared byte-for-byte (652 chars) and executed against mock stdin to confirm
 it still printed the documented output before the file was removed.
 
@@ -710,7 +714,9 @@ All of send/check-inbox map directly to the `endeavor_memory_record_add` and
 an agent uses the CLI or MCP. Still pull-based and asynchronous by design —
 an agent has to think to check its inbox (e.g. once at `bootstrap` time), the
 same way it has to think to call `handoff`; nothing here turns either agent
-into a background listener.
+into a background listener. On the Backup Mac, sending is rejected because
+the database is read-only; checking the inbox is a plain read and always
+allowed.
 
 ## Shared Session and Checkpoint Workflow
 
@@ -930,16 +936,22 @@ recently.
 **Same machine is real-time**, backed directly by the WAL-mode table like
 every other read/write here.
 
-**Important: `presence-start`/`-heartbeat`/`-stop` are writes to the local
-`.sqlite3` file**, exactly like `checkpoint` or `session-start`; do not use a
-filesystem-sync folder as though it coordinated database writes. What the
-sidecar mechanism actually solves is narrower: a **cross-host read path**.
-Every `presence-*` call also mirrors this host's active rows to
-`.presence/<machine>.json` — a file only that host writes, serialized with an
-advisory file lock. `presence`'s `"local"` list is this host's live table rows;
-`"remote"` is every other host's last mirrored snapshot, explicitly
-`"source": "sidecar"` and staleness-flagged. Treat it as last-known, not live,
-and never as proof that a shared SQLite write is safe.
+**Important: `presence-start`/`-heartbeat`/`-stop` are still writes to the
+shared, iCloud-synced `.sqlite3` file**, exactly like `checkpoint` or
+`session-start` — they do not get a pass on the "don't write the shared
+database concurrently from both Macs" rule (see README §Urgent rules), and
+calling them at anything faster than the checkpoint cadence
+increases how often that risk is exercised. What the sidecar mechanism
+actually solves is narrower and still worth having: the **cross-machine READ
+path**. Every `presence-*` call also mirrors this machine's own active rows
+to `ENDMEMEX/.presence/<machine>.json` — a file only that machine ever
+writes (serialized against same-machine concurrent writers with an advisory
+file lock, see `_presence_sidecar_lock`), so two Macs can never produce an
+iCloud conflicted-copy *on that file*. `presence`'s `"local"` list is always
+this machine's live table rows; `"remote"` is every *other* machine's last
+mirrored snapshot, explicitly `"source": "sidecar"` and staleness-flagged —
+read it as "last known", not "live", and never as proof the shared `.sqlite3`
+write it was derived from is itself safe to make concurrently.
 `presence`/`--json` degrades gracefully (empty local list) on a database that
 hasn't been migrated to the `agent_presence` table yet — no `init` required
 first. `.presence/` is gitignored, per-machine local state, not committed
@@ -948,7 +960,7 @@ history.
 ## Sync Freshness Signal (informational, not a lock)
 
 Every write command also mirrors "I just wrote, at this time" to
-`.sync_freshness/<machine>.json` — the same single-writer-per-file
+`ENDMEMEX/.sync_freshness/<machine>.json` — same single-writer-per-file
 pattern as the presence sidecar above, applied to every write path, not just
 `agent_presence`. This is purely informational: it never blocks or gates a
 write by itself. Read it with:
@@ -957,15 +969,26 @@ write by itself. Read it with:
 python3 ENDMEMEX/endeavor_db.py sync-status --json
 ```
 
-It is useful for observing when another host last wrote, but it never
-authorizes a database write. It does **not** prove any synchronization has
-caught up: a missing or old entry is informative, while a recent-looking entry
-is only a lower bound on how long ago that host wrote.
+It is useful for observing when the Main Mac last wrote, but it never
+authorizes a Backup-Mac write. It does **not** prove sync has caught up — a
+machine's own sidecar write still has to propagate through iCloud like
+everything else here, so a missing or old entry for the other Mac is
+informative, but a *recent*-looking entry is a lower bound on how long ago
+that Mac wrote, never a guarantee this Mac has seen its latest state.
 
-## Remote Write Gateway and Durable Events
+## Cross-Mac Write Gateway and Durable Events
 
-`write_gateway.py` is the supported path for a remote mutation. A designated
-writer host runs the service and owns the SQLite database. Each request is
+**`write_gateway.py` is archived** (moved to `PROTOTYPE/ENDMEMEX_write_gateway/`
+on 2026-08-11): fully implemented and tested, but never actually run in
+production (no `.write_gateway/` receipts/outbox directory, no process, no
+launchd entry, no `ENDMEMEX_GATEWAY_TOKEN`/`ENDMEMEX_GATEWAY_URL` ever set).
+There is currently **no supported path for a Backup-Mac mutation**; the
+Backup Mac remains read-only per `CLAUDE.md` §6.5. The description below is
+kept for reference in case this becomes a real need again — see the archived
+file's header for reactivation steps.
+
+`write_gateway.py` was the only supported path for a Backup-Mac mutation. The
+Main Mac runs the service and remains the sole SQLite writer. Each request is
 authenticated by `ENDMEMEX_GATEWAY_TOKEN` (minimum 32 characters), restricted
 to an allowlist of ordinary write commands (not `ingest`, which is local-only), and persisted under an
 `idempotency_key` before dispatch. A retry with the same key replays the
@@ -976,21 +999,21 @@ to replay.
 For cross-machine binding, TLS is mandatory:
 
 ```bash
-# Writer host (certificate/key paths are operator-managed and never stored here)
+# Main Mac (certificate/key paths are operator-managed and never stored here)
 ENDMEMEX_GATEWAY_TOKEN='…' python3 ENDMEMEX/write_gateway.py serve \
   --bind 0.0.0.0 --port 8781 --cert /secure/server.crt --key /secure/server.key
 
-# Remote client: queue locally, then submit; failed delivery, a terminal
+# Backup Mac: queue locally, then submit; failed delivery, a terminal remote
 # error, or a crash-left processing receipt remains visible in the
-# host-specific durable outbox and `flush` retries with the same key.
-ENDMEMEX_GATEWAY_URL='https://writer.example:8781' ENDMEMEX_GATEWAY_TOKEN='…' \
-  python3 ENDMEMEX/write_gateway.py submit --idempotency-key remote:checkpoint-0001 \
+# machine-specific durable outbox and `flush` retries with the same key.
+ENDMEMEX_GATEWAY_URL='https://main-mac:8781' ENDMEMEX_GATEWAY_TOKEN='…' \
+  python3 ENDMEMEX/write_gateway.py submit --idempotency-key backup:checkpoint-0001 \
   checkpoint --project DEMO --agent codex --summary 'saved remotely'
 python3 ENDMEMEX/write_gateway.py flush
 ```
 
 Do not put the token in a record, checkpoint, command log, or repository file.
-The gateway forbids `--db` and writer-host filesystem-reading payload flags in
+The gateway forbids `--db` and Main-Mac filesystem-reading payload flags in
 both `--flag value` and `--flag=value` spellings.
 
 `durable_events` closes the background-completion gap. A delegated run given
@@ -1019,8 +1042,8 @@ python3 ENDMEMEX/endeavor_db.py maintenance --yes
 ```
 
 `--yes` is required — omitting it is a hard error, not a silent no-op — since
-this briefly takes an exclusive lock and rewrites the database. Run it only
-when no other agent process is
+this briefly takes an exclusive lock and rewrites a 100MB+ file that iCloud
+then has to re-upload in full. Run it only when no other agent process is
 likely to be writing (e.g. between sessions), never as part of a routine
 write path. `busy_timeout` still applies: if another writer holds a
 transaction, this waits up to 15s and then fails cleanly with an error rather
@@ -1051,53 +1074,92 @@ status/module/bug/session filters plus `semantic = auto|on|off`;
 on it. A normal empty handoff returns null session/checkpoint values, not an
 error.
 
+On the Backup Mac, every write tool is refused with `[read-only-backup]`,
+including calls that pass `confirm: true`. The Main Mac is the sole ENDMEMEX
+writer; use Backup Mac only for read-only tools such as query, handoff,
+timeline, doctor, and sync-status.
+
+**Portability note (found 2026-07-28, not fixed by user request):**
+`mcp_server.py`'s `IS_BACKUP_MAC = getpass.getuser() == "halochampmac"` is a
+hardcoded username check, not an env var or config value. On a copy of
+ENDMEMEX run under any other username, this evaluates to `False` with no
+warning -- the Backup read-only guard would not apply. If ENDMEMEX is ever
+moved to a different dual-machine setup, revisit this check (e.g. an env var
+override with `halochampmac` kept as the default).
+
 ### Registration
 
-Register the server independently in each MCP-capable client that should use
-this local database:
+Both agents are already wired up in the two iCloud-synced workspace copies at
+`$HOME/Desktop/ENDEAVOR_AGENTIC` for project memory:
 
 - **Claude Code** discovers the git-tracked `.mcp.json` at the repository
-  root automatically (`command: python3 mcp_server.py`, stdio,
+  root automatically (`command: python3 ENDMEMEX/mcp_server.py`, stdio,
   server name `endmemex`). The same file also registers the separate
   `endeavor-agents` server described below. Memory tools appear as
   `mcp__endmemex__endeavor_memory_*` — the tool names themselves keep the
   `endeavor_memory_` prefix, matching the database file
   `endeavor_memory.sqlite3`, which deliberately kept its name through the
   ENDMEMEX folder rename.
-- **Codex** is registered per-machine in `~/.codex/config.toml` under
-  `[mcp_servers.endmemex]` with an absolute path and
-  `cwd = <repo root>`. A fresh machine needs that block added by hand
-  (user-level config, not synced with the repo).
+- **Codex** uses the per-machine `~/.codex/config.toml` registry, which is
+  global for that local account. Its `endmemex` entry needs an absolute path
+  and `cwd = <repo root>`; the fresh-machine registration procedure appears
+  below. This user-level configuration is not synced with the repository.
 
-All local registrations point at the same `endeavor_memory.sqlite3` database,
-so checkpoints, records, and query results are shared across clients on that
-host rather than duplicated.
+Both registrations point at the same `ENDMEMEX/endeavor_memory.sqlite3`
+database, so checkpoints, records, and query results are shared across
+agents rather than duplicated per client.
 
 To register in another MCP-capable client, point a stdio server at
-`python3 mcp_server.py` with the repository root as the
+`python3 ENDMEMEX/mcp_server.py` with the repository root as the
 working directory. The server has no dependencies beyond the standard
 library and does not touch the database until a tool is called.
 
-**Making it available outside this repository (global/user scope):** the
+**Making it available outside `ENDEAVOR_AGENTIC` (global/user scope):** the
 project-level `.mcp.json` above only registers `endmemex`/`endeavor-agents`
-for Claude Code sessions whose working directory is this repository itself
--- a session rooted anywhere else sees no `mcp__endmemex__*` tools at all,
-since MCP registration is scoped, not global by default. To make both
-servers available from every project on this machine, register them at user
-scope instead, with an absolute path to this checkout so the script resolves
-correctly regardless of the caller's cwd:
+for Claude Code sessions whose working directory is `ENDEAVOR_AGENTIC`
+itself -- a session rooted anywhere else (e.g. a sibling standalone-fork
+checkout) sees no `mcp__endmemex__*` tools at all, since MCP registration is
+scoped, not global by default. To make both servers available from every
+project on this machine, register them at user scope instead (`args` are
+already absolute paths via `${HOME}/...`, so the script resolves correctly
+regardless of the caller's cwd):
 
 ```bash
-claude mcp add --scope user endmemex -- python3 "<repo root>/mcp_server.py"
-claude mcp add --scope user endeavor-agents -- python3 "<repo root>/agent_mcp_server.py"
+claude mcp add --scope user endmemex -- python3 "${HOME}/Desktop/ENDEAVOR_AGENTIC/ENDMEMEX/mcp_server.py"
+claude mcp add --scope user endeavor-agents -- python3 "${HOME}/Desktop/ENDEAVOR_AGENTIC/ENDMEMEX/agent_mcp_server.py"
 ```
 
 This is additive, not a replacement: keep the project-scoped `.mcp.json` as
 is. If the same server name exists at both scopes, the project-scoped entry
-takes precedence when working inside this repository (no behavior change
-there); everywhere else, the user-scoped registration is what resolves. A
-running Claude Code session must be restarted to pick up a new user-scope
-registration -- same file-edit-≠-process-state rule noted below.
+takes precedence when working inside `ENDEAVOR_AGENTIC` (no behavior
+change there); everywhere else, the user-scoped registration is what
+resolves. A running Claude Code session must be restarted to pick up a new
+user-scope registration -- same file-edit-≠-process-state rule noted below.
+
+**Codex global/per-machine registration:** Codex does **not** use
+`--scope user`; its `~/.codex/config.toml` is already the global registry for
+that machine. Register both servers with absolute paths:
+
+```bash
+codex mcp add endmemex -- \
+  python3 /absolute/path/to/ENDEAVOR_AGENTIC/ENDMEMEX/mcp_server.py
+codex mcp add endeavor-agents -- \
+  python3 /absolute/path/to/ENDEAVOR_AGENTIC/ENDMEMEX/agent_mcp_server.py
+```
+
+`codex mcp add` has no `cwd` flag. After adding `endmemex`, edit its block in
+`~/.codex/config.toml` so it has the repository root as its working directory:
+
+```toml
+[mcp_servers.endmemex]
+command = "python3"
+args = ["/absolute/path/to/ENDEAVOR_AGENTIC/ENDMEMEX/mcp_server.py"]
+cwd = "/absolute/path/to/ENDEAVOR_AGENTIC"
+```
+
+Then run `codex mcp list` and confirm both `endmemex` and `endeavor-agents`
+are `enabled`. Restart or reconnect Codex once; an already-running session
+does not reload changed MCP configuration.
 
 **After editing either MCP server or `.mcp.json`, a running client keeps its
 old server/config state until it restarts or reconnects** (same file-edit ≠
@@ -1248,8 +1310,9 @@ Key behavior:
   completion also publishes a deduplicated `delegation.completed` event for
   the host; without `--project`, status/wait polling remains required.
 - **Opt-in checkpoint** — add `--checkpoint --project <P>` to also record
-  a real ENDMEMEX checkpoint of the delegation. Run it against the host that
-  owns the local database or a configured writer service.
+  a real ENDMEMEX checkpoint of the delegation. This is available only on
+  the Main Mac; Backup Mac delegates must omit it because ENDMEMEX is
+  read-only there.
 - **Sub-agents start cold** — the child knows nothing about the parent
   session. Put the needed context in the prompt, or tell it to read the
   ENDMEMEX handoff (`endeavor_db.py handoff --project <P> --json`).
