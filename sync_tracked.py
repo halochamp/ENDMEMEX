@@ -36,7 +36,22 @@ DB_SCRIPT = Path(__file__).resolve().parent / "endeavor_db.py"
 # the Main-Mac monorepo where the Git root is its parent.
 ROOT = db.ROOT
 
-_EXCLUDED_PARTS = {".git", ".kiro", "__pycache__", "graphify-out", "node_modules", "venv", ".venv"}
+# Folders outside ROOT to also index, e.g. a sibling checkout directory that
+# holds several independent repos. Empty by default -- this is a mechanism to
+# configure per-installation, not a default assumption about your layout. Add
+# entries as absolute paths. Walked by plain filesystem glob, not
+# `git ls-files` -- a folder here need not itself be a single Git repository
+# (it may hold several independent repos as immediate subfolders, or no repo
+# at all). Each discovered file's project label is its path's first
+# component under the external root (e.g. "<root>/some-project/x.md" ->
+# project "some-project"); a file directly at the external root's top level,
+# with no subfolder, is labeled with the root's own folder name instead.
+EXTERNAL_TRACKED_ROOTS: tuple[Path, ...] = ()
+
+_EXCLUDED_PARTS = {
+    ".git", ".kiro", "__pycache__", "graphify-out", "node_modules", "venv", ".venv",
+    ".pytest_cache", ".mypy_cache", ".ruff_cache", ".tox",
+}
 _EXCLUDED_PREFIXES = (
     ("ENDEAVOR_VOX", "library"),
     ("ENDEAVOR_VOX", "translations"),
@@ -97,6 +112,38 @@ def _git_tracked_markdown(root: Path) -> list[str]:
     return [item for item in result.stdout.decode("utf-8", errors="strict").split("\0") if item]
 
 
+def _sanitize_project_label(name: str) -> str:
+    return "_".join(name.split())
+
+
+def _external_markdown(root: Path) -> dict[str, tuple[str, str]]:
+    """Filesystem-walk discovery for an `EXTERNAL_TRACKED_ROOTS` entry.
+
+    Unlike `_git_tracked_markdown`, `root` need not itself be a single Git
+    repository, so this walks the filesystem directly rather than shelling
+    out to `git ls-files`, reusing the same generic junk-directory exclusions.
+    Returned dict keys are absolute path strings (not root-relative) since
+    these files live outside `ROOT`/`db.ROOT`; every downstream consumer
+    (`root / rel_path`, `display_path`, `_database_source_path`) already
+    collapses an absolute right-hand side via plain pathlib join semantics,
+    so no other code needs to change to handle them.
+    """
+    documents: dict[str, tuple[str, str]] = {}
+    if not root.is_dir():
+        return documents
+    root_label = _sanitize_project_label(root.name)
+    for path in sorted(root.rglob("*.md")):
+        rel = path.relative_to(root)
+        parts = rel.parts
+        if set(parts) & _EXCLUDED_PARTS or path.name in _EXCLUDED_NAMES:
+            continue
+        if path.name.startswith("prompt_baseline_") and path.name.endswith("_full.md"):
+            continue
+        project = parts[0] if len(parts) > 1 else root_label
+        documents[str(path.resolve())] = (project, _kind_for("/".join(parts[1:]) or path.name))
+    return documents
+
+
 def staged_markdown_renames(root: Path) -> list[tuple[str, str]]:
     """Return (old_rel, new_rel) pairs for staged *.md files that Git detects
     as a RENAME (status R). Used to clean up ONLY the old orphan of a rename;
@@ -148,6 +195,9 @@ def discover_knowledge_docs(
         if path.name.startswith("prompt_baseline_") and path.name.endswith("_full.md"):
             continue
         documents[rel] = (_project_for(rel, standalone=root == DB_SCRIPT.parent), _kind_for(rel))
+    if tracked_paths is None and root == ROOT:
+        for external_root in EXTERNAL_TRACKED_ROOTS:
+            documents.update(_external_markdown(external_root))
     return dict(sorted(documents.items()))
 
 

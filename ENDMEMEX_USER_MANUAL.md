@@ -224,6 +224,28 @@ Every source is hash-checked, so re-running it is safe and only changed
 documents are re-indexed. Pass one or more repository-relative paths to sync
 a specific eligible document.
 
+**Tracking Markdown outside `ROOT`:** `sync_tracked.py`'s
+`EXTERNAL_TRACKED_ROOTS` tuple names folders to also index that are not
+inside this Git repository at all -- e.g. a sibling checkout directory
+holding several independent repos as immediate subfolders. It ships empty by
+default; add absolute paths to it for your own layout. Unlike the discovery
+above, an external root is walked by plain filesystem glob rather than
+`git ls-files` -- there is no requirement that the root itself be a single
+Git repository, or a Git repository at all -- so it also picks up files a
+fresh clone or an in-progress, not-yet-committed checkout would have. Each
+discovered file's `--project` label is its path's first component under
+that external root (`<root>/some-project/x.md` -> project `some-project`);
+a file directly at the external root's top level, with no subfolder, is
+labeled with the root folder's own name instead (spaces become underscores).
+Every other command (`--check`, `--propose-prune`, `readiness`, `doctor`)
+already treats these the same as any other tracked document once
+discovered, since the stored `source_path` falls back to an absolute path
+string whenever the file isn't under `ROOT` -- the same fallback
+`display_path()`/`ingest_markdown()` already use for any out-of-tree source.
+A project label reused by both the in-repo tree and an external root is
+intentional, not a collision to fix: a query scoped to that project returns
+matches from both.
+
 After changing a tracked document, verify its source hash without writing to
 SQLite:
 
@@ -1055,6 +1077,27 @@ To register in another MCP-capable client, point a stdio server at
 `python3 mcp_server.py` with the repository root as the
 working directory. The server has no dependencies beyond the standard
 library and does not touch the database until a tool is called.
+
+**Making it available outside this repository (global/user scope):** the
+project-level `.mcp.json` above only registers `endmemex`/`endeavor-agents`
+for Claude Code sessions whose working directory is this repository itself
+-- a session rooted anywhere else sees no `mcp__endmemex__*` tools at all,
+since MCP registration is scoped, not global by default. To make both
+servers available from every project on this machine, register them at user
+scope instead, with an absolute path to this checkout so the script resolves
+correctly regardless of the caller's cwd:
+
+```bash
+claude mcp add --scope user endmemex -- python3 "<repo root>/mcp_server.py"
+claude mcp add --scope user endeavor-agents -- python3 "<repo root>/agent_mcp_server.py"
+```
+
+This is additive, not a replacement: keep the project-scoped `.mcp.json` as
+is. If the same server name exists at both scopes, the project-scoped entry
+takes precedence when working inside this repository (no behavior change
+there); everywhere else, the user-scoped registration is what resolves. A
+running Claude Code session must be restarted to pick up a new user-scope
+registration -- same file-edit-≠-process-state rule noted below.
 
 **After editing either MCP server or `.mcp.json`, a running client keeps its
 old server/config state until it restarts or reconnects** (same file-edit ≠
