@@ -1,7 +1,12 @@
 # ENDEAVOR Memory
 
 Local SQLite knowledge, durable-record, and resumable checkpoint store for
-Claude Code and Codex.
+Claude Code and Codex — plus a policy-bounded cross-agent delegation layer
+that lets one agent spawn the other as a background sub-agent.
+
+New to this repo? Install first: [`INSTALL.eng-th.md`](INSTALL.eng-th.md)
+(English + Thai, requires only Python 3.11+ and a stdlib-supported SQLite —
+no other dependencies for the core database and full-text search).
 
 ## How to use these docs
 
@@ -54,6 +59,26 @@ Markdown project-memory, audit, training, and bug-report files remain the
 human-readable source of truth. SQLite is the searchable continuity layer;
 SQLite-native records and their typed relations are authoritative for their
 own lifecycle.
+
+## Spawn bounded sub-agents
+
+ENDMEMEX is not only a memory store — it also lets Claude Code or Codex spawn
+a policy-bounded sub-agent (Codex or Claude) to run one self-contained task
+in the background, then poll it for progress instead of blocking. Runs
+default to **read-only**; explicit write access is granted only to a
+`worker` role, `reviewer`/`advisor` roles never write, and a spawned agent
+can never spawn another (nested delegation is refused). Never put secrets in
+a delegated prompt — the request and its output are kept in local run
+artifacts for audit.
+
+- **Preferred:** the `endeavor-agents` MCP server (`agent_mcp_server.py`)
+  exposes `endeavor_agent_start` / `endeavor_agent_status` /
+  `endeavor_agent_cancel` as MCP tools — see
+  [Agent MCP Server](ENDMEMEX_USER_MANUAL.md#agent-mcp-server) for
+  registration and usage.
+- **CLI fallback without MCP registration:** run `agent_delegate.py`
+  directly — see
+  [Cross-Agent Delegation](ENDMEMEX_USER_MANUAL.md#cross-agent-delegation-agent_delegatepy).
 
 ## Start a project session
 
@@ -115,7 +140,7 @@ document that will be deleted, do **not** ingest it; follow
 | Write a good checkpoint or understand retention/pinning | [Checkpoint Quality Rules](ENDMEMEX_USER_MANUAL.md#checkpoint-quality-rules) |
 | Announce or inspect active agent ownership | [Agent Presence](ENDMEMEX_USER_MANUAL.md#agent-presence-whos-working-right-now) |
 | Check cross-machine freshness signals | [Sync Freshness Signal](ENDMEMEX_USER_MANUAL.md#sync-freshness-signal-informational-not-a-lock) |
-| Submit remote writes or consume completion events | [Remote Write Gateway and Durable Events](ENDMEMEX_USER_MANUAL.md#remote-write-gateway-and-durable-events) |
+| Submit remote writes or consume completion events | [Cross-Mac Write Gateway and Durable Events](ENDMEMEX_USER_MANUAL.md#cross-mac-write-gateway-and-durable-events) |
 | Run `VACUUM`/optimization safely | [Database Maintenance](ENDMEMEX_USER_MANUAL.md#database-maintenance) |
 | Use or register memory MCP tools | [MCP Server](ENDMEMEX_USER_MANUAL.md#mcp-server) |
 | Start/status/cancel managed agent runs | [Agent MCP Server](ENDMEMEX_USER_MANUAL.md#agent-mcp-server) |
@@ -166,3 +191,7 @@ After changing retrieval, ranking, tokenization, or ENDMEMEX behavior:
 python3 ENDMEMEX/endeavor_db.py evaluate --semantic off --json
 python3 -m unittest discover -s ENDMEMEX/developer -p 'test_*.py'
 ```
+
+## License
+
+MIT — see [`LICENSE`](LICENSE).
