@@ -1182,16 +1182,27 @@ The initial surface has three tools:
   can recover the run through `status`/`cancel`. Access defaults to
   `read_only`. Explicit `access: workspace_write` is accepted only with
   `role: worker`: Codex uses `--sandbox workspace-write`; Claude receives
-  `Read`, `Grep`, `Glob`, `Edit`, and `Write` with `acceptEdits`, but no `Bash`.
-  Only the read tools are passed through `--allowedTools`; edit tools remain
-  available through `--tools` without bare global preapproval, so
+  `Read`, `Grep`, `Glob`, `Edit`, and `Write` with `acceptEdits`, but no `Bash`;
+  Antigravity (`agy`) receives `--mode accept-edits`, which auto-applies file
+  edits but still denies shell/`run_command` since
+  `--dangerously-skip-permissions` is never passed for `workspace_write` — the
+  same edit-only-no-shell shape as Claude, verified live against a real `agy`
+  run. Only the read tools are passed through `--allowedTools`; edit tools
+  remain available through `--tools` without bare global preapproval, so
   `acceptEdits` retains the working-directory edit boundary.
   Reviewer/advisor runs always remain read-only. All MCP-launched children are
   isolated from ambient customization: Codex ignores user config/rules and is
-  ephemeral, while Claude uses safe mode, no session persistence, and an
-  explicitly empty MCP configuration. The adapter also selects each
-  CLI's JSONL event mode so useful model text is written incrementally rather
-  than appearing only after the process exits.
+  ephemeral, Claude uses safe mode, no session persistence, and an explicitly
+  empty MCP configuration, and Antigravity uses `--new-project` (no flag exists
+  in `agy` v1.1.19 to disable ambient MCP config for a single run — a known
+  gap, moot today since none is configured on this installation). Antigravity
+  runs also always get `--add-dir <cwd>` and a `--print-timeout` derived from
+  the run's `timeout`; without `--add-dir`, `agy` silently edits its own
+  internal scratch directory instead of the intended working directory and
+  reports success — see the `agent_delegate.py` manual section above for the
+  live-verified details. The adapter also selects each CLI's JSONL/streaming
+  event mode so useful model text is written incrementally rather than
+  appearing only after the process exits.
 - `endeavor_agent_status` polls state and returns terminal output tails and
   artifact paths when available. While a run is active it returns normalized
   `progress_tail`, `progress_bytes`, and `progress_format`; callers should poll
@@ -1269,6 +1280,16 @@ python3 ENDMEMEX/agent_delegate.py claude "review this diff for bugs" \
 python3 ENDMEMEX/agent_delegate.py claude "return a JSON audit" \
   --model sonnet --role reviewer --expect-json --min-output-chars 2 \
   --retries 1 --result-format json
+
+# Claude/Codex -> Antigravity (agy -p; read-only by default).
+# gemini-3.7-flash-medium is the recommended default -- fast enough for
+# routine review/summarize tasks; agy has no wrapper default of its own.
+python3 ENDMEMEX/agent_delegate.py antigravity "summarize ENDMEMEX/schema.sql" \
+  --model gemini-3.7-flash-medium
+
+# Antigravity write worker: file edits auto-apply, shell stays denied
+python3 ENDMEMEX/agent_delegate.py antigravity "append a TODO note to NOTES.md" \
+  --sandbox workspace-write --model gemini-3.7-flash-medium
 ```
 
 #### Model names (verified 2026-07-24)
@@ -1281,6 +1302,7 @@ observed in the installed CLI, not invented aliases:
 |---|---|---|
 | Codex | Omitted `--model` uses the Codex CLI config. On this Mac, `~/.codex/config.toml` sets `gpt-5.6-luna`. | OpenAI's current GPT-5.6 IDs are `gpt-5.6-sol`, `gpt-5.6-terra`, and `gpt-5.6-luna`. Availability depends on the ChatGPT account/plan and Codex CLI. |
 | Claude Code | The wrapper explicitly defaults to the `haiku` alias. | The installed Claude Code 2.1.218 accepts the aliases `fable`, `sonnet`, and `opus`, plus a full Claude model name. Its own `claude --help` shows `claude-fable-5`; Anthropic's CLI manual also documents full IDs with `claude-sonnet-4-20250514`. |
+| Antigravity (`agy`) | Omitted `--model` uses `agy`'s own configured default (no wrapper default — currently `Gemini 3.7 Flash (High)` per this Mac's `~/.gemini/antigravity-cli/settings.json`). **Recommended explicit default: `--model gemini-3.7-flash-medium`** — flash-medium is fast enough for routine review/summarize tasks; reserve `-pro-high` for genuinely hard tasks (a `gemini-3.1-pro-high` reviewer run on the full `server_monitor.py` took ~6 minutes). | Run `agy models` for the live list. Verified on this Mac (v1.1.19): `gemini-3.7-flash-{high,medium,low}`, `gemini-3.6-flash-{high,medium,low}`, `gemini-3.5-flash-{high,medium,low}`, `gemini-3.1-pro-{high,low}`, `claude-sonnet-4-6`, `claude-opus-4-6-thinking`, `gpt-oss-120b-medium`. Effort is baked into most slugs; `--reasoning-effort` (`low`/`medium`/`high`) is also accepted separately. |
 
 Sources: [OpenAI API Models](https://developers.openai.com/api/docs/models),
 [OpenAI latest-model guidance](https://developers.openai.com/api/docs/guides/latest-model),
@@ -1321,8 +1343,29 @@ Key behavior:
   unrelated piped parent input or hanging while waiting for an inherited pipe.
 - **Explicit roles** — `--role worker` preserves the original prompt;
   `reviewer` and `advisor` prepend a read-only evidence/critique contract and
-  enforce it at runtime: Codex must use `--sandbox read-only`, while Claude is
-  limited to `Read`, `Grep`, and `Glob` tools (or no tools).
+  enforce it at runtime: Codex and Antigravity must use `--sandbox read-only`,
+  while Claude is limited to `Read`, `Grep`, and `Glob` tools (or no tools).
+- **Antigravity (`agy`) sandbox translation and the `--add-dir` requirement** —
+  the wrapper always injects `--add-dir <cwd>` and `--print-timeout <timeout>s`
+  for antigravity runs. **`--add-dir` is not optional**: verified live, without
+  it `agy` silently operates on its own internal scratch directory
+  (`~/.gemini/antigravity-cli/scratch/`) instead of `--cwd` and reports
+  `status:"SUCCESS"` having edited a completely different file, with no error
+  — a silent-wrong-file failure mode, not a missing feature. `agy` has no
+  dedicated read-only mode value; `--sandbox read-only` (the default) omits
+  `--mode` entirely, which leaves `agy`'s default request-review posture —
+  verified live, a denied write/shell attempt there returns exit 1 with
+  `status:"ERROR"` and a `permission check failed` message, not a silent
+  no-op. `--sandbox workspace-write` adds `--mode accept-edits` (file edits
+  auto-apply; shell/`run_command` is still denied — verified live). `--sandbox
+  danger-full-access` additionally adds `--dangerously-skip-permissions`,
+  which approves everything including shell; only use it in a disposable
+  sandbox. `--model`/`--reasoning-effort` map to `agy`'s own `--model`/
+  `--effort low|medium|high`, which matches this wrapper's convention
+  directly. `--isolated` maps to `--new-project`; `agy --help` (v1.1.19)
+  exposes no flag to disable ambient MCP config for a single run, so that
+  part of `--isolated`'s promise is a known gap (moot today: no MCP servers
+  are configured for this installation — `agy mcp list`).
 - **Future-compatible model selection** — `--model` is a free-form alias/full-ID
   passthrough for both target CLIs, with no Haiku/Sonnet/Opus/Codex allowlist.
   When omitted, Claude uses the wrapper's `haiku` default while Codex uses its
@@ -1348,11 +1391,13 @@ Key behavior:
   validation, and ordinary child failures are never retried blindly.
 - **Validation** — `--expect-json`, `--expect-regex`, and
   `--min-output-chars` turn an invalid successful-looking response into exit 4.
-- **Diagnostics** — `diagnose claude|codex` reports caller/depth plus the exact
-  executable path and version. `--binary /full/path` resolves machines with
-  multiple CLI installations. A Codex-side Claude `Not logged in` failure is
-  classified as `sandbox_credential_unavailable` with an instruction to retry
-  outside the sandbox before asking the user to log in again.
+- **Diagnostics** — `diagnose claude|codex|antigravity` reports caller/depth
+  plus the exact executable path and version. Antigravity's binary is `agy`,
+  not `antigravity`; the wrapper resolves this automatically via
+  `TARGET_BINARIES`. `--binary /full/path` resolves machines with multiple CLI
+  installations. A Codex-side Claude `Not logged in` failure is classified as
+  `sandbox_credential_unavailable` with an instruction to retry outside the
+  sandbox before asking the user to log in again.
 - Exit codes: child's own code; `2` = recursion refused; `3` = target/run not
   found; `4` = output validation failed; `124` = timeout; `126` = launch
   failure; `130` = cancelled.

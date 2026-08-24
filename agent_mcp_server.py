@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# Developer: Poomwat Jarussri
+# Email: champoomwat@gmail.com
+# GitHub: https://github.com/halochamp
 """Stdio MCP bridge for policy-bounded managed cross-agent delegation.
 
 This server deliberately stays separate from mcp_server.py: delegation can
@@ -40,17 +43,18 @@ LATEST_PROTOCOL = "2025-03-26"
 SUPPORTED_PROTOCOLS = {"2024-11-05", LATEST_PROTOCOL}
 
 SERVER_INSTRUCTIONS = (
-    "Endeavor Agents runs bounded Codex or Claude sub-agents. Runs default to read-only; "
-    "workspace_write must be requested explicitly and is restricted to the worker role. Use start for one "
-    "cold, self-contained task, then poll status with the returned run_id; status includes "
+    "Endeavor Agents runs bounded Codex, Claude, or Antigravity (agy) sub-agents. Runs default to "
+    "read-only; workspace_write must be requested explicitly and is restricted to the worker role. Use "
+    "start for one cold, self-contained task, then poll status with the returned run_id; status includes "
     "incremental progress_tail chunks while the model is running. Report those chunks to the "
     "user instead of waiting silently for terminal output. Use cancel only when the run should "
-    "stop. Reviewer and advisor roles always remain read-only. Claude workspace-write workers "
-    "receive edit tools but no shell; only read tools are preapproved and acceptEdits retains "
-    "the working-directory edit boundary. Use Codex or the parent when command execution is needed. "
-    "The parent agent owns final conclusions and verification. Nested "
-    "delegation is refused. Never put secrets in prompts because run requests and outputs are "
-    "stored in local ENDMEMEX audit artifacts."
+    "stop. Reviewer and advisor roles always remain read-only. Claude and Antigravity workspace-write "
+    "workers receive edit tools but no shell: Claude gets Read/Grep/Glob/Edit/Write with acceptEdits "
+    "and no Bash preapproval; Antigravity gets --mode accept-edits, which auto-applies file edits but "
+    "still denies run_command since --dangerously-skip-permissions is never passed. Use Codex or the "
+    "parent when command execution is needed. The parent agent owns final conclusions and "
+    "verification. Nested delegation is refused. Never put secrets in prompts because run requests "
+    "and outputs are stored in local ENDMEMEX audit artifacts."
 )
 
 START_ANNOTATIONS = {
@@ -86,7 +90,8 @@ TOOLS = [
             "background and returns JSON containing run_id and status. Runs default to read-only. "
             "Explicit workspace_write is allowed only for role=worker: Codex uses its workspace "
             "sandbox; Claude receives Read/Grep/Glob/Edit/Write without Bash or bare edit "
-            "preapproval. Reviewer and advisor "
+            "preapproval; Antigravity (agy) gets --mode accept-edits, which auto-applies file edits "
+            "but still denies shell/run_command. Reviewer and advisor "
             "roles are always read-only. The child starts cold, so include all needed context or tell it which "
             "ENDMEMEX handoff to read. Never include secrets; local run artifacts retain the "
             "request and output."
@@ -98,7 +103,7 @@ TOOLS = [
             "properties": {
                 "target": {
                     "type": "string",
-                    "enum": ["codex", "claude"],
+                    "enum": ["codex", "claude", "antigravity"],
                     "description": "CLI agent to start.",
                 },
                 "prompt": {
@@ -117,7 +122,8 @@ TOOLS = [
                     "enum": ["read_only", "workspace_write"],
                     "description": (
                         "Filesystem access policy (default read_only). workspace_write requires "
-                        "role=worker; Claude write workers are edit-only and receive no Bash."
+                        "role=worker; Claude and Antigravity write workers are edit-only and receive "
+                        "no shell."
                     ),
                 },
                 "model": {

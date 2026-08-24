@@ -2,7 +2,8 @@
 
 Local SQLite knowledge, durable-record, and resumable checkpoint store for
 Claude Code and Codex — plus a policy-bounded cross-agent delegation layer
-that lets one agent spawn the other as a background sub-agent.
+that lets Claude Code or Codex spawn Codex, Claude, or Google's Antigravity
+CLI (`agy`) as a background sub-agent.
 
 New to this repo? Install first: [`INSTALL.eng-th.md`](INSTALL.eng-th.md)
 (English + Thai, requires only Python 3.11+ and a stdlib-supported SQLite —
@@ -63,13 +64,13 @@ own lifecycle.
 ## Spawn bounded sub-agents
 
 ENDMEMEX is not only a memory store — it also lets Claude Code or Codex spawn
-a policy-bounded sub-agent (Codex or Claude) to run one self-contained task
-in the background, then poll it for progress instead of blocking. Runs
-default to **read-only**; explicit write access is granted only to a
-`worker` role, `reviewer`/`advisor` roles never write, and a spawned agent
-can never spawn another (nested delegation is refused). Never put secrets in
-a delegated prompt — the request and its output are kept in local run
-artifacts for audit.
+a policy-bounded sub-agent (Codex, Claude, or Antigravity's `agy` CLI) to run
+one self-contained task in the background, then poll it for progress instead
+of blocking. Runs default to **read-only**; explicit write access is granted
+only to a `worker` role, `reviewer`/`advisor` roles never write, and a
+spawned agent can never spawn another (nested delegation is refused). Never
+put secrets in a delegated prompt — the request and its output are kept in
+local run artifacts for audit.
 
 - **Preferred:** the `endeavor-agents` MCP server (`agent_mcp_server.py`)
   exposes `endeavor_agent_start` / `endeavor_agent_status` /

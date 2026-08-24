@@ -1,3 +1,6 @@
+# Developer: Poomwat Jarussri
+# Email: champoomwat@gmail.com
+# GitHub: https://github.com/halochamp
 from __future__ import annotations
 
 import io
@@ -34,6 +37,15 @@ class AgentMcpServerContractTest(unittest.TestCase):
         self.assertTrue(mcp.TOOL_BY_NAME["endeavor_agent_start"]["annotations"]["openWorldHint"])
         self.assertTrue(mcp.TOOL_BY_NAME["endeavor_agent_start"]["annotations"]["destructiveHint"])
         self.assertTrue(mcp.TOOL_BY_NAME["endeavor_agent_cancel"]["annotations"]["destructiveHint"])
+
+    def test_start_schema_accepts_antigravity_target(self):
+        self.assertEqual(
+            mcp.TOOL_BY_NAME["endeavor_agent_start"]["inputSchema"]["properties"]["target"]["enum"],
+            ["codex", "claude", "antigravity"],
+        )
+        self.assertIsNone(mcp.validate_arguments("endeavor_agent_start", {
+            "target": "antigravity", "prompt": "Inspect file",
+        }))
 
     def test_start_forwards_only_read_only_managed_policy(self):
         with mock.patch.object(mcp, "admitted_start", return_value='{"run_id":"abcdefgh"}') as run:
@@ -108,6 +120,22 @@ class AgentMcpServerContractTest(unittest.TestCase):
             "--available-tools", "Read", "Grep", "Glob", "Edit", "Write",
         ])
         self.assertNotIn("Bash", command)
+
+    def test_antigravity_workspace_write_forwards_sandbox_without_claude_flags(self):
+        # The mcp layer just forwards --sandbox generically for antigravity;
+        # the actual --mode/--dangerously-skip-permissions translation
+        # happens downstream in delegate_lifecycle.build_command, not here.
+        with mock.patch.object(mcp, "admitted_start", return_value="{}") as run:
+            result = mcp.call("endeavor_agent_start", {
+                "target": "antigravity", "prompt": "Edit the requested file",
+                "role": "worker", "access": "workspace_write",
+            })
+        self.assertEqual(result, "{}")
+        command = run.call_args.args[0]
+        self.assertEqual(command[0], "antigravity")
+        self.assertEqual(command[command.index("--sandbox") + 1], "workspace-write")
+        self.assertNotIn("--permission-mode", command)
+        self.assertNotIn("--available-tools", command)
 
     def test_workspace_write_rejects_reviewer_and_advisor_before_launch(self):
         with mock.patch.object(mcp, "admitted_start") as run:

@@ -1,9 +1,12 @@
+# Developer: Poomwat Jarussri
+# Email: champoomwat@gmail.com
+# GitHub: https://github.com/halochamp
 """Pure request-shaping, progress-parsing, and OS-identity helpers for
 agent_delegate.py's managed sub-agent runs.
 
 Scoped by a transitive-closure AST call-graph check over agent_delegate.py's
-top-level functions against its monkeypatch set: these helpers are
-transitively clean. write_checkpoint
+66 top-level functions against its own 17-name monkeypatch set (see
+MODULARIZATION_DAG.md): these 19 are transitively clean. write_checkpoint
 (the 20th candidate the scan also cleared) stays in agent_delegate.py --
 it is the only one of the clean set that reads ROOT/DB_SCRIPT, both of which
 stay defined in agent_delegate.py (ROOT feeds build_delegate_parser's
@@ -135,6 +138,31 @@ def build_command(args: argparse.Namespace, binary: str) -> list[str]:
         if args.json or getattr(args, "stream_progress", False):
             cmd.append("--json")
         cmd += ["--", args.prompt]
+    elif args.target == "antigravity":
+        # -p takes the very next token as its value unconditionally (verified
+        # safe against a prompt starting with "--"), unlike codex/claude's
+        # trailing positional -- no "--" terminator needed here.
+        # --add-dir is not optional: without it agy silently operates on its
+        # own internal scratch directory instead of args.cwd and can report
+        # status:"SUCCESS" having edited a completely different file.
+        cmd = [binary, "-p", args.prompt, "--add-dir", args.cwd,
+               "--print-timeout", f"{args.timeout}s"]
+        if getattr(args, "isolated", False):
+            cmd += ["--new-project"]
+        if model:
+            cmd += ["--model", model]
+        cmd += ["--effort", reasoning_effort]
+        # agy has no explicit read-only mode value; omitting --mode leaves
+        # the default request-review posture, which denies (exit 1) any
+        # write/shell attempt rather than silently no-oping it.
+        if args.sandbox in ("workspace-write", "danger-full-access"):
+            cmd += ["--mode", "accept-edits"]
+        if args.sandbox == "danger-full-access":
+            cmd += ["--dangerously-skip-permissions"]
+        if getattr(args, "stream_progress", False):
+            cmd += ["--output-format", "stream-json"]
+        elif args.json:
+            cmd += ["--output-format", "json"]
     else:
         cmd = [binary, "-p", "--model", model]
         cmd += ["--effort", reasoning_effort]
@@ -198,6 +226,16 @@ def _event_texts(event: object) -> list[str]:
             for block in content:
                 if isinstance(block, dict) and isinstance(block.get("text"), str):
                     texts.append(block["text"])
+    # Antigravity (agy): event["event"] is a string, not the dict shape
+    # Claude uses above, so it never matches the nested-delta branch this
+    # function's caller handles separately. This is a fallback only -- the
+    # caller accumulates agy's step_update text_delta chunks directly into
+    # delta_chunks, which take priority whenever present.
+    if event.get("event") == "result":
+        result = event.get("result")
+        if isinstance(result, dict) and result.get("status") == "SUCCESS" \
+                and isinstance(result.get("response"), str):
+            texts.append(result["response"])
     return texts
 
 
@@ -226,6 +264,21 @@ def _event_error_texts(event: object) -> list[str]:
         result = event.get("result")
         if isinstance(result, str) and result:
             texts.append(result)
+    # Antigravity (agy) step/result error shapes -- see _event_texts for why
+    # this is keyed on the string-valued event["event"] instead of "type".
+    if event.get("event") == "step_update":
+        step_update = event.get("step_update")
+        if isinstance(step_update, dict) and step_update.get("state") == "ERROR":
+            tool_info = step_update.get("tool_info")
+            if isinstance(tool_info, dict):
+                tool_error = tool_info.get("error")
+                if isinstance(tool_error, dict) and isinstance(tool_error.get("message"), str):
+                    texts.append(tool_error["message"])
+    if event.get("event") == "result":
+        result = event.get("result")
+        if isinstance(result, dict) and result.get("status") == "ERROR" \
+                and isinstance(result.get("error"), str) and result["error"]:
+            texts.append(result["error"])
     return texts
 
 
@@ -322,7 +375,7 @@ def is_transient(exit_code: int, error_kind: str | None) -> bool:
 def role_policy_error(args: argparse.Namespace) -> str | None:
     if args.role == "worker":
         return None
-    if args.target == "codex" and args.sandbox != "read-only":
+    if args.target in ("codex", "antigravity") and args.sandbox != "read-only":
         return f"{args.role} role requires --sandbox read-only"
     if args.target == "claude":
         granted = set(args.allowed_tools or []) | set(

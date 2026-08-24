@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# Developer: Poomwat Jarussri
+# Email: champoomwat@gmail.com
+# GitHub: https://github.com/halochamp
 """Delegate a one-shot task to the other CLI agent (Claude <-> Codex).
 
 WHEN TO USE (agent-facing): you are Claude Code and want Codex to do a
@@ -18,6 +21,16 @@ USAGE:
         --sandbox workspace-write
     python3 ENDMEMEX/agent_delegate.py codex "review this diff" \
         --model <codex-model-alias-or-id> --reasoning-effort high
+
+    # Claude/Codex -> Antigravity (agy -p). Binary is "agy", not "antigravity";
+    # resolved via TARGET_BINARIES. --add-dir <cwd> and --print-timeout are
+    # always injected automatically -- without --add-dir, agy silently edits
+    # its own internal scratch directory instead of --cwd and reports
+    # success. --sandbox translates to --mode/--dangerously-skip-permissions
+    # (no direct read-only flag exists; omitting --mode is the safe default).
+    python3 ENDMEMEX/agent_delegate.py antigravity "summarize ENDMEMEX/schema.sql"
+    python3 ENDMEMEX/agent_delegate.py antigravity "fix the TODO in sync_tracked.py" \
+        --sandbox workspace-write
 
     # Codex -> Claude (claude -p). Model defaults to haiku (cheap).
     # Any current/future Claude alias or full model ID can be passed without
@@ -77,8 +90,8 @@ ENDMEMEX/.agent_delegate_log.jsonl (plain file write, safe on both Macs,
 never a DB write). Managed run state, request/result envelopes, checksums,
 and disk-streamed stdout/stderr live under ENDMEMEX/.agent_delegate_runs/.
 Add --checkpoint --project <P> to also record a real ENDMEMEX checkpoint.
-This is opt-in; use it only with a local database or a configured remote
-writer service.
+This is opt-in and Main-Mac-only; the Backup Mac rejects every ENDMEMEX
+database write (CLAUDE.md §7.5).
 
 Full reference: ENDMEMEX/ENDMEMEX_USER_MANUAL.md §Cross-Agent Delegation.
 """
@@ -176,6 +189,7 @@ ROLE_PREFIX = {
 }
 
 CODEX_SANDBOXES = ("read-only", "workspace-write", "danger-full-access")
+TARGET_BINARIES = {"codex": "codex", "claude": "claude", "antigravity": "agy"}
 
 
 def _atomic_json(path: Path, payload: dict) -> None:
@@ -629,6 +643,7 @@ def _progress_stream(path: Path, target: str, stream_progress: bool) -> tuple[in
     delta_chunks: list[str] = []
     chunks: list[str] = []
     error_chunks: list[str] = []
+    last_antigravity_step_index: object = None
     for line in lines:
         try:
             event = json.loads(line)
@@ -644,6 +659,21 @@ def _progress_stream(path: Path, target: str, stream_progress: bool) -> tuple[in
         delta = nested.get("delta") if isinstance(nested, dict) else None
         if isinstance(delta, dict) and isinstance(delta.get("text"), str):
             delta_chunks.append(delta["text"])
+            continue
+        # Antigravity (agy): unlike Claude, event["event"] is a string here,
+        # not a dict, so it never matches the branch above. Its incremental
+        # answer text lives at step_update.text_delta on agent_response steps.
+        if nested == "step_update":
+            step_update = event.get("step_update") if isinstance(event, dict) else None
+            if isinstance(step_update, dict) and step_update.get("step_type") == "agent_response":
+                text_delta = step_update.get("text_delta")
+                if isinstance(text_delta, str) and text_delta:
+                    step_index = step_update.get("step_index")
+                    if (delta_chunks and step_index != last_antigravity_step_index
+                            and not delta_chunks[-1].endswith("\n")):
+                        delta_chunks.append("\n")
+                    delta_chunks.append(text_delta)
+                    last_antigravity_step_index = step_index
             continue
         for chunk in _event_texts(event):
             if chunk and (not chunks or chunk != chunks[-1]):
@@ -774,7 +804,7 @@ def execute_managed(args: argparse.Namespace, run_id: str, directory: Path) -> d
                     "output": "refused: nested delegation depth limit reached"})
         return result
 
-    binary = args.binary or find_binary(args.target)
+    binary = args.binary or find_binary(TARGET_BINARIES.get(args.target, args.target))
     if not binary:
         result = {
             "run_id": run_id, "status": "failed", "exit_code": 3,
@@ -989,7 +1019,7 @@ def publish_completion_event(args: argparse.Namespace, caller: str, entry: dict)
 
 def build_delegate_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("target", choices=("codex", "claude"),
+    parser.add_argument("target", choices=("codex", "claude", "antigravity"),
                         help="which agent to spawn as the sub-agent")
     parser.add_argument("prompt", help="task for the sub-agent")
     parser.add_argument("--cwd", default=str(ROOT),
@@ -1041,7 +1071,7 @@ def build_delegate_parser() -> argparse.ArgumentParser:
                         help="exact Claude --tools availability set (defaults to allowed-tools)")
     parser.add_argument("--permission-mode", default=None,
                         help="claude --permission-mode passthrough")
-    # ENDMEMEX checkpoint (opt-in database write)
+    # ENDMEMEX checkpoint (opt-in DB write; Main Mac only)
     parser.add_argument("--checkpoint", action="store_true",
                         help="also record an ENDMEMEX checkpoint of this delegation")
     parser.add_argument("--project", default=None,
@@ -1573,10 +1603,10 @@ def cancel_main(run_id: str, _emit: bool = True) -> int:
 
 def diagnose_main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(prog="agent_delegate.py diagnose")
-    parser.add_argument("target", choices=("codex", "claude"))
+    parser.add_argument("target", choices=("codex", "claude", "antigravity"))
     parser.add_argument("--binary")
     args = parser.parse_args(argv)
-    binary = args.binary or find_binary(args.target)
+    binary = args.binary or find_binary(TARGET_BINARIES.get(args.target, args.target))
     binary_ok = bool(binary and Path(binary).is_file() and os.access(binary, os.X_OK))
     payload = {
         "target": args.target,

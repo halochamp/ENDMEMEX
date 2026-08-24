@@ -1,3 +1,6 @@
+# Developer: Poomwat Jarussri
+# Email: champoomwat@gmail.com
+# GitHub: https://github.com/halochamp
 """Tests for agent_delegate.py — no real CLI is spawned."""
 from __future__ import annotations
 
@@ -52,7 +55,7 @@ class BuildCommandTest(unittest.TestCase):
                     sandbox="read-only", model=None, allowed_tools=None,
                     available_tools=None,
                     reasoning_effort=None, permission_mode=None, isolated=False,
-                    stream_progress=False)
+                    stream_progress=False, timeout=900)
         base.update(overrides)
         return mock.Mock(**base)
 
@@ -154,6 +157,7 @@ class BuildCommandTest(unittest.TestCase):
         self.assertEqual(
             agent_delegate.effective_model(self._args(target="claude")), "haiku",
         )
+        self.assertIsNone(agent_delegate.effective_model(self._args(target="antigravity")))
 
     def test_reasoning_effort_defaults_to_medium_for_both_targets(self):
         self.assertEqual(agent_delegate.effective_reasoning_effort(self._args()), "medium")
@@ -182,6 +186,70 @@ class BuildCommandTest(unittest.TestCase):
                     self._args(target=target, prompt="--help"), binary,
                 )
                 self.assertEqual(cmd[-2:], ["--", "--help"])
+
+    def test_antigravity_command_read_only_default(self):
+        cmd = agent_delegate.build_command(
+            self._args(target="antigravity", cwd="/tmp/work"), "/bin/agy",
+        )
+        self.assertEqual(cmd, [
+            "/bin/agy", "-p", "do it", "--add-dir", "/tmp/work",
+            "--print-timeout", "900s", "--effort", "medium",
+        ])
+        self.assertNotIn("--mode", cmd)
+        self.assertNotIn("--dangerously-skip-permissions", cmd)
+
+    def test_antigravity_prompt_starting_with_dash_is_not_misparsed(self):
+        # -p consumes the very next token as its value unconditionally
+        # (verified live against a real agy binary), unlike codex/claude's
+        # trailing positional -- no "--" terminator is needed or used here.
+        cmd = agent_delegate.build_command(
+            self._args(target="antigravity", prompt="--dangerously-skip-permissions"),
+            "/bin/agy",
+        )
+        self.assertEqual(cmd[cmd.index("-p") + 1], "--dangerously-skip-permissions")
+        self.assertNotIn("--", cmd)
+
+    def test_antigravity_workspace_write_accepts_edits_but_not_shell(self):
+        cmd = agent_delegate.build_command(
+            self._args(target="antigravity", sandbox="workspace-write"), "/bin/agy",
+        )
+        self.assertEqual(cmd[cmd.index("--mode") + 1], "accept-edits")
+        self.assertNotIn("--dangerously-skip-permissions", cmd)
+
+    def test_antigravity_danger_full_access_skips_permissions(self):
+        cmd = agent_delegate.build_command(
+            self._args(target="antigravity", sandbox="danger-full-access"), "/bin/agy",
+        )
+        self.assertEqual(cmd[cmd.index("--mode") + 1], "accept-edits")
+        self.assertIn("--dangerously-skip-permissions", cmd)
+
+    def test_antigravity_print_timeout_derived_from_wrapper_timeout(self):
+        cmd = agent_delegate.build_command(
+            self._args(target="antigravity", timeout=120), "/bin/agy",
+        )
+        self.assertEqual(cmd[cmd.index("--print-timeout") + 1], "120s")
+
+    def test_antigravity_isolated_uses_new_project(self):
+        cmd = agent_delegate.build_command(
+            self._args(target="antigravity", isolated=True), "/bin/agy",
+        )
+        self.assertIn("--new-project", cmd)
+
+    def test_antigravity_model_is_forwarded_without_allowlist(self):
+        cmd = agent_delegate.build_command(
+            self._args(target="antigravity", model="gemini-3.7-flash-high"), "/bin/agy",
+        )
+        self.assertEqual(cmd[cmd.index("--model") + 1], "gemini-3.7-flash-high")
+
+    def test_antigravity_output_format_matches_json_and_stream_flags(self):
+        cmd = agent_delegate.build_command(
+            self._args(target="antigravity", json=True), "/bin/agy",
+        )
+        self.assertEqual(cmd[cmd.index("--output-format") + 1], "json")
+        cmd = agent_delegate.build_command(
+            self._args(target="antigravity", stream_progress=True), "/bin/agy",
+        )
+        self.assertEqual(cmd[cmd.index("--output-format") + 1], "stream-json")
 
 
 class PositiveIntTest(unittest.TestCase):
@@ -622,6 +690,70 @@ class RunChildTest(unittest.TestCase):
         self.assertIn("partial answer", progress["progress_tail"])
         self.assertIn("connection reset mid-stream", progress["progress_tail"])
 
+    def test_progress_snapshot_renders_antigravity_text_deltas(self):
+        """Event lines captured verbatim from a real `agy -p ... --output-format
+        stream-json` run. event["event"] is a string here, not the dict shape
+        Claude uses, so it must not fall through to the raw-JSON-dump
+        fallback -- that would leak NDJSON garbage into stdout_tail, which
+        the MCP server reports to the parent agent as the "answer"."""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "events.log"
+            events = [
+                {"event": "init", "conversation_id": "c1",
+                 "init": {"cwd": "/tmp", "tools": ["view_file"], "permission_mode": "request-review"}},
+                {"event": "step_update", "step_update": {
+                    "conversation_id": "c1", "step_index": 0, "state": "DONE",
+                    "step_type": "user_input",
+                }},
+                {"event": "step_update", "step_update": {
+                    "conversation_id": "c1", "step_index": 2, "state": "ACTIVE",
+                    "step_type": "agent_response", "text_delta": "PONG",
+                }},
+                {"event": "step_update", "step_update": {
+                    "conversation_id": "c1", "step_index": 2, "state": "DONE",
+                    "step_type": "agent_response", "text_delta": "\n",
+                }},
+                {"event": "result", "result": {
+                    "conversation_id": "c1", "status": "SUCCESS", "response": "PONG\n",
+                }},
+            ]
+            path.write_text("".join(json.dumps(event) + "\n" for event in events))
+            progress = agent_delegate.progress_snapshot(path, "antigravity", True)
+        self.assertEqual(progress["progress_tail"], "PONG\n")
+
+    def test_progress_snapshot_surfaces_antigravity_tool_and_result_errors(self):
+        """Event lines captured verbatim from a real denied-write run (write
+        attempted without --mode accept-edits)."""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "events.log"
+            events = [
+                {"event": "init", "conversation_id": "c2",
+                 "init": {"cwd": "/tmp", "tools": [], "permission_mode": "request-review"}},
+                {"event": "step_update", "step_update": {
+                    "conversation_id": "c2", "step_index": 5, "state": "ERROR",
+                    "step_type": "tool", "tool_name": "replace_file_content",
+                    "tool_info": {
+                        "parameters": {"TargetFile": "/tmp/sample.txt"},
+                        "error": {
+                            "type": "TOOL_ERROR",
+                            "message": "permission check failed for write_file "
+                                       "\"/tmp/sample.txt\": user denied permission",
+                        },
+                    },
+                }},
+                {"event": "result", "result": {
+                    "conversation_id": "c2", "status": "ERROR", "response": "",
+                    "error": "permission check failed for write_file "
+                             "\"/tmp/sample.txt\": user denied permission",
+                }},
+            ]
+            path.write_text("".join(json.dumps(event) + "\n" for event in events))
+            progress = agent_delegate.progress_snapshot(path, "antigravity", True)
+        self.assertIn("permission check failed for write_file", progress["progress_tail"])
+        # Identical text from the tool error and the terminal result error
+        # must be deduplicated rather than appearing twice.
+        self.assertEqual(progress["progress_tail"].count("permission check failed"), 1)
+
 
 class ManagedRuntimeTest(unittest.TestCase):
     def setUp(self):
@@ -839,6 +971,17 @@ class ManagedRuntimeTest(unittest.TestCase):
         self.assertEqual(result["exit_code"], 4)
         self.assertEqual(result["error_kind"], "role_policy_violation")
         self.assertIn("Write", result["message"])
+
+    def test_advisor_role_rejects_antigravity_workspace_write(self):
+        args = agent_delegate.build_delegate_parser().parse_args([
+            "antigravity", "task", "--role", "advisor", "--sandbox", "workspace-write",
+        ])
+        run_id, directory = agent_delegate.new_run(agent_delegate._config_from_args(args))
+        with mock.patch.object(agent_delegate, "append_log"):
+            result = agent_delegate.execute_managed(args, run_id, directory)
+        self.assertEqual(result["exit_code"], 4)
+        self.assertEqual(result["error_kind"], "role_policy_violation")
+        self.assertIn("--sandbox read-only", result["message"])
 
     def test_read_state_reports_log_activity(self):
         args = delegate_args()
@@ -1668,6 +1811,15 @@ class LoggingTest(unittest.TestCase):
         self.assertEqual(code, 3)
         log.assert_called_once()
         self.assertEqual(log.call_args[0][0]["exit_code"], 3)
+
+    def test_antigravity_target_resolves_agy_binary_not_the_target_name(self):
+        # The antigravity CLI's binary is "agy", not "antigravity" -- a
+        # literal find_binary("antigravity") lookup would never find it.
+        with mock.patch.object(agent_delegate, "find_binary",
+                               return_value=None) as find_binary, \
+             mock.patch.object(agent_delegate, "append_log"):
+            run_main(["antigravity", "hi"])
+        find_binary.assert_called_once_with("agy")
 
     def test_raw_early_failure_is_visible_on_stderr(self):
         stderr = __import__("io").StringIO()
