@@ -104,7 +104,10 @@ TOOLS = [
                 "target": {
                     "type": "string",
                     "enum": ["codex", "claude", "antigravity"],
-                    "description": "CLI agent to start.",
+                    "description": (
+                        "CLI agent to start: codex (OpenAI), claude (Anthropic), "
+                        "or antigravity (Google agy)."
+                    ),
                 },
                 "prompt": {
                     "type": "string",
@@ -130,7 +133,11 @@ TOOLS = [
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 200,
-                    "description": "Optional target CLI model alias or full ID; passed through without an allowlist.",
+                    "description": (
+                        "Optional target CLI model alias or full ID; passed through without an allowlist. "
+                        "Use an explicit value when deterministic model selection matters; isolated Codex "
+                        "runs ignore user configuration."
+                    ),
                 },
                 "reasoning_effort": {
                     "type": "string",

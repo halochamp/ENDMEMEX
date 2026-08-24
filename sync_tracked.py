@@ -6,17 +6,14 @@ ingest is hash-based and idempotent (a file that hasn't changed reports
 "unchanged", no duplicate rows), so this is always safe to re-run in full.
 
 Usage:
-    python3 ENDMEMEX/sync_tracked.py           # sync every eligible doc
-    python3 ENDMEMEX/sync_tracked.py <path>...  # sync only named docs
+    python3 sync_tracked.py           # sync every eligible doc
+    python3 sync_tracked.py <path>...  # sync only named docs
       (paths must be keys of TRACKED_DOCS below)
 
-Includes Git-tracked `PROTOTYPE/` documentation by explicit workspace policy.
-It still excludes third-party notices, source libraries/translations,
-prompt-baseline snapshots, and generated directories.
-
-Active project-memory files may be listed explicitly while their new project
-directory is still awaiting its first Git commit. This keeps current cross-agent
-memory searchable without staging or committing user work implicitly.
+Includes eligible Git-tracked Markdown and excludes third-party notices,
+prompt-baseline snapshots, and generated/cache directories. In a standalone
+clone all documents use project `ENDMEMEX`; when embedded in a parent Git
+workspace, the first path component becomes the project label.
 """
 from __future__ import annotations
 
@@ -32,8 +29,8 @@ import endeavor_db as db
 
 DB_SCRIPT = Path(__file__).resolve().parent / "endeavor_db.py"
 # Keep tracked-document discovery aligned with the database/runtime root. The
-# public repository is standalone (its .git lives beside this script), unlike
-# the Main-Mac monorepo where the Git root is its parent.
+# public repository is standalone (its .git lives beside this script), while
+# an embedded copy may use a parent Git workspace.
 ROOT = db.ROOT
 
 # Folders outside ROOT to also index, e.g. a sibling checkout directory that
@@ -52,29 +49,9 @@ _EXCLUDED_PARTS = {
     ".git", ".kiro", "__pycache__", "graphify-out", "node_modules", "venv", ".venv",
     ".pytest_cache", ".mypy_cache", ".ruff_cache", ".tox",
 }
-_EXCLUDED_PREFIXES = (
-    ("ENDEAVOR_VOX", "library"),
-    ("ENDEAVOR_VOX", "translations"),
-)
+_EXCLUDED_PREFIXES: tuple[tuple[str, ...], ...] = ()
 _EXCLUDED_NAMES = {"THIRD_PARTY_NOTICES.md"}
-_PROJECT_PREFIXES = (
-    ("AWAKE", "AWAKE"),
-    ("ENDMEMEX", "ENDMEMEX"),
-    ("PROTOTYPE/ENDEAVOR_LOCAL_AGENT_VLM", "PROTOTYPE_ENDEAVOR_LOCAL_AGENT_VLM"),
-    ("PROTOTYPE/ENDEAVOR_AGENT", "PROTOTYPE_ENDEAVOR_AGENT"),
-    ("PROTOTYPE/ENDEAVOR_CORE", "PROTOTYPE_ENDEAVOR_CORE"),
-    ("ENDEAVOR_AGENT_API_MAX/ENDEAVOR_LOCAL_AGENT_API", "ENDEAVOR_AGENT_API_MAX"),
-    ("ENDEAVOR_AGENT_API_MAX/ENDEAVOR_RAG_API", "ENDEAVOR_RAG_API"),
-    ("ENDEAVOR_LOCAL_AGENT_MAX_VLM", "ENDEAVOR_LOCAL_AGENT_MAX_VLM"),
-    ("ENDEAVOR_LOCAL_AGENT_MAX", "ENDEAVOR_LOCAL_AGENT_MAX"),
-    ("ENDEAVOR_RAG_MAX", "ENDEAVOR_RAG_MAX"),
-    ("ENDEAVOR_VOX", "ENDEAVOR_VOX"),
-    ("ENDEAVOR_VISSION", "ENDEAVOR_VISSION"),
-    ("ENDEAVOR_API_MAX", "ENDEAVOR_API_MAX"),
-    ("agent_training_guide", "agent-training-guide"),
-    ("Telegram_MAX", "Telegram_MAX"),
-)
-_ACTIVE_PROJECT_DOCS = ("AWAKE/PROJECT_MEMORY.md",)
+_ACTIVE_PROJECT_DOCS: tuple[str, ...] = ()
 
 
 def _kind_for(rel_path: str) -> str:
@@ -95,10 +72,10 @@ def _kind_for(rel_path: str) -> str:
 def _project_for(rel_path: str, *, standalone: bool = False) -> str:
     if standalone:
         return "ENDMEMEX"
-    for prefix, project in _PROJECT_PREFIXES:
-        if rel_path == prefix or rel_path.startswith(f"{prefix}/"):
-            return project
-    return "ENDEAVOR_AGENTIC"
+    parts = Path(rel_path).parts
+    if len(parts) > 1:
+        return _sanitize_project_label(parts[0])
+    return _sanitize_project_label(ROOT.name)
 
 
 def _git_tracked_markdown(root: Path) -> list[str]:

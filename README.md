@@ -141,12 +141,12 @@ document that will be deleted, do **not** ingest it; follow
 | Write a good checkpoint or understand retention/pinning | [Checkpoint Quality Rules](ENDMEMEX_USER_MANUAL.md#checkpoint-quality-rules) |
 | Announce or inspect active agent ownership | [Agent Presence](ENDMEMEX_USER_MANUAL.md#agent-presence-whos-working-right-now) |
 | Check cross-machine freshness signals | [Sync Freshness Signal](ENDMEMEX_USER_MANUAL.md#sync-freshness-signal-informational-not-a-lock) |
-| Submit remote writes or consume completion events | [Cross-Mac Write Gateway and Durable Events](ENDMEMEX_USER_MANUAL.md#cross-mac-write-gateway-and-durable-events) |
+| Submit remote writes or consume completion events | [Remote Write Gateway and Durable Events](ENDMEMEX_USER_MANUAL.md#remote-write-gateway-and-durable-events) |
 | Run `VACUUM`/optimization safely | [Database Maintenance](ENDMEMEX_USER_MANUAL.md#database-maintenance) |
 | Use or register memory MCP tools | [MCP Server](ENDMEMEX_USER_MANUAL.md#mcp-server) |
 | Start/status/cancel managed agent runs | [Agent MCP Server](ENDMEMEX_USER_MANUAL.md#agent-mcp-server) |
 | Delegate through `agent_delegate.py` fallback | [Cross-Agent Delegation](ENDMEMEX_USER_MANUAL.md#cross-agent-delegation-agent_delegatepy) |
-| Select a verified explicit model name | [Model names](ENDMEMEX_USER_MANUAL.md#model-names-verified-2026-07-24) |
+| Select a model or inspect live CLI availability | [Model selection and live discovery](ENDMEMEX_USER_MANUAL.md#model-selection-and-live-discovery) |
 
 ### Inspecting all pending work — mandatory procedure
 
@@ -189,8 +189,8 @@ unless the user explicitly transfers it.
 After changing retrieval, ranking, tokenization, or ENDMEMEX behavior:
 
 ```bash
-python3 ENDMEMEX/endeavor_db.py evaluate --semantic off --json
-python3 -m unittest discover -s ENDMEMEX/developer -p 'test_*.py'
+python3 endeavor_db.py evaluate --semantic off --json
+python3 -m unittest discover -s developer -p 'test_*.py'
 ```
 
 ## License

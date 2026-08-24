@@ -1,6 +1,6 @@
 # ENDMEMEX — อธิบายการทำงาน
 
-**ENDMEMEX** คือระบบ **ความจำร่วม (Shared Memory)** แบบ SQLite สำหรับ AI Agent 2 ตัว คือ **Claude Code** และ **Codex** ในโปรเจค `ENDEAVOR_AGENTIC`
+**ENDMEMEX** คือระบบ **ความจำร่วม (Shared Memory)** แบบ SQLite สำหรับ AI agents เช่น **Claude Code** และ **Codex** ในโปรเจคของคุณ
 
 ---
 
@@ -189,31 +189,31 @@ handoff → ส่งต่อ session ให้ agent อื่น resume ไ�
 
 ```bash
 # Initialize database
-python3 ENDMEMEX/endeavor_db.py init
+python3 endeavor_db.py init
 
 # Bootstrap project
-python3 ENDMEMEX/endeavor_db.py bootstrap --project <PROJECT> --json
+python3 endeavor_db.py bootstrap --project <PROJECT> --json
 
 # Query knowledge
-python3 ENDMEMEX/endeavor_db.py query "<question>" --project <PROJECT> --json --compact
+python3 endeavor_db.py query "<question>" --project <PROJECT> --json --compact
 
 # Sync tracked docs
-python3 ENDMEMEX/sync_tracked.py <path>...
+python3 sync_tracked.py <path>...
 
 # Checkpoint
-python3 ENDMEMEX/endeavor_db.py checkpoint --project <PROJECT> --goal "..."
+python3 endeavor_db.py checkpoint --project <PROJECT> --goal "..."
 
 # Pending work
-python3 ENDMEMEX/endeavor_db.py pending --all-projects --json
-python3 ENDMEMEX/endeavor_db.py handoff --all-paused --json
+python3 endeavor_db.py pending --all-projects --json
+python3 endeavor_db.py handoff --all-paused --json
 
 # Embedding diagnose
-python3 ENDMEMEX/endeavor_db.py embed-diagnose
+python3 endeavor_db.py embed-diagnose
 
 # Record operations
-python3 ENDMEMEX/endeavor_db.py record-add --type audit --project <PROJECT> --title "..." --content "..."
-python3 ENDMEMEX/endeavor_db.py record-show <RECORD_ID>
-python3 ENDMEMEX/endeavor_db.py record-search --current-only --project <PROJECT>
+python3 endeavor_db.py record-add --type audit --project <PROJECT> --title "..." --content "..."
+python3 endeavor_db.py record-show <RECORD_ID>
+python3 endeavor_db.py record-search --current-only --project <PROJECT>
 ```
 
 ---

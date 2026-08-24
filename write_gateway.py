@@ -119,7 +119,7 @@ def validate_request(payload: object) -> dict[str, Any]:
     ):
         raise ValueError("arguments must be an array of at most 100 bounded strings")
     if has_option(arguments, "--db"):
-        raise ValueError("--db is forbidden; the gateway always writes the Main-Mac database")
+        raise ValueError("--db is forbidden; the gateway always writes the designated host database")
     if command == "record-add" and has_option(arguments, "--content-file"):
         raise ValueError("--content-file is forbidden at the gateway boundary; send --content")
     if command == "checkpoint" and has_option(arguments, "--payload"):

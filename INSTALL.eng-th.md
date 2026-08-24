@@ -42,7 +42,8 @@ notes, handoffs, and investigation history.
 ### 3. Add your first document
 
 Use `ingest` to index documents you choose. The public release deliberately
-ships with no private seed sources.
+ships with no private seed sources; the optional `seed` command indexes only
+the public README, manual, and agent guide bundled here.
 
 ```bash
 python3 endeavor_db.py ingest README.md --project demo --kind documentation
@@ -67,9 +68,9 @@ python3 endeavor_db.py checkpoint \
 ```
 
 See [AGENT.md](AGENT.md) for the recommended query, checkpoint, and
-audit/fix/verification lifecycle. Delegating a task to Codex or Claude is an
-optional, separate workflow; the parent agent remains responsible for the
-final conclusion and verification.
+audit/fix/verification lifecycle. Delegating a task to Codex, Claude, or
+Antigravity is an optional, separate workflow; the parent agent remains
+responsible for the final conclusion and verification.
 
 ### 5. Optional: enable semantic search
 
@@ -151,7 +152,8 @@ python3 endeavor_db.py doctor
 ### 3. เพิ่มเอกสารแรกของคุณ
 
 ใช้ `ingest` เพื่อสร้างดัชนีให้เอกสารที่คุณเลือกเอง public release นี้ไม่มี private
-seed source ติดมาด้วยโดยตั้งใจ
+seed source ติดมาด้วยโดยตั้งใจ ส่วนคำสั่ง `seed` จะทำดัชนีเฉพาะ README, คู่มือ และ
+agent guide ที่เผยแพร่ใน repository นี้
 
 ```bash
 python3 endeavor_db.py ingest README.md --project demo --kind documentation
@@ -176,9 +178,9 @@ python3 endeavor_db.py checkpoint \
 ```
 
 ดู workflow ที่แนะนำสำหรับ query, checkpoint และ lifecycle แบบ
-audit/fix/verification ได้ที่ [AGENT.md](AGENT.md) การส่งงานไปให้ Codex หรือ
-Claude เป็น workflow เสริมที่แยกออกมา โดย parent agent ยังคงรับผิดชอบข้อสรุปและการ
-ตรวจสอบสุดท้าย
+audit/fix/verification ได้ที่ [AGENT.md](AGENT.md) การส่งงานไปให้ Codex, Claude
+หรือ Antigravity เป็น workflow เสริมที่แยกออกมา โดย parent agent ยังคงรับผิดชอบ
+ข้อสรุปและการตรวจสอบสุดท้าย
 
 ### 5. ตัวเลือกเสริม: เปิดใช้ semantic search
 

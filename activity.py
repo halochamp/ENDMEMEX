@@ -94,7 +94,7 @@ def render_activity(conn: sqlite3.Connection, limit: int, *, export_max: int = A
         "",
         f"Latest {len(rows)} of {total} logged write actions, newest first; times are local.",
         "Auto-refreshed after every write command; regenerate manually with "
-        "`python3 ENDMEMEX/endeavor_db.py activity`. Do not edit — generated file.",
+        "`python3 endeavor_db.py activity`. Do not edit — generated file.",
         "",
     ]
     for row in rows:

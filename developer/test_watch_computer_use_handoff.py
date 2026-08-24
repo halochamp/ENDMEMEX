@@ -12,7 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import watch_computer_use_handoff as m  # noqa: E402
 
 
-def handoff_payload(sequence=5, agent="claude", next_steps="hand off to Terra"):
+def handoff_payload(sequence=5, agent="claude", next_steps="hand off to Codex"):
     return {"checkpoint": {"session_id": m.SESSION, "agent": agent,
                            "sequence": sequence, "next_steps": next_steps}}
 
@@ -53,6 +53,17 @@ class MainOrderingTest(unittest.TestCase):
             __import__("tempfile").TemporaryDirectory()))
         self.state_path = self.tmp_dir / "state.json"
         self.enterContext(mock.patch.object(m, "STATE", self.state_path))
+        self.enterContext(mock.patch.object(m, "PROJECT", "demo"))
+        self.enterContext(mock.patch.object(m, "SESSION", "session-1"))
+
+    def test_missing_configuration_fails_before_reading_handoff(self):
+        handoff = mock.Mock()
+        with mock.patch.object(m, "PROJECT", ""), \
+             mock.patch.object(m, "SESSION", ""), \
+             mock.patch.object(m, "handoff", handoff):
+            code = m.main()
+        self.assertEqual(code, 2)
+        handoff.assert_not_called()
 
     def _mock_handoff(self, payload):
         return mock.patch.object(m, "handoff", return_value=payload)

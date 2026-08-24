@@ -476,11 +476,6 @@ def _embed_python_candidates() -> list[Path]:
         candidates.extend((
             HERE / ".venv/bin/python",
             ROOT / ".venv/bin/python",
-            Path("/opt/homebrew/anaconda3/envs/endeavor/bin/python"),
-            Path("/opt/homebrew/anaconda3/bin/python3"),
-            Path("/opt/homebrew/anaconda3/envs/mlx/bin/python"),
-            Path.home() / "anaconda3/envs/endeavor/bin/python",
-            Path.home() / "miniconda3/envs/endeavor/bin/python",
         ))
 
     unique: list[Path] = []
@@ -895,8 +890,8 @@ def stale_embedding_ids(conn: sqlite3.Connection, document_id: int | None = None
 
 def backfill_embeddings(conn: sqlite3.Connection, batch_size: int = EMBED_BATCH_SIZE) -> dict[str, Any]:
     """Embed every row missing an embedding or whose stored hash no longer
-    matches its content (self-heal, same shape as ENDEAVOR_RAG_MAX's BM25
-    mtime self-heal). Spawns/waits for the companion if it isn't warm."""
+    matches its content (self-healing stale-vector repair). Spawns/waits for
+    the companion if it isn't warm."""
     if batch_size <= 0:
         raise ValueError("batch_size must be positive")
     if not ensure_embed_server(wait=True):
@@ -2557,7 +2552,7 @@ def readiness_report(conn: sqlite3.Connection, project: str, path: Path) -> dict
     """Build an actionable, non-mutating preflight for one project.
 
     The report deliberately never calls bootstrap, backfill, or warm: it is
-    safe on both Macs and reports what needs attention before a session starts.
+    safe on any host and reports what needs attention before a session starts.
     ANN status is inspected only; no sidecar is built here.
     """
     doctor = doctor_report(conn, path)
@@ -2600,14 +2595,14 @@ def readiness_report(conn: sqlite3.Connection, project: str, path: Path) -> dict
         actions.append({
             "priority": "P0", "code": "database_health",
             "reason": "SQLite, schema, FTS, embedding-blob, or record-lifecycle health is not current.",
-            "command": "python3 ENDMEMEX/endeavor_db.py doctor",
+            "command": "python3 endeavor_db.py doctor",
             "guidance": "Resolve the detailed doctor findings before making ENDMEMEX writes.",
         })
     if not hooks_ok(doctor["hooks"]):
         actions.append({
             "priority": "P1", "code": "install_hooks",
             "reason": "The advisory tracked-document sync hook is missing or drifted.",
-            "command": "python3 ENDMEMEX/endeavor_db.py install-hooks",
+            "command": "python3 endeavor_db.py install-hooks",
             "guidance": "Install the hook in this clone, then rerun readiness.",
         })
 
@@ -2617,21 +2612,21 @@ def readiness_report(conn: sqlite3.Connection, project: str, path: Path) -> dict
         actions.append({
             "priority": "P1", "code": "document_freshness_unavailable",
             "reason": str(docs_error),
-            "command": "python3 ENDMEMEX/sync_tracked.py --check --json",
+            "command": "python3 sync_tracked.py --check --json",
             "guidance": "Restore the tracked-document check before trusting freshness counts.",
         })
     elif docs_drift:
         actions.append({
             "priority": "P1", "code": "sync_tracked_documents",
             "reason": f"{docs_drift} tracked document(s) are stale, missing, or have metadata drift.",
-            "command": "python3 ENDMEMEX/sync_tracked.py --check --json",
+            "command": "python3 sync_tracked.py --check --json",
             "guidance": "Review the listed paths, then sync each approved tracked document.",
         })
     if int(docs.get("orphaned", 0)):
         actions.append({
             "priority": "P1", "code": "review_orphaned_documents",
             "reason": f"{docs['orphaned']} indexed document(s) are outside the tracked manifest.",
-            "command": "python3 ENDMEMEX/sync_tracked.py --propose-prune /private/tmp/endmemex-prune-proposal.json",
+            "command": "python3 sync_tracked.py --propose-prune /private/tmp/endmemex-prune-proposal.json",
             "guidance": "Review the hash-pinned proposal; never prune automatically from readiness.",
         })
 
@@ -2641,19 +2636,19 @@ def readiness_report(conn: sqlite3.Connection, project: str, path: Path) -> dict
         actions.append({
             "priority": "P1", "code": "embedding_coverage",
             "reason": f"{embedding_pending} embedding(s) are pending and {stale_embeddings} hash(es) are stale.",
-            "command": "python3 ENDMEMEX/endeavor_db.py embed-diagnose",
+            "command": "python3 endeavor_db.py embed-diagnose",
             "guidance": "Follow the structured diagnosis before running embed-backfill or changing a companion.",
         })
     if ann_required and not ann_status.get("fresh"):
         available = ann_status.get("available")
         if available is True:
-            command = "python3 ENDMEMEX/endeavor_db.py ann-build"
+            command = "python3 endeavor_db.py ann-build"
             guidance = "Build the sidecar on this machine, then rerun readiness to confirm it is fresh."
         elif available is False:
             command = None
             guidance = "Install optional numpy and hnswlib in the selected runtime, then build the per-machine sidecar."
         else:
-            command = "python3 ENDMEMEX/endeavor_db.py ann-status"
+            command = "python3 endeavor_db.py ann-status"
             guidance = "The ANN probe did not establish dependency state; inspect its error before changing a runtime."
         actions.append({
             "priority": "P1", "code": "ann_sidecar",
@@ -2667,7 +2662,7 @@ def readiness_report(conn: sqlite3.Connection, project: str, path: Path) -> dict
             "priority": "OK", "code": "ready",
             "reason": "The project preflight has no blocking or attention items.",
             "command": shlex.join([
-                "python3", "ENDMEMEX/endeavor_db.py", "bootstrap", "--project", project, "--json",
+                "python3", "endeavor_db.py", "bootstrap", "--project", project, "--json",
             ]),
             "guidance": "Start or resume the normal session workflow when work is ready to begin.",
         })
@@ -2720,7 +2715,7 @@ def unavailable_readiness_report(project: str, path: Path, error: str) -> dict[s
     database_action = {
         "priority": "P0", "code": "database_unavailable",
         "reason": f"Cannot open the ENDMEMEX database: {error}",
-        "command": "python3 ENDMEMEX/endeavor_db.py init",
+        "command": "python3 endeavor_db.py init",
         "guidance": "Initialize or restore the local database, then rerun readiness.",
     }
     actions = [database_action]
@@ -3174,81 +3169,90 @@ AGENT_HELP_TEXT = """\
 ENDMEMEX — agent cheat sheet (README.md = overview; ENDMEMEX_USER_MANUAL.md = full reference)
 
 Start of session (one call — handoff + embed backfill + doc freshness + hooks):
-  python3 ENDMEMEX/endeavor_db.py bootstrap --project <PROJECT> --json
+  python3 endeavor_db.py bootstrap --project <PROJECT> --json
 
 Broader session briefing (handoff + open records + recent knowledge/activity,
 capped to a char budget — use when bootstrap's handoff alone isn't enough
 context):
-  python3 ENDMEMEX/endeavor_db.py pack --project <PROJECT> --json
+  python3 endeavor_db.py pack --project <PROJECT> --json
 
 Search before rediscovering know-how (default JSON is verbose; --compact
 trims it to what you read when browsing; --check-stale flags results whose
 source file has drifted from the index):
-  python3 ENDMEMEX/endeavor_db.py query "<question>" --project <PROJECT> --compact --json
-  python3 ENDMEMEX/endeavor_db.py query "<question>" --check-stale --json
+  python3 endeavor_db.py query "<question>" --project <PROJECT> --compact --json
+  python3 endeavor_db.py query "<question>" --check-stale --json
 
 Checkpoint after every material phase (collapses session-start+checkpoint
 into one call via --project/--goal on the first checkpoint of a task;
 --auto-files appends git-status-detected files under ROOT/<PROJECT>/ — opt-in,
 only fires when PROJECT is also a real top-level directory):
-  python3 ENDMEMEX/endeavor_db.py checkpoint \\
+  python3 endeavor_db.py checkpoint \\
     --project <PROJECT> --goal "<goal>" --agent claude|codex \\
     --summary "<what happened>" --status active|paused|blocked|completed \\
     --auto-files --next-steps "<exact continuation>"
 
 Pin a checkpoint so the sliding-window prune never deletes it (--pin at
 creation, or retroactively by id; unpin returns it to normal pruning):
-  python3 ENDMEMEX/endeavor_db.py checkpoint ... --pin
-  python3 ENDMEMEX/endeavor_db.py pin-checkpoint <checkpoint_id> --agent claude|codex
-  python3 ENDMEMEX/endeavor_db.py unpin-checkpoint <checkpoint_id> --agent claude|codex
+  python3 endeavor_db.py checkpoint ... --pin
+  python3 endeavor_db.py pin-checkpoint <checkpoint_id> --agent claude|codex
+  python3 endeavor_db.py unpin-checkpoint <checkpoint_id> --agent claude|codex
 
 Resume:
-  python3 ENDMEMEX/endeavor_db.py handoff --project <PROJECT> --json
+  python3 endeavor_db.py handoff --project <PROJECT> --json
 
 List every paused task before choosing a project:
-  python3 ENDMEMEX/endeavor_db.py handoff --all-paused --json
+  python3 endeavor_db.py handoff --all-paused --json
 
 Discover all pending work (presence, resumable/blocked sessions, and
 lifecycle-aware durable records; does not replace handoff selection):
-  python3 ENDMEMEX/endeavor_db.py pending --all-projects --json
-  python3 ENDMEMEX/endeavor_db.py pending --project <PROJECT> --json
+  python3 endeavor_db.py pending --all-projects --json
+  python3 endeavor_db.py pending --project <PROJECT> --json
 
 Durable audit -> fix -> verification lifecycle (stable IDs, typed edges):
-  python3 ENDMEMEX/endeavor_db.py record-add --id AUDIT-X-001 \\
+  python3 endeavor_db.py record-add --id AUDIT-X-001 \\
     --project <PROJECT> --type audit --title "..." --content "..." --agent claude
-  python3 ENDMEMEX/endeavor_db.py record-add --id FIX-X-001 \\
+  python3 endeavor_db.py record-add --id FIX-X-001 \\
     --project <PROJECT> --type fix --title "..." --content "..." \\
     --link resolves:AUDIT-X-001 --agent claude
-  python3 ENDMEMEX/endeavor_db.py record-show AUDIT-X-001 --depth 3
+  python3 endeavor_db.py record-show AUDIT-X-001 --depth 3
 
 Keep tracked Markdown current after editing a PROJECT_MEMORY.md/plan/audit:
-  python3 ENDMEMEX/sync_tracked.py <path>
+  python3 sync_tracked.py <path>
 
 Health check (never spawns anything, safe anytime):
-  python3 ENDMEMEX/endeavor_db.py doctor
+  python3 endeavor_db.py doctor
 
 One-command read-only project preflight (machine role, DB, embeddings, ANN,
 tracked-document freshness, and ordered next actions):
-  python3 ENDMEMEX/endeavor_db.py readiness --project <PROJECT>
+  python3 endeavor_db.py readiness --project <PROJECT>
 
 See who else is working (same-machine real-time, other machines via a
 per-machine sidecar file -- never a shared-table write, see
 ENDMEMEX_USER_MANUAL.md §Agent Presence for why):
-  python3 ENDMEMEX/endeavor_db.py presence-start --agent claude|codex \\
+  python3 endeavor_db.py presence-start --agent claude|codex \\
     --project <PROJECT> --task "<short description>"
-  python3 ENDMEMEX/endeavor_db.py presence --json
-  python3 ENDMEMEX/endeavor_db.py presence-stop
+  python3 endeavor_db.py presence --json
+  python3 endeavor_db.py presence-stop
 
-Check when the other Mac last wrote
+Check when another host last wrote
 (informational only, never write authorization or a guarantee sync caught up -- see
 ENDMEMEX_USER_MANUAL.md §Sync Freshness Signal):
-  python3 ENDMEMEX/endeavor_db.py sync-status --json
+  python3 endeavor_db.py sync-status --json
 
-Delegate a one-shot task to the other agent (Claude <-> Codex sub-agent;
-child starts cold — put context in the prompt; nested delegation refused):
-  python3 ENDMEMEX/agent_delegate.py codex  "<task>"   # from Claude
-  python3 ENDMEMEX/agent_delegate.py claude "<task>" --model sonnet  # from Codex
-  (full guide: agent_delegate.py docstring / ENDMEMEX_USER_MANUAL.md §Cross-Agent Delegation)
+Managed delegation (preferred when endeavor-agents is connected; worker runs
+are user-gated): call endeavor_agent_start with target=codex|claude|antigravity,
+one cold/self-contained task, role=worker|reviewer|advisor, and access=read_only
+by default. Retain run_id, poll endeavor_agent_status, relay only new progress,
+and let the parent verify the terminal result. workspace_write is explicit,
+worker-only, and Claude/Antigravity write workers have no shell.
+
+Direct one-shot fallback when the managed MCP is unavailable (child starts
+cold; nested delegation is refused):
+  python3 agent_delegate.py codex "<task>"
+  python3 agent_delegate.py claude "<task>" --model sonnet
+  python3 agent_delegate.py antigravity "<task>" --model <agy-model-slug>
+  python3 agent_delegate.py diagnose codex|claude|antigravity
+  (full guide: ENDMEMEX_USER_MANUAL.md §Agent MCP Server and §Cross-Agent Delegation)
 
 Rules that don't show up in --help: never store secrets/tokens in a
 checkpoint or record; use `paused` (not `completed`) until verified. Keep a

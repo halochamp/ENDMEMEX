@@ -2,24 +2,24 @@
 # Developer: Poomwat Jarussri
 # Email: champoomwat@gmail.com
 # GitHub: https://github.com/halochamp
-"""Delegate a one-shot task to the other CLI agent (Claude <-> Codex).
+"""Delegate a one-shot task to Codex, Claude, or Antigravity.
 
-WHEN TO USE (agent-facing): you are Claude Code and want Codex to do a
-bounded piece of work (or you are Codex and want Claude) without the user
-switching tools — a second opinion on a diff, a parallel analysis, a task
-the other agent is better trained for. The sub-agent runs headless, does
-the task, prints its answer, and exits. For long multi-phase handoffs use
-the ENDMEMEX checkpoint/handoff workflow instead (CLAUDE.md §7.5); this
+WHEN TO USE (agent-facing): the applicable delegation/advisor policy authorizes
+one supported CLI to do a bounded piece of work without the user switching
+tools. Worker runs are user-gated; reviewers and advisors remain read-only.
+The sub-agent runs headless, does the task, prints its answer, and exits. For
+long multi-phase handoffs use
+the ENDMEMEX checkpoint/handoff workflow instead (see AGENT.md); this
 wrapper is for one-shot delegation only.
 
 USAGE:
 
     # Claude -> Codex (codex exec). Sandbox defaults to read-only;
     # pass workspace-write ONLY if the sub-agent must edit files.
-    python3 ENDMEMEX/agent_delegate.py codex "summarize ENDMEMEX/schema.sql"
-    python3 ENDMEMEX/agent_delegate.py codex "fix the TODO in sync_tracked.py" \
+    python3 agent_delegate.py codex "summarize schema.sql"
+    python3 agent_delegate.py codex "fix the TODO in sync_tracked.py" \
         --sandbox workspace-write
-    python3 ENDMEMEX/agent_delegate.py codex "review this diff" \
+    python3 agent_delegate.py codex "review this diff" \
         --model <codex-model-alias-or-id> --reasoning-effort high
 
     # Claude/Codex -> Antigravity (agy -p). Binary is "agy", not "antigravity";
@@ -28,40 +28,41 @@ USAGE:
     # its own internal scratch directory instead of --cwd and reports
     # success. --sandbox translates to --mode/--dangerously-skip-permissions
     # (no direct read-only flag exists; omitting --mode is the safe default).
-    python3 ENDMEMEX/agent_delegate.py antigravity "summarize ENDMEMEX/schema.sql"
-    python3 ENDMEMEX/agent_delegate.py antigravity "fix the TODO in sync_tracked.py" \
+    python3 agent_delegate.py antigravity "summarize schema.sql"
+    python3 agent_delegate.py antigravity "fix the TODO in sync_tracked.py" \
         --sandbox workspace-write
 
     # Codex -> Claude (claude -p). Model defaults to haiku (cheap).
     # Any current/future Claude alias or full model ID can be passed without
     # a wrapper update. Claude gets NO tools unless you grant them.
-    python3 ENDMEMEX/agent_delegate.py claude "review this function: ..." \
+    python3 agent_delegate.py claude "review this function: ..." \
         --model sonnet --allowed-tools Read Grep
 
-    # --model is intentionally a free-form passthrough for both CLIs. When
-    # omitted, Claude uses the wrapper's haiku default and Codex uses the
-    # model configured by Codex CLI.
+    # --model is intentionally a free-form passthrough for all three CLIs.
+    # When omitted, Claude uses the wrapper's haiku default; Codex and
+    # Antigravity use their target CLI defaults/configuration. Managed MCP
+    # Codex runs add --isolated, so they ignore Codex user configuration.
     # --reasoning-effort is likewise optional: it maps to Codex's
-    # model_reasoning_effort config and Claude's --effort flag.
+    # model_reasoning_effort config and Claude/Antigravity --effort.
 
     # Managed/background execution. Every run gets durable local artifacts.
     # IMPORTANT for the delegating agent: completion is not pushed back into
     # your LLM context. Before using --background, arrange a status/wait poll
     # or a host-level completion trigger for this run_id; otherwise its result
     # can remain unread.
-    python3 ENDMEMEX/agent_delegate.py claude "audit ENDMEMEX" --model sonnet \
+    python3 agent_delegate.py claude "audit ENDMEMEX" --model sonnet \
         --role reviewer --background
-    python3 ENDMEMEX/agent_delegate.py status <RUN_ID> --json
-    python3 ENDMEMEX/agent_delegate.py wait <RUN_ID> --timeout 600 --json
-    python3 ENDMEMEX/agent_delegate.py cancel <RUN_ID>
+    python3 agent_delegate.py status <RUN_ID> --json
+    python3 agent_delegate.py wait <RUN_ID> --timeout 600 --json
+    python3 agent_delegate.py cancel <RUN_ID>
 
     # Sonnet performs the task; Opus reviews its findings as a read-only advisor.
-    python3 ENDMEMEX/agent_delegate.py advise "audit ENDMEMEX for bugs" \
+    python3 agent_delegate.py advise "audit ENDMEMEX for bugs" \
         --worker-model sonnet --advisor-model opus --result-format json
 
     # Preflight and result validation.
-    python3 ENDMEMEX/agent_delegate.py diagnose claude
-    python3 ENDMEMEX/agent_delegate.py claude "return JSON" --expect-json \
+    python3 agent_delegate.py diagnose claude
+    python3 agent_delegate.py claude "return JSON" --expect-json \
         --min-output-chars 2 --retries 1 --result-format json
 
     # Codex note: Claude CLI credentials may be unavailable to a sandboxed
@@ -74,7 +75,7 @@ USAGE:
 RULES THE SUB-AGENT'S PROMPT MUST FOLLOW:
 - The child starts COLD — it knows nothing about your session. Inline the
   needed context into the prompt, or tell it explicitly to run
-  `python3 ENDMEMEX/endeavor_db.py handoff --project <P> --json` first.
+  `python3 endeavor_db.py handoff --project <P> --json` first.
 - Give one bounded task with a clear deliverable ("reply with X"), not an
   open-ended mission; you read its stdout as the result.
 - Never ask the child to delegate onward — depth is capped at 1 and the
@@ -86,14 +87,13 @@ refused; 3 = target CLI/run not found; 4 = result validation failed;
 launch the CLI; 130 = cancelled.
 
 LOGGING: every call appends one JSON line to
-ENDMEMEX/.agent_delegate_log.jsonl (plain file write, safe on both Macs,
+.agent_delegate_log.jsonl (plain local file write,
 never a DB write). Managed run state, request/result envelopes, checksums,
-and disk-streamed stdout/stderr live under ENDMEMEX/.agent_delegate_runs/.
+and disk-streamed stdout/stderr live under .agent_delegate_runs/.
 Add --checkpoint --project <P> to also record a real ENDMEMEX checkpoint.
-This is opt-in and Main-Mac-only; the Backup Mac rejects every ENDMEMEX
-database write (CLAUDE.md §7.5).
+This is opt-in and writes the local ENDMEMEX database.
 
-Full reference: ENDMEMEX/ENDMEMEX_USER_MANUAL.md §Cross-Agent Delegation.
+Full reference: ENDMEMEX_USER_MANUAL.md §Cross-Agent Delegation.
 """
 from __future__ import annotations
 
@@ -1071,7 +1071,7 @@ def build_delegate_parser() -> argparse.ArgumentParser:
                         help="exact Claude --tools availability set (defaults to allowed-tools)")
     parser.add_argument("--permission-mode", default=None,
                         help="claude --permission-mode passthrough")
-    # ENDMEMEX checkpoint (opt-in DB write; Main Mac only)
+    # ENDMEMEX checkpoint (opt-in local database write)
     parser.add_argument("--checkpoint", action="store_true",
                         help="also record an ENDMEMEX checkpoint of this delegation")
     parser.add_argument("--project", default=None,
@@ -1120,7 +1120,7 @@ def start_background(args: argparse.Namespace) -> int:
     state = update_run_state(directory, launcher_pid=proc.pid, launcher_pgid=proc.pid,
                              manager_log=str(manager_log))
     print(json.dumps({"run_id": run_id, "status": state.get("status", "queued"),
-                      "status_command": f"python3 ENDMEMEX/agent_delegate.py status {run_id}",
+                      "status_command": f"python3 agent_delegate.py status {run_id}",
                       "next_action": BACKGROUND_NEXT_ACTION}))
     return 0
 

@@ -4,10 +4,19 @@
 *.sqlite3-journal
 __pycache__/
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
 .DS_Store
 *.log
 embed_server.log
 .embed_start.lock
+.env
+.env.*
+!.env.example
 # Generated human-readable digest — derived from activity_log and refreshed on
 # every write command; tracking it would dirty every commit.
 ACTIVITY.md
@@ -20,6 +29,9 @@ ACTIVITY.md
 .agent_delegate_runs/
 .agent_mcp_admission.lock
 .agent_mcp_start_history.json
+.ann/
+.computer_use_handoff_watch.json
 .presence/
 .sync_freshness/
+.write_gateway/
 graphify-out/

@@ -78,67 +78,77 @@ class EndeavorDatabaseTest(unittest.TestCase):
         self.assertEqual(results[0]["source_path"], str(source.resolve()))
         self.assertGreaterEqual(results[0]["line_start"], 1)
 
-    def test_discover_knowledge_docs_keeps_audits_and_includes_reviewed_prototypes(self):
-        active_audit = self.root / "ENDEAVOR_VOX" / "developer" / "vox_audit.md"
+    def test_public_seed_sources_are_bundled_guides(self):
+        self.assertEqual(
+            [source.name for source, _project, _kind in db.SEED_SOURCES],
+            ["README.md", "ENDMEMEX_USER_MANUAL.md", "AGENT.md"],
+        )
+        self.assertTrue(all(source.is_file() for source, _project, _kind in db.SEED_SOURCES))
+        with mock.patch.object(db, "ingest_markdown", return_value={"status": "imported"}) as ingest:
+            self.assertEqual(len(db.seed(self.conn)), 3)
+        self.assertEqual(ingest.call_count, 3)
+
+    def test_discover_knowledge_docs_classifies_generic_tracked_markdown(self):
+        active_audit = self.root / "sample_app" / "developer" / "app_audit.md"
         active_audit.parent.mkdir(parents=True)
         active_audit.write_text("# Audit\n\nFixed an issue.\n", encoding="utf-8")
-        bug_report = self.root / "ENDEAVOR_LOCAL_AGENT_MAX" / "developer" / "bug_report.md"
+        bug_report = self.root / "service_b" / "developer" / "bug_report.md"
         bug_report.parent.mkdir(parents=True)
         bug_report.write_text("# Bug\n\nRoot cause.\n", encoding="utf-8")
-        archived = self.root / "PROTOTYPE" / "ENDEAVOR_CORE" / "bug_report.md"
+        archived = self.root / "prototypes" / "core" / "bug_report.md"
         archived.parent.mkdir(parents=True)
         archived.write_text("# Old bug\n", encoding="utf-8")
-        baseline = self.root / "ENDEAVOR_VOX" / "developer" / "prompt_baseline_react_full.md"
+        baseline = self.root / "sample_app" / "developer" / "prompt_baseline_react_full.md"
         baseline.write_text("# Snapshot\n", encoding="utf-8")
-        library = self.root / "ENDEAVOR_VOX" / "library" / "book.md"
+        library = self.root / "sample_app" / "library" / "book.md"
         library.parent.mkdir(parents=True)
         library.write_text("# Book\n", encoding="utf-8")
         memory_design = self.root / "ENDMEMEX" / "developer" / "DESIGN.md"
         memory_design.parent.mkdir(parents=True)
         memory_design.write_text("# ENDEAVOR Memory Design\n", encoding="utf-8")
-        rag_api_memory = self.root / "ENDEAVOR_AGENT_API_MAX" / "ENDEAVOR_RAG_API" / "PROJECT_MEMORY.md"
-        rag_api_memory.parent.mkdir(parents=True)
-        rag_api_memory.write_text("# RAG API Memory\n", encoding="utf-8")
+        grouped_memory = self.root / "api_group" / "service_api" / "PROJECT_MEMORY.md"
+        grouped_memory.parent.mkdir(parents=True)
+        grouped_memory.write_text("# API Memory\n", encoding="utf-8")
 
         docs = sync_tracked.discover_knowledge_docs(
             self.root,
             tracked_paths=[
-                "ENDEAVOR_VOX/developer/vox_audit.md",
-                "ENDEAVOR_LOCAL_AGENT_MAX/developer/bug_report.md",
-                "PROTOTYPE/ENDEAVOR_CORE/bug_report.md",
-                "ENDEAVOR_VOX/developer/prompt_baseline_react_full.md",
-                "ENDEAVOR_VOX/library/book.md",
+                "sample_app/developer/app_audit.md",
+                "service_b/developer/bug_report.md",
+                "prototypes/core/bug_report.md",
+                "sample_app/developer/prompt_baseline_react_full.md",
+                "sample_app/library/book.md",
                 "ENDMEMEX/developer/DESIGN.md",
-                "ENDEAVOR_AGENT_API_MAX/ENDEAVOR_RAG_API/PROJECT_MEMORY.md",
+                "api_group/service_api/PROJECT_MEMORY.md",
             ],
         )
 
-        self.assertEqual(docs["ENDEAVOR_VOX/developer/vox_audit.md"], ("ENDEAVOR_VOX", "audit"))
-        self.assertEqual(docs["ENDEAVOR_LOCAL_AGENT_MAX/developer/bug_report.md"], ("ENDEAVOR_LOCAL_AGENT_MAX", "audit"))
+        self.assertEqual(docs["sample_app/developer/app_audit.md"], ("sample_app", "audit"))
+        self.assertEqual(docs["service_b/developer/bug_report.md"], ("service_b", "audit"))
         self.assertEqual(
-            docs["PROTOTYPE/ENDEAVOR_CORE/bug_report.md"],
-            ("PROTOTYPE_ENDEAVOR_CORE", "audit"),
+            docs["prototypes/core/bug_report.md"],
+            ("prototypes", "audit"),
         )
-        self.assertNotIn("ENDEAVOR_VOX/developer/prompt_baseline_react_full.md", docs)
-        self.assertNotIn("ENDEAVOR_VOX/library/book.md", docs)
+        self.assertNotIn("sample_app/developer/prompt_baseline_react_full.md", docs)
+        self.assertEqual(docs["sample_app/library/book.md"], ("sample_app", "project_memory"))
         self.assertEqual(
             docs["ENDMEMEX/developer/DESIGN.md"],
             ("ENDMEMEX", "project_memory"),
         )
         self.assertEqual(
-            docs["ENDEAVOR_AGENT_API_MAX/ENDEAVOR_RAG_API/PROJECT_MEMORY.md"],
-            ("ENDEAVOR_RAG_API", "project_memory"),
+            docs["api_group/service_api/PROJECT_MEMORY.md"],
+            ("api_group", "project_memory"),
         )
 
-    def test_discover_knowledge_docs_includes_explicit_active_project_memory(self):
-        awake_memory = self.root / "AWAKE" / "PROJECT_MEMORY.md"
-        awake_memory.parent.mkdir(parents=True)
-        awake_memory.write_text("# AWAKE Memory\n", encoding="utf-8")
+    def test_discover_knowledge_docs_does_not_include_untracked_markdown(self):
+        untracked = self.root / "sample_app" / "PROJECT_MEMORY.md"
+        untracked.parent.mkdir(parents=True)
+        untracked.write_text("# Untracked Memory\n", encoding="utf-8")
 
         with mock.patch.object(sync_tracked, "_git_tracked_markdown", return_value=[]):
             docs = sync_tracked.discover_knowledge_docs(self.root)
 
-        self.assertEqual(docs["AWAKE/PROJECT_MEMORY.md"], ("AWAKE", "project_memory"))
+        self.assertEqual(docs, {})
 
     def test_discover_knowledge_docs_includes_external_tracked_roots(self):
         # A sibling of self.root, NOT nested inside it -- matching the real
@@ -190,6 +200,17 @@ class EndeavorDatabaseTest(unittest.TestCase):
     def test_sync_tracked_labels_standalone_public_markdown_as_endmemex(self):
         self.assertEqual(
             sync_tracked._project_for("developer/audit.md", standalone=True), "ENDMEMEX"
+        )
+
+    def test_sync_tracked_uses_embedded_workspace_name_as_generic_fallback(self):
+        with mock.patch.object(sync_tracked, "ROOT", Path("/tmp/My Workspace")):
+            self.assertEqual(
+                sync_tracked._project_for("notes.md"), "My_Workspace"
+            )
+
+    def test_sync_tracked_uses_first_folder_for_embedded_project(self):
+        self.assertEqual(
+            sync_tracked._project_for("sample app/docs/notes.md"), "sample_app"
         )
 
     def test_prune_documents_only_removes_sources_outside_manifest(self):
@@ -1508,7 +1529,7 @@ class EndeavorDatabaseTest(unittest.TestCase):
         self.assertTrue(report["ann"]["required"])
         self.assertEqual(report["overall"], "attention")
         actions = {item["code"]: item for item in report["next_actions"]}
-        self.assertEqual(actions["ann_sidecar"]["command"], "python3 ENDMEMEX/endeavor_db.py ann-build")
+        self.assertEqual(actions["ann_sidecar"]["command"], "python3 endeavor_db.py ann-build")
         self.assertIn("propose-prune", actions["review_orphaned_documents"]["command"])
         self.assertNotIn("bootstrap", "\n".join(item["command"] or "" for item in report["next_actions"]))
 
@@ -1540,7 +1561,7 @@ class EndeavorDatabaseTest(unittest.TestCase):
         self.assertEqual(report["next_actions"], [{
             "priority": "OK", "code": "ready",
             "reason": "The project preflight has no blocking or attention items.",
-            "command": "python3 ENDMEMEX/endeavor_db.py bootstrap --project 'demo; touch /private/tmp/owned' --json",
+            "command": "python3 endeavor_db.py bootstrap --project 'demo; touch /private/tmp/owned' --json",
             "guidance": "Start or resume the normal session workflow when work is ready to begin.",
         }])
 
@@ -1572,7 +1593,7 @@ class EndeavorDatabaseTest(unittest.TestCase):
         action = report["next_actions"][0]
         self.assertEqual(report["ann"]["status"], "unavailable")
         self.assertIsNone(report["ann"]["available"])
-        self.assertEqual(action["command"], "python3 ENDMEMEX/endeavor_db.py ann-status")
+        self.assertEqual(action["command"], "python3 endeavor_db.py ann-status")
         self.assertNotIn("Install optional", action["guidance"])
 
     def test_readiness_requires_a_boolean_true_ann_fresh_signal(self):
@@ -1601,7 +1622,7 @@ class EndeavorDatabaseTest(unittest.TestCase):
         }), mock.patch.object(db, "local_machine", return_value="local-host"):
             report = db.readiness_report(self.conn, "demo", self.database)
         self.assertFalse(report["ann"]["fresh"])
-        self.assertEqual(report["next_actions"][0]["command"], "python3 ENDMEMEX/endeavor_db.py ann-build")
+        self.assertEqual(report["next_actions"][0]["command"], "python3 endeavor_db.py ann-build")
 
     def test_ann_helper_status_reports_empty_subprocess_output_as_unavailable(self):
         completed = subprocess.CompletedProcess(args=["ann_index.py"], returncode=1, stdout="", stderr="failed")
@@ -3140,6 +3161,10 @@ class EndeavorDatabaseTest(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         help_text = stdout.getvalue()
         self.assertIn("bootstrap --project", help_text)
+        self.assertIn("endeavor_agent_start", help_text)
+        self.assertIn("codex|claude|antigravity", help_text)
+        self.assertIn("workspace_write is explicit", help_text)
+        self.assertNotIn("Claude <-> Codex", help_text)
         self.assertIn("writable SQLite database local to one host", help_text)
         self.assertNotIn("[read-only-", help_text)
         self.assertNotIn("confirm with the user", help_text)
@@ -3439,7 +3464,7 @@ class EndeavorDatabaseTest(unittest.TestCase):
         # exit can restore the real module attribute while another thread is
         # still relying on the patched value, leaking real writes onto disk
         # (this bit once already -- caught real files landing in the actual
-        # ENDMEMEX/.presence/ directory). Patch once, outside the threads,
+        # .presence/ directory). Patch once, outside the threads,
         # and restore once at the end instead.
         presence_dir = self.root / ".presence"
         errors: list[Exception] = []

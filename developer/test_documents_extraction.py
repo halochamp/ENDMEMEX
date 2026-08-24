@@ -172,7 +172,7 @@ class OpenStatusContextTest(unittest.TestCase):
         self.assertEqual(self._status("Task index", "then open only that section of the manual."), "")
         self.assertEqual(self._status("Query", "Open the cited sources before relying on them."), "")
         self.assertEqual(self._status("Notes", "Use an open-source library for this."), "")
-        self.assertEqual(self._status("AWAKE", "keeps the app window open with a live countdown."), "")
+        self.assertEqual(self._status("sample_app", "keeps the app window open with a live countdown."), "")
 
     def test_prose_use_of_pending_is_not_an_open_issue(self):
         self.assertEqual(self._status("Perf", "high variance — pending separate investigation."), "")

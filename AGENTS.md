@@ -1,7 +1,7 @@
 # AGENTS.md
 
-Quick rules for agents working in ENDMEMEX as either a standalone Public
-repository or the `ENDMEMEX/` directory in the Main monorepo.
+Quick rules for agents working in ENDMEMEX as either a standalone public
+repository or an `ENDMEMEX/` directory inside a parent monorepo.
 
 - Read [README](README.md) before any write. The detailed workflow is in
   [ENDMEMEX User Manual](ENDMEMEX_USER_MANUAL.md); keep this file short.
@@ -19,6 +19,6 @@ repository or the `ENDMEMEX/` directory in the Main monorepo.
   stopped companion. Do not commit databases, logs, caches, sidecars, secrets,
   or agent-run artifacts.
 
-From the standalone repository, invoke commands as `python3 endeavor_db.py`.
-From the Main monorepo, use `python3 ENDMEMEX/endeavor_db.py` instead. Both
-layouts intentionally expose the same command behavior.
+The commands in this repository assume the standalone root and use
+`python3 endeavor_db.py`. If this directory is embedded in a parent monorepo,
+run the same scripts using paths relative to that parent workspace.

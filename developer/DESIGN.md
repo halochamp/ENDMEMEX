@@ -2,12 +2,12 @@
 
 Status: implemented design, schema version 12
 Audience: maintainers of `ENDMEMEX`, Codex, and Claude Code
-Runtime entry point: `ENDMEMEX/endeavor_db.py`
+Runtime entry point: `endeavor_db.py`
 
 ## 1. Purpose
 
 ENDEAVOR Memory is the shared local persistence layer for Codex and Claude
-Code in the `ENDEAVOR_AGENTIC` workspace. It provides three related but
+Code in the ENDMEMEX workspace. It provides three related but
 deliberately separate kinds of memory:
 
 1. Searchable knowledge derived from reviewed Markdown.
@@ -109,7 +109,7 @@ query
           ranked results with provenance and match reasons
 
 Background completion ──► durable_events ──poll/ack──► host wake/continuation
-Backup outbox ──authenticated HTTPS/idempotency──► Main-Mac write gateway
+Remote outbox ──authenticated HTTPS/idempotency──► designated-host write gateway
 ```
 
 ## 6. Process Boundaries
@@ -148,7 +148,7 @@ lexical freshness. Embedding freshness is handled separately by
 
 ## 7. Database Opening and Migration
 
-The default database is `ENDMEMEX/endeavor_memory.sqlite3`. It may be
+The default database is `endeavor_memory.sqlite3`. It may be
 overridden with `--db` or `ENDEAVOR_DB_PATH`.
 
 Writable connections configure:
@@ -299,7 +299,7 @@ Markdown is not pulled into SQLite by a trigger. The required flow is:
 ```text
 agent edits reviewed .md
         │
-        ├── explicit: python3 ENDMEMEX/sync_tracked.py
+        ├── explicit: python3 sync_tracked.py
         └── advisory: local Git pre-commit hook calls the same sync
                          │
                          ▼
@@ -314,7 +314,7 @@ libraries/translations, and large prompt-baseline snapshots. Project and kind
 are derived deterministically from the repository-relative path.
 
 The local pre-commit hook is advisory. Its source of truth is Git-tracked at
-`ENDMEMEX/hooks/pre-commit`; the live `.git/hooks/` copy is installed
+`hooks/pre-commit`; the live `.git/hooks/` copy is installed
 with `endeavor_db.py install-hooks` and `doctor` reports
 `installed`/`differs`/`missing` per hook so drift cannot stay silent. A source
 edit that is not committed is not automatically synchronized; the agent must
@@ -599,7 +599,7 @@ requires an explicit sync.
 
 ## 17. Concurrency and Transaction Boundaries
 
-Supported concurrency is multiple local processes on the same Mac:
+Supported concurrency is multiple local processes on the same host:
 
 - WAL allows readers while a writer is active.
 - Busy timeout absorbs short writer overlap.
@@ -613,15 +613,15 @@ filesystem-sync service. WAL is a local concurrency mechanism, not distributed
 coordination. Keep the writable database on one host; use the authenticated
 write gateway for remote mutations.
 
-`write_gateway.py` is the controlled exception: Backup callers write only to
+`write_gateway.py` is the controlled exception: remote callers write only to
 a machine-specific local outbox, then send an allowlisted request to the Main
 service over authenticated HTTPS. The Main service stores an idempotency
 receipt before dispatch. Duplicate keys replay the receipt; a crash-left
 `processing` key fails closed instead of risking duplicate mutation. `--db`
 and Main-filesystem payload indirection are rejected at the boundary in both
 separate-token and `--flag=value` forms. Document `ingest` is deliberately
-local-only, so a Backup caller cannot make the Main service read an arbitrary
-Main-Mac path.
+local-only, so a remote caller cannot make the writer service read an arbitrary
+writer-host path.
 
 `durable_events` provides an at-least-once host notification boundary with
 producer deduplication and explicit acknowledgement. Background delegation
@@ -700,19 +700,19 @@ After work:
 Fast regression suite:
 
 ```bash
-python3 -m unittest discover -s ENDMEMEX/developer -p 'test_*.py'
+python3 -m unittest discover -s developer -p 'test_*.py'
 ```
 
 The suite uses temporary databases, does not require MiniLM, and must not leak
 a background companion process.
 
 Retrieval evaluation cases live in
-`ENDMEMEX/developer/eval_queries.json`. The CLI uses this file by
+`developer/eval_queries.json`. The CLI uses this file by
 default:
 
 ```bash
-python3 ENDMEMEX/endeavor_db.py evaluate --pipeline both --json
-python3 ENDMEMEX/endeavor_db.py evaluate --pipeline unified --semantic off --json
+python3 endeavor_db.py evaluate --pipeline both --json
+python3 endeavor_db.py evaluate --pipeline unified --semantic off --json
 ```
 
 Evaluation defaults to both the Markdown-only baseline and the production
@@ -723,7 +723,7 @@ whether semantic capability was actually available.
 Health/integrity gate:
 
 ```bash
-python3 ENDMEMEX/endeavor_db.py doctor
+python3 endeavor_db.py doctor
 ```
 
 `doctor.ok` requires current schema, SQLite integrity, valid foreign keys,

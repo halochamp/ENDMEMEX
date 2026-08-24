@@ -1,8 +1,8 @@
 """embed_server.py — lazy-loaded MiniLM embedding companion for ENDMEMEX
 (127.0.0.1:8770).
 
-Mirrors ENDEAVOR_VOX/tts_f5_th_v2_server.py's warm/idle-kill pattern: this
-process's own lifecycle IS the "warm" state. endeavor_db.py spawns it on
+This process's own lifecycle is the embedding model's "warm" state.
+endeavor_db.py spawns it on
 first embedding need (ingest or `query --semantic`) and talks to it over
 HTTP; the model loads once at process startup and the process exits itself
 after IDLE_TIMEOUT_SEC of no requests to release RAM. If this companion

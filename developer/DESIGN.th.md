@@ -1,12 +1,12 @@
 # ENDEAVOR Memory — การออกแบบโดยละเอียด
 
-สถานะ: การออกแบบที่นำไปใช้งานแล้ว, schema version 4
+สถานะ: การออกแบบที่นำไปใช้งานแล้ว, schema version 12
 กลุ่มผู้อ่าน: ผู้ดูแล `ENDMEMEX`, Codex และ Claude Code
-จุดเริ่มต้นขณะรัน: `ENDMEMEX/endeavor_db.py`
+จุดเริ่มต้นขณะรัน: `endeavor_db.py`
 
 ## 1. วัตถุประสงค์
 
-ENDEAVOR Memory คือชั้นจัดเก็บข้อมูลภายในเครื่องที่ใช้ร่วมกันระหว่าง Codex และ Claude Code ใน workspace `ENDEAVOR_AGENTIC` โดยมี memory สามประเภทที่เกี่ยวข้องกัน แต่แยกจากกันโดยเจตนา:
+ENDEAVOR Memory คือชั้นจัดเก็บข้อมูลภายในเครื่องที่ใช้ร่วมกันระหว่าง Codex และ Claude Code ใน workspace ของ ENDMEMEX โดยมี memory สามประเภทที่เกี่ยวข้องกัน แต่แยกจากกันโดยเจตนา:
 
 1. ความรู้ที่ค้นหาได้จากไฟล์ Markdown ที่ผ่านการตรวจทานแล้ว
 2. ระเบียน audit, fix, verification, decision และ knowledge ที่อยู่ใน SQLite โดยตรง พร้อมการอ้างอิงภายในที่คงที่
@@ -119,7 +119,7 @@ Companion process เป็นขอบเขตของ warm state: model ท�
 
 ## 7. การเปิดฐานข้อมูลและ migration
 
-ฐานข้อมูลเริ่มต้นคือ `ENDMEMEX/endeavor_memory.sqlite3` และเปลี่ยนได้ด้วย `--db` หรือ `ENDEAVOR_DB_PATH`
+ฐานข้อมูลเริ่มต้นคือ `endeavor_memory.sqlite3` และเปลี่ยนได้ด้วย `--db` หรือ `ENDEAVOR_DB_PATH`
 
 Writable connection ตั้งค่า:
 
@@ -235,7 +235,7 @@ Markdown ไม่ถูกดึงเข้า SQLite ด้วย trigger เ
 ```text
 agent แก้ไข .md ที่ผ่านการตรวจทาน
         │
-        ├── explicit: python3 ENDMEMEX/sync_tracked.py
+        ├── explicit: python3 sync_tracked.py
         └── advisory: local Git pre-commit hook เรียก sync เดียวกัน
                          │
                          ▼

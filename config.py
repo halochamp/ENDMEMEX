@@ -87,6 +87,7 @@ KNOWLEDGE_CATEGORIES = (
 KNOWLEDGE_FTS_IDENTITY_EXPRESSION = "{tags}: (" + " OR ".join(KNOWLEDGE_CATEGORIES) + ")"
 
 SEED_SOURCES = (
-    (ROOT / "agent_training_guide" / "sum_agent_training_guide.md", "agent-training-guide", "training_guide"),
-    (ROOT / "ENDEAVOR_LOCAL_AGENT_MAX" / "developer" / "PROJECT_MEMORY.md", "ENDEAVOR_LOCAL_AGENT_MAX", "project_memory"),
+    (HERE / "README.md", "ENDMEMEX", "documentation"),
+    (HERE / "ENDMEMEX_USER_MANUAL.md", "ENDMEMEX", "documentation"),
+    (HERE / "AGENT.md", "ENDMEMEX", "documentation"),
 )

@@ -1,66 +1,27 @@
 [
   {
-    "query": "silent failure",
-    "expected_project": "agent-training-guide",
-    "expected_category": "agent_training"
+    "query": "writable SQLite local to one host",
+    "expected_project": "ENDMEMEX",
+    "expected_category": "documentation"
   },
   {
-    "query": "train agent",
-    "expected_project": "agent-training-guide",
-    "expected_category": "agent_training"
-  },
-  {
-    "query": "tool selection bias",
-    "expected_project": "agent-training-guide",
-    "expected_category": "agent_training"
-  },
-  {
-    "query": "user_profile_learner bug",
-    "expected_project": "ENDEAVOR_LOCAL_AGENT_MAX",
-    "expected_category": "debugging"
-  },
-  {
-    "query": "MemorySaver SQLite",
-    "expected_project": "ENDEAVOR_LOCAL_AGENT_MAX"
-  },
-  {
-    "query": "วิธีแก้ bug",
-    "expected_category": "debugging"
-  },
-  {
-    "query": "checkpoint handoff session limit",
+    "query": "bootstrap handoff embedding backfill",
+    "expected_project": "ENDMEMEX",
     "expected_category": "session_history"
   },
   {
-    "query": "regression test verification",
-    "expected_category": "testing"
+    "query": "workspace_write explicit worker role",
+    "expected_project": "ENDMEMEX",
+    "expected_category": "documentation"
   },
   {
-    "query": "bilingual translation blockquote",
-    "expected_project": "ENDEAVOR_VOX",
-    "expected_category": "architecture"
+    "query": "retiring a document archive delete",
+    "expected_project": "ENDMEMEX",
+    "expected_category": "documentation"
   },
   {
-    "query": "F5 companion broken pipe",
-    "expected_project": "ENDEAVOR_VOX",
-    "expected_category": "debugging"
-  },
-  {
-    "query": "read_image full read loop",
-    "expected_project": "ENDEAVOR_LOCAL_AGENT_MAX_VLM"
-  },
-  {
-    "query": "Bearer token tunnel auth",
-    "expected_project": "ENDEAVOR_AGENT_API_MAX"
-  },
-  {
-    "query": "BM25 index rebuild",
-    "expected_project": "ENDEAVOR_RAG_MAX"
-  },
-  {
-    "query": "an assistant returns a plausible-looking incorrect answer without ever raising an exception, so it never realizes it should redo the step",
-    "expected_project": "agent-training-guide",
-    "expected_category": "agent_training",
-    "note": "zero keyword overlap with the 'silent failure' chunks — lexical FTS misses this entirely; only the MiniLM semantic pass finds it. The semantic result must be identified by project/category rather than a replaceable knowledge row ID."
+    "query": "remote mutations authenticated write gateway",
+    "expected_project": "ENDMEMEX",
+    "expected_category": "documentation"
   }
 ]

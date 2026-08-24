@@ -28,10 +28,10 @@ from primitives import parse_feedback_result_id
 
 def build_parser(module_doc: str) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=module_doc)
-    parser.add_argument("--db", help="SQLite path (default: ENDMEMEX/endeavor_memory.sqlite3)")
+    parser.add_argument("--db", help="SQLite path (default: endeavor_memory.sqlite3)")
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("init", help="Create or migrate the database")
-    sub.add_parser("seed", help="Ingest the training summary and main project memory")
+    sub.add_parser("seed", help="Ingest the bundled ENDMEMEX guides")
     sub.add_parser(
         "agent-help", help="Print a short agent-facing command cheat sheet (no database access)"
     )
@@ -116,7 +116,7 @@ def build_parser(module_doc: str) -> argparse.ArgumentParser:
     backfill.add_argument("--batch-size", type=positive_int, default=EMBED_BATCH_SIZE)
     sub.add_parser(
         "install-hooks",
-        help="Copy the git-tracked hook sources (ENDMEMEX/hooks/) into .git/hooks — run once per fresh clone",
+        help="Copy the git-tracked hook sources (hooks/) into .git/hooks — run once per fresh clone",
     )
     boot = sub.add_parser(
         "bootstrap",
