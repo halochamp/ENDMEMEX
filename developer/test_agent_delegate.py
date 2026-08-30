@@ -75,6 +75,12 @@ class BuildCommandTest(unittest.TestCase):
         self.assertIn("--ignore-rules", cmd)
         self.assertIn("--ephemeral", cmd)
 
+    def test_isolated_codex_reuses_local_model_catalog_when_available(self):
+        with mock.patch.dict(os.environ, {"CODEX_HOME": "/tmp/codex-home"}, clear=False), \
+             mock.patch("delegate_lifecycle.os.path.isfile", return_value=True):
+            cmd = agent_delegate.build_command(self._args(isolated=True), "/bin/codex")
+        self.assertIn('model_catalog_json="/tmp/codex-home/models_cache.json"', cmd)
+
     def test_codex_stream_progress_uses_jsonl_events(self):
         cmd = agent_delegate.build_command(
             self._args(stream_progress=True), "/bin/codex",
@@ -625,6 +631,19 @@ class RunChildTest(unittest.TestCase):
         self.assertEqual(progress["progress_bytes"],
                          progress["stdout_progress_bytes"] + progress["stderr_progress_bytes"])
         self.assertGreater(progress["stderr_progress_bytes"], 0)
+
+    def test_plain_stderr_progress_hides_codex_stdin_notice(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            stdout = directory / "stdout.log"
+            stderr = directory / "stderr.log"
+            stdout.write_text(json.dumps({
+                "type": "item.completed",
+                "item": {"type": "agent_message", "text": "answer"},
+            }) + "\n")
+            stderr.write_text("Reading additional input from stdin...\n")
+            progress = agent_delegate.progress_snapshot(stdout, "codex", True, stderr)
+        self.assertEqual(progress["progress_tail"], "answer")
 
     def test_plain_stderr_progress_hides_command_and_source_dumps(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -1790,6 +1809,18 @@ class LoggingTest(unittest.TestCase):
         self.assertEqual(len(entry["prompt"]), agent_delegate.LOG_PROMPT_CHARS)
         self.assertEqual(len(entry["output"]), agent_delegate.LOG_OUTPUT_CHARS)
         json.dumps(entry)  # must be serializable
+
+    def test_success_entry_hides_codex_stdin_notice_from_reported_stderr(self):
+        entries = []
+        notice = "Reading additional input from stdin...\n"
+        with mock.patch.object(agent_delegate, "run_child_to_files",
+                               managed_child(stdout="ok", stderr=notice, code=0)), \
+             mock.patch.object(agent_delegate, "find_binary", return_value="/bin/x"), \
+             mock.patch.object(agent_delegate, "_binary_version", return_value="test"), \
+             mock.patch.object(agent_delegate, "append_log", entries.append):
+            code = run_main(["codex", "hi"])
+        self.assertEqual(code, 0)
+        self.assertEqual(entries[0]["stderr_tail"], "")
 
     def test_failure_entry_includes_stderr_tail(self):
         entries = []

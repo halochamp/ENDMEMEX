@@ -837,7 +837,7 @@ def execute_managed(args: argparse.Namespace, run_id: str, directory: Path) -> d
         RUN_ID_ENV: run_id,
     }
     started = time.monotonic()
-    final_stdout = final_stderr = ""
+    final_stdout = final_stderr = reported_stderr = ""
     stdout_path = stderr_path = directory / "unused.log"
     exit_code = 1
     validation_errors: list[str] = []
@@ -882,6 +882,19 @@ def execute_managed(args: argparse.Namespace, run_id: str, directory: Path) -> d
             update_run_state(directory, **launch_identity)
         final_stdout, stdout_truncated = _read_output(stdout_path)
         final_stderr, _ = _read_output(stderr_path)
+        reported_stderr = final_stderr
+        if args.target == "codex":
+            reported_stderr = "\n".join(
+                line for line in final_stderr.splitlines()
+                if line.strip() != "Reading additional input from stdin..."
+                and not (
+                    "codex_models_manager::manager" in line
+                    and "failed to refresh available models" in line
+                    and "timeout waiting for child process to exit" in line
+                )
+            )
+            if reported_stderr:
+                reported_stderr += "\n"
         error_kind, next_action = classify_error(
             args, caller, exit_code, final_stdout, final_stderr,
         )
@@ -913,9 +926,9 @@ def execute_managed(args: argparse.Namespace, run_id: str, directory: Path) -> d
     else:
         status = "failed"
     duration = round(time.monotonic() - started, 3)
-    progress = progress_snapshot(
-        stdout_path, args.target, bool(getattr(args, "stream_progress", False)), stderr_path,
-    )
+    stream_progress = bool(getattr(args, "stream_progress", False))
+    progress = progress_snapshot(stdout_path, args.target, stream_progress, stderr_path)
+    stdout_progress = progress_snapshot(stdout_path, args.target, stream_progress)
     result = {
         "run_id": run_id,
         "status": status,
@@ -937,18 +950,18 @@ def execute_managed(args: argparse.Namespace, run_id: str, directory: Path) -> d
         "stdout_sha256": _sha256(stdout_path),
         "stderr_sha256": _sha256(stderr_path),
         "stdout_tail": (
-            progress["progress_tail"][-LOG_OUTPUT_CHARS:]
-            if getattr(args, "stream_progress", False)
+            stdout_progress["progress_tail"][-LOG_OUTPUT_CHARS:]
+            if stream_progress
             else final_stdout[-LOG_OUTPUT_CHARS:]
         ),
-        "stderr_tail": final_stderr[-LOG_STDERR_CHARS:],
+        "stderr_tail": reported_stderr[-LOG_STDERR_CHARS:],
         **progress,
         "parent_record": args.parent_record,
     }
     _atomic_json(directory / "result.json", result)
     update_run_state(directory, **result)
     entry = {**base_entry(args, caller), **result, "output": result["stdout_tail"]}
-    if exit_code != 0 and final_stderr:
+    if exit_code != 0 and reported_stderr:
         entry["stderr"] = result["stderr_tail"]
     append_log(entry)
     if args.checkpoint:

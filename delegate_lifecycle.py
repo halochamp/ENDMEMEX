@@ -132,6 +132,15 @@ def build_command(args: argparse.Namespace, binary: str) -> list[str]:
                "--skip-git-repo-check"]
         if getattr(args, "isolated", False):
             cmd += ["--ignore-user-config", "--ignore-rules", "--ephemeral"]
+            codex_home = os.environ.get("CODEX_HOME") or os.path.expanduser("~/.codex")
+            model_cache = os.path.join(codex_home, "models_cache.json")
+            if os.path.isfile(model_cache):
+                # Isolated runs intentionally ignore config.toml, but Codex still
+                # needs a model catalog. Reuse the already-authenticated local
+                # cache so it does not spawn a remote catalog refresh on every
+                # delegated run (which can time out even when the model run
+                # itself succeeds).
+                cmd += ["-c", f'model_catalog_json="{model_cache}"']
         if model:
             cmd += ["--model", model]
         cmd += ["-c", f'model_reasoning_effort="{reasoning_effort}"']
@@ -293,10 +302,26 @@ def _filter_plain_progress(raw: str) -> str:
     kept: list[str] = []
     for paragraph in raw.split("\n\n"):
         lines = [line.rstrip() for line in paragraph.splitlines()]
-        meaningful = [line for line in lines if line.strip()]
+        meaningful = [
+            line for line in lines
+            if line.strip() and line.strip() != "Reading additional input from stdin..."
+        ]
         if not meaningful:
             continue
         joined = "\n".join(meaningful)
+        # Codex 0.151 may emit this internal model-catalog refresh warning even
+        # when the requested model runs successfully. Keep it in the raw stderr
+        # artifact for diagnostics, but do not present it as agent progress.
+        if all(
+            line == "Reading additional input from stdin..."
+            or (
+                "codex_models_manager::manager" in line
+                and "failed to refresh available models" in line
+                and "timeout waiting for child process to exit" in line
+            )
+            for line in meaningful
+        ):
+            continue
         is_command_dump = (
             meaningful[0] in {"exec", "shell", "analysis"}
             or any(line.lstrip().startswith(("/bin/", "$ ")) for line in meaningful)
