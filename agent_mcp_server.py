@@ -41,6 +41,100 @@ START_HISTORY = RUNS_DIR.parent / ".agent_mcp_start_history.json"
 RUN_ID_PATTERN = "^[A-Za-z0-9][A-Za-z0-9_-]{7,127}$"
 LATEST_PROTOCOL = "2025-03-26"
 SUPPORTED_PROTOCOLS = {"2024-11-05", LATEST_PROTOCOL}
+MODEL_CATALOG_DATE = "2026-08-30"
+CODEX_MODEL_IDS = (
+    "gpt-5.6-sol",
+    "gpt-5.6-terra",
+    "gpt-5.6-luna",
+)
+CLAUDE_MODEL_ALIASES = (
+    "fable",
+    "opus",
+    "sonnet",
+    "haiku",
+)
+CLAUDE_MODEL_IDS = (
+    "claude-fable-5",
+    "claude-opus-5",
+    "claude-sonnet-5",
+    "claude-haiku-4-5-20251001",
+)
+# Exact slugs returned by `agy models` in the verified environment (agy 1.1.22).
+# Antigravity availability is account/CLI-dependent, so the live command stays
+# authoritative when its output differs from this snapshot.
+AGY_MODEL_SLUGS = (
+    "gemini-3.7-flash-high",
+    "gemini-3.7-flash-medium",
+    "gemini-3.7-flash-low",
+    "gemini-3.6-flash-high",
+    "gemini-3.6-flash-medium",
+    "gemini-3.6-flash-low",
+    "gemini-3.5-flash-high",
+    "gemini-3.5-flash-medium",
+    "gemini-3.5-flash-low",
+    "gemini-3.1-pro-high",
+    "gemini-3.1-pro-low",
+    "claude-sonnet-4-6",
+    "claude-opus-4-6-thinking",
+    "gpt-oss-120b-medium",
+)
+AGY_RECOMMENDED_MODEL = "gemini-3.7-flash-medium"
+
+MODEL_SELECTION_GUIDANCE = (
+    f"Model catalog updated/verified {MODEL_CATALOG_DATE}: Codex full model IDs are "
+    "gpt-5.6-sol, gpt-5.6-terra, "
+    "and gpt-5.6-luna (do not shorten them to sol/terra/luna); Claude Code "
+    "deterministic full IDs are claude-fable-5, claude-opus-5, "
+    "claude-sonnet-5, and claude-haiku-4-5-20251001, while its documented "
+    "moving aliases are fable, opus, sonnet, and haiku; Antigravity uses an "
+    f"exact agy slug, with {AGY_RECOMMENDED_MODEL} verified on agy 1.1.22. "
+    "Run `agy models` and copy its exact slug if the live account/CLI list differs; "
+    "do not use an Antigravity display name as a slug."
+)
+
+AGENT_OPERATING_PRINCIPLES = (
+    "Operating principles from AGENT.md, CLAUDE.md, and AGENT_PROCEDURE.md: "
+    "(1) start a worker only after explicit user authorization; for a generic "
+    "review/second opinion, use the connected endeavor-agents server and use the "
+    "direct wrapper only as its bounded fallback; (2) give the cold child one bounded, self-contained "
+    "deliverable with exact scope, constraints, and done criteria; (3) reviewers "
+    "and advisors are always read-only, and workspace_write is only for an "
+    "explicitly authorized worker; (4) never put secrets in prompts or stored "
+    "artifacts; (5) retain run_id, poll status, and relay only new progress; "
+    "(6) the parent owns commands, decisions, and final verification; (7) use "
+    "ENDMEMEX bootstrap/query before non-trivial work and checkpoint/handoff for "
+    "each material phase or multi-phase task; (8) use memory actor endeavor only "
+    "when the Endeavor runtime writes, keep SQLite writes local to one host, and "
+    "use the authenticated write gateway for remote mutations."
+)
+
+START_USAGE_EXAMPLES = {
+    "codex": (
+        '{"target": "codex", "prompt": "Review the current diff; do not edit files.", '
+        '"role": "reviewer", "access": "read_only", "model": "gpt-5.6-sol", '
+        '"reasoning_effort": "medium", "timeout": 900}'
+    ),
+    "claude": (
+        '{"target": "claude", "prompt": "Review the current diff; do not edit files.", '
+        '"role": "reviewer", "access": "read_only", "model": "claude-sonnet-5", '
+        '"reasoning_effort": "medium", "timeout": 900}'
+    ),
+    "antigravity": (
+        '{"target": "antigravity", "prompt": "Review the current diff; do not edit files.", '
+        '"role": "reviewer", "access": "read_only", "model": "gemini-3.7-flash-medium", '
+        '"reasoning_effort": "medium", "timeout": 900}'
+    ),
+}
+START_USAGE_EXAMPLE = START_USAGE_EXAMPLES["codex"]
+START_USAGE_HINT = (
+    " Hint: call endeavor_agent_start with JSON like "
+    f"{START_USAGE_EXAMPLE}. Copy-ready Claude example: {START_USAGE_EXAMPLES['claude']}. "
+    f"Copy-ready Antigravity example: {START_USAGE_EXAMPLES['antigravity']}. "
+    "Required fields are target and prompt; "
+    "target must be codex, claude, or antigravity; role is worker, reviewer, or advisor; "
+    "access is read_only or workspace_write, and workspace_write requires role=worker. "
+    f"{MODEL_SELECTION_GUIDANCE} {AGENT_OPERATING_PRINCIPLES}"
+)
 
 SERVER_INSTRUCTIONS = (
     "Endeavor Agents runs bounded Codex, Claude, or Antigravity (agy) sub-agents. Runs default to "
@@ -54,7 +148,10 @@ SERVER_INSTRUCTIONS = (
     "still denies run_command since --dangerously-skip-permissions is never passed. Use Codex or the "
     "parent when command execution is needed. The parent agent owns final conclusions and "
     "verification. Nested delegation is refused. Never put secrets in prompts because run requests "
-    "and outputs are stored in local ENDMEMEX audit artifacts."
+    "and outputs are stored in local ENDMEMEX audit artifacts. To start a run, use "
+    f"endeavor_agent_start with arguments like {START_USAGE_EXAMPLE}. {MODEL_SELECTION_GUIDANCE} "
+    f"{AGENT_OPERATING_PRINCIPLES} "
+    "Invalid start arguments return [error] with the same usage hint."
 )
 
 START_ANNOTATIONS = {
@@ -88,6 +185,12 @@ TOOLS = [
         "description": (
             "WRITE, NON-IDEMPOTENT, OPEN WORLD. Starts one bounded managed sub-agent in the "
             "background and returns JSON containing run_id and status. Runs default to read-only. "
+            f"Correct usage example: {START_USAGE_EXAMPLE}. "
+            f"Claude example: {START_USAGE_EXAMPLES['claude']}. "
+            f"Antigravity example: {START_USAGE_EXAMPLES['antigravity']}. "
+            f"{MODEL_SELECTION_GUIDANCE} "
+            f"{AGENT_OPERATING_PRINCIPLES} "
+            "The required fields are target and prompt; invalid arguments return [error] with a usage hint. "
             "Explicit workspace_write is allowed only for role=worker: Codex uses its workspace "
             "sandbox; Claude receives Read/Grep/Glob/Edit/Write without Bash or bare edit "
             "preapproval; Antigravity (agy) gets --mode accept-edits, which auto-applies file edits "
@@ -135,8 +238,8 @@ TOOLS = [
                     "maxLength": 200,
                     "description": (
                         "Optional target CLI model alias or full ID; passed through without an allowlist. "
-                        "Use an explicit value when deterministic model selection matters; isolated Codex "
-                        "runs ignore user configuration."
+                        f"{MODEL_SELECTION_GUIDANCE} Use an explicit value when deterministic model "
+                        "selection matters; isolated Codex runs ignore user configuration."
                     ),
                 },
                 "reasoning_effort": {
@@ -222,29 +325,37 @@ def _validate_value(name: str, value: object, schema: dict) -> str | None:
     return None
 
 
+def _with_start_usage_hint(name: str, error: str) -> str:
+    if name == "endeavor_agent_start":
+        return error + START_USAGE_HINT
+    return error
+
+
 def validate_arguments(name: str, args: object) -> str | None:
     tool = TOOL_BY_NAME.get(name)
     if tool is None:
         return f"unknown Endeavor agent tool: {name}"
     if not isinstance(args, dict):
-        return "arguments must be an object"
+        return _with_start_usage_hint(name, "arguments must be an object")
     schema = tool["inputSchema"]
     properties = schema.get("properties", {})
     unknown = sorted(set(args) - set(properties))
     if unknown:
-        return f"unknown argument(s): {', '.join(unknown)}"
+        return _with_start_usage_hint(name, f"unknown argument(s): {', '.join(unknown)}")
     missing = [key for key in schema.get("required", []) if key not in args]
     if missing:
-        return f"missing required argument(s): {', '.join(missing)}"
+        return _with_start_usage_hint(name, f"missing required argument(s): {', '.join(missing)}")
     for key, value in args.items():
         error = _validate_value(key, value, properties[key])
         if error:
-            return error
+            return _with_start_usage_hint(name, error)
     if name == "endeavor_agent_start":
         role = args.get("role", "worker")
         access = args.get("access", "read_only")
         if access == "workspace_write" and role != "worker":
-            return "workspace_write requires role=worker; reviewer and advisor are read-only"
+            return _with_start_usage_hint(
+                name, "workspace_write requires role=worker; reviewer and advisor are read-only",
+            )
     return None
 
 

@@ -20,7 +20,8 @@ USAGE:
     python3 agent_delegate.py codex "fix the TODO in sync_tracked.py" \
         --sandbox workspace-write
     python3 agent_delegate.py codex "review this diff" \
-        --model <codex-model-alias-or-id> --reasoning-effort high
+        --model gpt-5.6-sol --reasoning-effort high
+    # Current OpenAI full IDs: gpt-5.6-sol, gpt-5.6-terra, gpt-5.6-luna.
 
     # Claude/Codex -> Antigravity (agy -p). Binary is "agy", not "antigravity";
     # resolved via TARGET_BINARIES. --add-dir <cwd> and --print-timeout are
@@ -28,15 +29,19 @@ USAGE:
     # its own internal scratch directory instead of --cwd and reports
     # success. --sandbox translates to --mode/--dangerously-skip-permissions
     # (no direct read-only flag exists; omitting --mode is the safe default).
-    python3 agent_delegate.py antigravity "summarize schema.sql"
+    python3 agent_delegate.py antigravity "summarize schema.sql" \
+        --model gemini-3.7-flash-medium
+    # Current verified agy 1.1.22 slug: gemini-3.7-flash-medium. Refresh the
+    # account-specific list with `agy models` before pinning another slug.
     python3 agent_delegate.py antigravity "fix the TODO in sync_tracked.py" \
         --sandbox workspace-write
 
     # Codex -> Claude (claude -p). Model defaults to haiku (cheap).
-    # Any current/future Claude alias or full model ID can be passed without
-    # a wrapper update. Claude gets NO tools unless you grant them.
+    # Current deterministic full IDs: claude-fable-5, claude-opus-5,
+    # claude-sonnet-5, claude-haiku-4-5-20251001. Documented moving aliases:
+    # fable, opus, sonnet, haiku. Claude gets NO tools unless you grant them.
     python3 agent_delegate.py claude "review this function: ..." \
-        --model sonnet --allowed-tools Read Grep
+        --model claude-sonnet-5 --allowed-tools Read Grep
 
     # --model is intentionally a free-form passthrough for all three CLIs.
     # When omitted, Claude uses the wrapper's haiku default; Codex and

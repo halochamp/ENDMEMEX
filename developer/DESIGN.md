@@ -237,6 +237,11 @@ unique within a session. Retention keeps 500 unpinned checkpoints per session
 and 10,000 unpinned checkpoints globally. The newest checkpoint of every
 non-completed session and every explicitly pinned checkpoint are exempt.
 
+The `agent` attribution on sessions, checkpoints, records, feedback, events,
+and presence rows accepts the shared `MEMORY_AGENT_CHOICES` list:
+`codex`, `claude`, `human`, `system`, or `endeavor`. `endeavor` identifies the
+Endeavor runtime itself and is distinct from the managed delegation target list.
+
 `activity_log` records lightweight write events such as ingest, checkpoint,
 record creation, and relation creation. It is not a raw query log.
 

@@ -64,7 +64,8 @@ class ConfigExtractionTest(unittest.TestCase):
         # config.SIDECAR_TEMP_MAX_AGE_SEC; cli_parser.py binds
         # config.EMBED_BATCH_SIZE, config.HERE, config.MAX_MEMORY_CONTEXT_RECORDS,
         # config.MEMORY_RECORD_STATUSES, config.MEMORY_RECORD_TYPES,
-        # config.MEMORY_RELATIONS, and config.PACK_DEFAULT_BUDGET_CHARS. All are
+        # config.MEMORY_AGENT_CHOICES, config.MEMORY_RELATIONS, and
+        # config.PACK_DEFAULT_BUDGET_CHARS. All are
         # only safe because none is ever a monkeypatch target in
         # test_endeavor_db.py (see the tripwire test below) -- unlike
         # MAX_CHUNK_CHARS, which documents.py receives as an explicit parameter

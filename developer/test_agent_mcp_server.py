@@ -37,6 +37,34 @@ class AgentMcpServerContractTest(unittest.TestCase):
         self.assertTrue(mcp.TOOL_BY_NAME["endeavor_agent_start"]["annotations"]["openWorldHint"])
         self.assertTrue(mcp.TOOL_BY_NAME["endeavor_agent_start"]["annotations"]["destructiveHint"])
         self.assertTrue(mcp.TOOL_BY_NAME["endeavor_agent_cancel"]["annotations"]["destructiveHint"])
+        self.assertIn(mcp.START_USAGE_EXAMPLE, mcp.SERVER_INSTRUCTIONS)
+        self.assertIn(mcp.START_USAGE_EXAMPLE, mcp.TOOL_BY_NAME["endeavor_agent_start"]["description"])
+        self.assertIn(mcp.MODEL_SELECTION_GUIDANCE, mcp.SERVER_INSTRUCTIONS)
+        self.assertIn(mcp.MODEL_SELECTION_GUIDANCE, mcp.TOOL_BY_NAME["endeavor_agent_start"]["description"])
+        self.assertIn(mcp.AGENT_OPERATING_PRINCIPLES, mcp.SERVER_INSTRUCTIONS)
+        self.assertIn(mcp.AGENT_OPERATING_PRINCIPLES, mcp.START_USAGE_HINT)
+        self.assertIn(mcp.AGENT_OPERATING_PRINCIPLES, mcp.TOOL_BY_NAME["endeavor_agent_start"]["description"])
+
+    def test_model_catalog_exposes_copy_ready_values_for_each_target(self):
+        self.assertEqual(mcp.MODEL_CATALOG_DATE, "2026-08-30")
+        self.assertEqual(
+            mcp.CODEX_MODEL_IDS,
+            ("gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"),
+        )
+        self.assertEqual(
+            mcp.CLAUDE_MODEL_IDS,
+            ("claude-fable-5", "claude-opus-5", "claude-sonnet-5", "claude-haiku-4-5-20251001"),
+        )
+        self.assertEqual(
+            mcp.CLAUDE_MODEL_ALIASES,
+            ("fable", "opus", "sonnet", "haiku"),
+        )
+        self.assertIn("gemini-3.7-flash-medium", mcp.AGY_MODEL_SLUGS)
+        self.assertEqual(mcp.AGY_RECOMMENDED_MODEL, "gemini-3.7-flash-medium")
+        for target, example in mcp.START_USAGE_EXAMPLES.items():
+            with self.subTest(target=target):
+                self.assertIn(f'"target": "{target}"', example)
+                self.assertIn('"model": "', example)
 
     def test_start_schema_accepts_antigravity_target(self):
         self.assertEqual(
@@ -53,7 +81,7 @@ class AgentMcpServerContractTest(unittest.TestCase):
                 "target": "claude",
                 "prompt": "Review the current diff",
                 "role": "reviewer",
-                "model": "sonnet",
+                "model": "claude-sonnet-5",
                 "reasoning_effort": "high",
                 "timeout": 1200,
                 "parent_record": "AUDIT-MEM-001",
@@ -70,7 +98,7 @@ class AgentMcpServerContractTest(unittest.TestCase):
         uuid.UUID(hex=command[command.index("--run-id") + 1])
         self.assertEqual(command[command.index("--sandbox") + 1], "read-only")
         self.assertEqual(command[command.index("--role") + 1], "reviewer")
-        self.assertEqual(command[command.index("--model") + 1], "sonnet")
+        self.assertEqual(command[command.index("--model") + 1], "claude-sonnet-5")
         self.assertEqual(command[command.index("--reasoning-effort") + 1], "high")
         allowed_index = command.index("--allowed-tools")
         self.assertEqual(command[allowed_index:allowed_index + 4], [
@@ -148,7 +176,7 @@ class AgentMcpServerContractTest(unittest.TestCase):
                     self.assertEqual(
                         result,
                         "[error] workspace_write requires role=worker; "
-                        "reviewer and advisor are read-only",
+                        "reviewer and advisor are read-only" + mcp.START_USAGE_HINT,
                     )
         run.assert_not_called()
 
@@ -177,11 +205,17 @@ class AgentMcpServerContractTest(unittest.TestCase):
                 "target": "codex", "prompt": "x", "timeout": 3601,
             })
             bad_run_id = mcp.call("endeavor_agent_cancel", {"run_id": "../unsafe"})
-        self.assertEqual(unknown, "[error] unknown argument(s): sandbox")
+        self.assertEqual(unknown, "[error] unknown argument(s): sandbox" + mcp.START_USAGE_HINT)
         self.assertIn("target must be one of", bad_target)
-        self.assertEqual(bad_timeout, "[error] timeout must be <= 3600")
+        self.assertEqual(bad_timeout, "[error] timeout must be <= 3600" + mcp.START_USAGE_HINT)
         self.assertEqual(bad_run_id, "[error] run_id has an invalid format")
         run.assert_not_called()
+
+    def test_missing_start_arguments_include_a_correct_usage_example(self):
+        result = mcp.call("endeavor_agent_start", {})
+        self.assertIn("[error] missing required argument(s): target, prompt", result)
+        self.assertIn(mcp.START_USAGE_HINT, result)
+        self.assertIn(mcp.START_USAGE_EXAMPLE, result)
 
     def test_backend_timeout_and_invalid_json_are_controlled_errors(self):
         with mock.patch.object(mcp.subprocess, "run", side_effect=subprocess.TimeoutExpired("x", 15)):

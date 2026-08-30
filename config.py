@@ -80,6 +80,10 @@ MEMORY_RECORD_TYPES = ("audit", "fix", "verification", "decision", "knowledge")
 MEMORY_RECORD_STATUSES = ("open", "current", "resolved", "accepted")
 MEMORY_ACTION_STATES = ("actionable", "deferred", "blocked", "nonactionable", "done")
 MEMORY_RELATIONS = ("references", "resolves", "verifies", "supersedes", "contradicts", "duplicates")
+# Attribution identities for ENDMEMEX memory/session writes. This is separate
+# from agent_delegate's managed-child target list: ``endeavor`` identifies the
+# Endeavor runtime itself when it writes a record or checkpoint.
+MEMORY_AGENT_CHOICES = ("codex", "claude", "human", "system", "endeavor")
 KNOWLEDGE_CATEGORIES = (
     "agent_training", "debugging", "testing", "architecture",
     "session_history", "project_memory", "documentation",

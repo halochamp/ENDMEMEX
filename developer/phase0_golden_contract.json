@@ -2060,7 +2060,7 @@
         "maybe"
       ],
       "exit": 2,
-      "stderr": "usage: endeavor_db.py query [-h] [--project PROJECT] [--category CATEGORY]\n                            [--status {open,resolved,accepted}]\n                            [--module MODULE] [--bug-id BUG_ID]\n                            [--session-label SESSION_LABEL] [--limit LIMIT]\n                            [--json] [--semantic {auto,on,off}] [--compact]\n                            [--check-stale]\n                            text\nendeavor_db.py query: error: argument --semantic: invalid choice: 'maybe' (choose from auto, on, off)\n"
+      "stderr": "usage: endeavor_db.py query [-h] [--project PROJECT] [--category CATEGORY]\n                            [--status {open,resolved,accepted}]\n                            [--module MODULE] [--bug-id BUG_ID]\n                            [--session-label SESSION_LABEL] [--limit LIMIT]\n                            [--json] [--semantic {auto,on,off}] [--compact]\n                            [--check-stale]\n                            text\nendeavor_db.py query: error: argument --semantic: invalid choice: 'maybe' (choose from 'auto', 'on', 'off')\n"
     },
     "mutually_exclusive": {
       "argv": [
@@ -2081,7 +2081,7 @@
         "notanid"
       ],
       "exit": 2,
-      "stderr": "usage: endeavor_db.py feedback [-h] --agent {codex,claude,human,system}\n                               --query QUERY [--result SELECTED_IDS]\n                               [--useful {yes,no}] [--note NOTE]\nendeavor_db.py feedback: error: argument --result: invalid parse_feedback_result_id value: 'notanid'\n"
+      "stderr": "usage: endeavor_db.py feedback [-h]\n                               --agent {codex,claude,human,system,endeavor}\n                               --query QUERY [--result SELECTED_IDS]\n                               [--useful {yes,no}] [--note NOTE]\nendeavor_db.py feedback: error: argument --result: invalid parse_feedback_result_id value: 'notanid'\n"
     }
   },
   "endeavor_db_parser_contract_by_python_minor": {
@@ -2490,7 +2490,8 @@
                   "codex",
                   "claude",
                   "human",
-                  "system"
+                  "system",
+                  "endeavor"
                 ],
                 "metavar": null,
                 "help": null
@@ -2990,7 +2991,8 @@
                   "codex",
                   "claude",
                   "human",
-                  "system"
+                  "system",
+                  "endeavor"
                 ],
                 "metavar": null,
                 "help": null
@@ -3101,7 +3103,8 @@
                   "codex",
                   "claude",
                   "human",
-                  "system"
+                  "system",
+                  "endeavor"
                 ],
                 "metavar": null,
                 "help": null
@@ -3234,7 +3237,8 @@
                   "codex",
                   "claude",
                   "human",
-                  "system"
+                  "system",
+                  "endeavor"
                 ],
                 "metavar": null,
                 "help": null
@@ -3722,7 +3726,8 @@
                   "codex",
                   "claude",
                   "human",
-                  "system"
+                  "system",
+                  "endeavor"
                 ],
                 "metavar": null,
                 "help": null
@@ -3813,7 +3818,8 @@
                   "codex",
                   "claude",
                   "human",
-                  "system"
+                  "system",
+                  "endeavor"
                 ],
                 "metavar": null,
                 "help": null
@@ -3910,7 +3916,8 @@
                   "codex",
                   "claude",
                   "human",
-                  "system"
+                  "system",
+                  "endeavor"
                 ],
                 "metavar": null,
                 "help": null
@@ -4021,7 +4028,8 @@
                   "codex",
                   "claude",
                   "human",
-                  "system"
+                  "system",
+                  "endeavor"
                 ],
                 "metavar": null,
                 "help": null
@@ -4535,7 +4543,8 @@
                   "codex",
                   "claude",
                   "human",
-                  "system"
+                  "system",
+                  "endeavor"
                 ],
                 "metavar": null,
                 "help": null
@@ -4633,7 +4642,8 @@
                   "codex",
                   "claude",
                   "human",
-                  "system"
+                  "system",
+                  "endeavor"
                 ],
                 "metavar": null,
                 "help": null
@@ -4959,7 +4969,8 @@
                   "codex",
                   "claude",
                   "human",
-                  "system"
+                  "system",
+                  "endeavor"
                 ],
                 "metavar": null,
                 "help": null
@@ -5050,7 +5061,8 @@
                   "codex",
                   "claude",
                   "human",
-                  "system"
+                  "system",
+                  "endeavor"
                 ],
                 "metavar": null,
                 "help": null
@@ -5136,7 +5148,8 @@
                   "codex",
                   "claude",
                   "human",
-                  "system"
+                  "system",
+                  "endeavor"
                 ],
                 "metavar": null,
                 "help": null
@@ -5249,7 +5262,8 @@
                   "codex",
                   "claude",
                   "human",
-                  "system"
+                  "system",
+                  "endeavor"
                 ],
                 "metavar": null,
                 "help": null
@@ -5377,7 +5391,8 @@
                   "codex",
                   "claude",
                   "human",
-                  "system"
+                  "system",
+                  "endeavor"
                 ],
                 "metavar": null,
                 "help": null
@@ -5393,7 +5408,7 @@
         "ann-build": "usage: endeavor_db.py ann-build [-h]\n\noptions:\n  -h, --help  show this help message and exit\n",
         "ann-status": "usage: endeavor_db.py ann-status [-h]\n\noptions:\n  -h, --help  show this help message and exit\n",
         "bootstrap": "usage: endeavor_db.py bootstrap [-h] --project PROJECT [--session SESSION]\n                                [--json] [--batch-size BATCH_SIZE]\n                                [--include-pending]\n\noptions:\n  -h, --help            show this help message and exit\n  --project PROJECT\n  --session SESSION     Explicit resumable session ID; must belong to\n                        --project\n  --json\n  --batch-size BATCH_SIZE\n  --include-pending     Also include lifecycle-aware pending work\n",
-        "checkpoint": "usage: endeavor_db.py checkpoint [-h] [--session SESSION] [--project PROJECT]\n                                 --agent {codex,claude,human,system}\n                                 [--goal GOAL] [--payload PAYLOAD]\n                                 [--summary SUMMARY] [--work-done WORK_DONE]\n                                 [--current-state CURRENT_STATE]\n                                 [--next-steps NEXT_STEPS]\n                                 [--blockers BLOCKERS]\n                                 [--status {active,paused,completed,blocked}]\n                                 [--file FILES_CHANGED] [--auto-files]\n                                 [--command COMMANDS_RUN]\n                                 [--verify VERIFICATION] [--pin]\n\noptions:\n  -h, --help            show this help message and exit\n  --session SESSION\n  --project PROJECT\n  --agent {codex,claude,human,system}\n  --goal GOAL           If --project has no active/paused/blocked session,\n                        start one with this goal before checkpointing,\n                        collapsing handoff+session-start+checkpoint into one\n                        call for the common single-session task\n  --payload PAYLOAD     JSON payload file; CLI flags override it\n  --summary SUMMARY\n  --work-done WORK_DONE\n  --current-state CURRENT_STATE\n  --next-steps NEXT_STEPS\n  --blockers BLOCKERS\n  --status {active,paused,completed,blocked}\n  --file FILES_CHANGED\n  --auto-files          Append git-status-detected changed files under\n                        ROOT/<project>/ to --file. Requires --project; a\n                        project label that isn't also a real top-level\n                        directory yields no files rather than guessing across\n                        the whole repo.\n  --command COMMANDS_RUN\n  --verify VERIFICATION\n  --pin                 Mark this checkpoint important: exempt it from the\n                        sliding-window prune (add_checkpoint's per-session cap\n                        and prune_checkpoints_globally) so it survives\n                        indefinitely regardless of age or session status.\n",
+        "checkpoint": "usage: endeavor_db.py checkpoint [-h] [--session SESSION] [--project PROJECT]\n                                 --agent {codex,claude,human,system,endeavor}\n                                 [--goal GOAL] [--payload PAYLOAD]\n                                 [--summary SUMMARY] [--work-done WORK_DONE]\n                                 [--current-state CURRENT_STATE]\n                                 [--next-steps NEXT_STEPS]\n                                 [--blockers BLOCKERS]\n                                 [--status {active,paused,completed,blocked}]\n                                 [--file FILES_CHANGED] [--auto-files]\n                                 [--command COMMANDS_RUN]\n                                 [--verify VERIFICATION] [--pin]\n\noptions:\n  -h, --help            show this help message and exit\n  --session SESSION\n  --project PROJECT\n  --agent {codex,claude,human,system,endeavor}\n  --goal GOAL           If --project has no active/paused/blocked session,\n                        start one with this goal before checkpointing,\n                        collapsing handoff+session-start+checkpoint into one\n                        call for the common single-session task\n  --payload PAYLOAD     JSON payload file; CLI flags override it\n  --summary SUMMARY\n  --work-done WORK_DONE\n  --current-state CURRENT_STATE\n  --next-steps NEXT_STEPS\n  --blockers BLOCKERS\n  --status {active,paused,completed,blocked}\n  --file FILES_CHANGED\n  --auto-files          Append git-status-detected changed files under\n                        ROOT/<project>/ to --file. Requires --project; a\n                        project label that isn't also a real top-level\n                        directory yields no files rather than guessing across\n                        the whole repo.\n  --command COMMANDS_RUN\n  --verify VERIFICATION\n  --pin                 Mark this checkpoint important: exempt it from the\n                        sliding-window prune (add_checkpoint's per-session cap\n                        and prune_checkpoints_globally) so it survives\n                        indefinitely regardless of age or session status.\n",
         "doctor": "usage: endeavor_db.py doctor [-h]\n\noptions:\n  -h, --help  show this help message and exit\n",
         "embed-backfill": "usage: endeavor_db.py embed-backfill [-h] [--batch-size BATCH_SIZE]\n\noptions:\n  -h, --help            show this help message and exit\n  --batch-size BATCH_SIZE\n",
         "embed-cool": "usage: endeavor_db.py embed-cool [-h]\n\noptions:\n  -h, --help  show this help message and exit\n",
@@ -5401,10 +5416,10 @@
         "embed-status": "usage: endeavor_db.py embed-status [-h]\n\noptions:\n  -h, --help  show this help message and exit\n",
         "embed-warm": "usage: endeavor_db.py embed-warm [-h] [--keep-alive]\n\noptions:\n  -h, --help    show this help message and exit\n  --keep-alive\n",
         "evaluate": "usage: endeavor_db.py evaluate [-h] [--file FILE] [--limit LIMIT] [--json]\n                               [--semantic {auto,on,off}]\n                               [--pipeline {markdown,unified,both}]\n\noptions:\n  -h, --help            show this help message and exit\n  --file FILE\n  --limit LIMIT\n  --json\n  --semantic {auto,on,off}\n  --pipeline {markdown,unified,both}\n                        Benchmark the Markdown-only baseline, the production\n                        unified query path, or both\n",
-        "event-ack": "usage: endeavor_db.py event-ack [-h] --agent {codex,claude,human,system}\n                                event_id\n\npositional arguments:\n  event_id\n\noptions:\n  -h, --help            show this help message and exit\n  --agent {codex,claude,human,system}\n",
-        "event-add": "usage: endeavor_db.py event-add [-h] --type EVENT_TYPE --project PROJECT\n                                --subject SUBJECT_ID --dedupe-key DEDUPE_KEY\n                                [--payload PAYLOAD] --agent\n                                {codex,claude,human,system}\n\noptions:\n  -h, --help            show this help message and exit\n  --type EVENT_TYPE\n  --project PROJECT\n  --subject SUBJECT_ID\n  --dedupe-key DEDUPE_KEY\n  --payload PAYLOAD     JSON object\n  --agent {codex,claude,human,system}\n",
+        "event-ack": "usage: endeavor_db.py event-ack [-h] --agent {codex,claude,human,system,endeavor}\n                                event_id\n\npositional arguments:\n  event_id\n\noptions:\n  -h, --help            show this help message and exit\n  --agent {codex,claude,human,system,endeavor}\n",
+        "event-add": "usage: endeavor_db.py event-add [-h] --type EVENT_TYPE --project PROJECT\n                                --subject SUBJECT_ID --dedupe-key DEDUPE_KEY\n                                [--payload PAYLOAD] --agent\n                                {codex,claude,human,system,endeavor}\n\noptions:\n  -h, --help            show this help message and exit\n  --type EVENT_TYPE\n  --project PROJECT\n  --subject SUBJECT_ID\n  --dedupe-key DEDUPE_KEY\n  --payload PAYLOAD     JSON object\n  --agent {codex,claude,human,system,endeavor}\n",
         "event-poll": "usage: endeavor_db.py event-poll [-h] [--after AFTER] [--project PROJECT]\n                                 [--limit LIMIT] [--include-acked] [--json]\n\noptions:\n  -h, --help         show this help message and exit\n  --after AFTER\n  --project PROJECT\n  --limit LIMIT\n  --include-acked\n  --json\n",
-        "feedback": "usage: endeavor_db.py feedback [-h] --agent {codex,claude,human,system}\n                               --query QUERY [--result SELECTED_IDS]\n                               [--useful {yes,no}] [--note NOTE]\n\noptions:\n  -h, --help            show this help message and exit\n  --agent {codex,claude,human,system}\n  --query QUERY\n  --result SELECTED_IDS\n                        Selected result ID (integer Markdown ID or stable\n                        SQLite record ID)\n  --useful {yes,no}\n  --note NOTE\n",
+        "feedback": "usage: endeavor_db.py feedback [-h] --agent {codex,claude,human,system,endeavor}\n                               --query QUERY [--result SELECTED_IDS]\n                               [--useful {yes,no}] [--note NOTE]\n\noptions:\n  -h, --help            show this help message and exit\n  --agent {codex,claude,human,system,endeavor}\n  --query QUERY\n  --result SELECTED_IDS\n                        Selected result ID (integer Markdown ID or stable\n                        SQLite record ID)\n  --useful {yes,no}\n  --note NOTE\n",
         "handoff": "usage: endeavor_db.py handoff [-h] [--session SESSION] [--project PROJECT]\n                              [--all-paused] [--json]\n\noptions:\n  -h, --help         show this help message and exit\n  --session SESSION\n  --project PROJECT\n  --all-paused       List the latest checkpoint for every paused session\n                     across all projects\n  --json\n",
         "ingest": "usage: endeavor_db.py ingest [-h] --project PROJECT [--kind KIND] [--no-embed]\n                             source\n\npositional arguments:\n  source\n\noptions:\n  -h, --help         show this help message and exit\n  --project PROJECT\n  --kind KIND\n  --no-embed         Skip the best-effort MiniLM embedding pass (lexical\n                     ingest always still runs)\n",
         "init": "usage: endeavor_db.py init [-h]\n\noptions:\n  -h, --help  show this help message and exit\n",
@@ -5412,25 +5427,25 @@
         "maintenance": "usage: endeavor_db.py maintenance [-h] [--yes]\n\noptions:\n  -h, --help  show this help message and exit\n  --yes       Required confirmation; rewrites the whole database file and\n              briefly blocks all writers\n",
         "pack": "usage: endeavor_db.py pack [-h] --project PROJECT [--session SESSION]\n                           [--budget BUDGET_CHARS] [--json]\n\noptions:\n  -h, --help            show this help message and exit\n  --project PROJECT\n  --session SESSION     Explicit resumable session ID; must belong to\n                        --project\n  --budget BUDGET_CHARS\n  --json\n",
         "pending": "usage: endeavor_db.py pending [-h] (--project PROJECT | --all-projects)\n                              [--json]\n\noptions:\n  -h, --help         show this help message and exit\n  --project PROJECT\n  --all-projects\n  --json\n",
-        "pin-checkpoint": "usage: endeavor_db.py pin-checkpoint [-h] --agent {codex,claude,human,system}\n                                     checkpoint_id\n\npositional arguments:\n  checkpoint_id\n\noptions:\n  -h, --help            show this help message and exit\n  --agent {codex,claude,human,system}\n",
+        "pin-checkpoint": "usage: endeavor_db.py pin-checkpoint [-h] --agent {codex,claude,human,system,endeavor}\n                                     checkpoint_id\n\npositional arguments:\n  checkpoint_id\n\noptions:\n  -h, --help            show this help message and exit\n  --agent {codex,claude,human,system,endeavor}\n",
         "presence": "usage: endeavor_db.py presence [-h] [--project PROJECT] [--json]\n\noptions:\n  -h, --help         show this help message and exit\n  --project PROJECT\n  --json\n",
-        "presence-heartbeat": "usage: endeavor_db.py presence-heartbeat [-h] --agent\n                                         {codex,claude,human,system} --project\n                                         PROJECT [--instance INSTANCE]\n                                         [--task TASK] [--pid PID]\n\noptions:\n  -h, --help            show this help message and exit\n  --agent {codex,claude,human,system}\n  --project PROJECT\n  --instance INSTANCE\n  --task TASK           Update the task description; omit to just refresh the\n                        timestamp\n  --pid PID             Informational only; defaults to this process's own PID\n",
-        "presence-start": "usage: endeavor_db.py presence-start [-h] --agent {codex,claude,human,system}\n                                     --project PROJECT [--task TASK]\n                                     [--session SESSION] [--instance INSTANCE]\n                                     [--pid PID]\n\noptions:\n  -h, --help            show this help message and exit\n  --agent {codex,claude,human,system}\n  --project PROJECT\n  --task TASK           Short free-text of what this process is doing\n  --session SESSION\n  --instance INSTANCE   Only needed to distinguish two concurrent instances of\n                        the same agent on the same project/machine; identity\n                        is otherwise (machine, agent, project), not pid --\n                        each CLI call is its own short-lived subprocess\n  --pid PID             Informational only; defaults to this process's own PID\n",
-        "presence-stop": "usage: endeavor_db.py presence-stop [-h] --agent {codex,claude,human,system}\n                                    --project PROJECT [--instance INSTANCE]\n\noptions:\n  -h, --help            show this help message and exit\n  --agent {codex,claude,human,system}\n  --project PROJECT\n  --instance INSTANCE\n",
+        "presence-heartbeat": "usage: endeavor_db.py presence-heartbeat [-h] --agent\n                                         {codex,claude,human,system,endeavor} --project\n                                         PROJECT [--instance INSTANCE]\n                                         [--task TASK] [--pid PID]\n\noptions:\n  -h, --help            show this help message and exit\n  --agent {codex,claude,human,system,endeavor}\n  --project PROJECT\n  --instance INSTANCE\n  --task TASK           Update the task description; omit to just refresh the\n                        timestamp\n  --pid PID             Informational only; defaults to this process's own PID\n",
+        "presence-start": "usage: endeavor_db.py presence-start [-h] --agent {codex,claude,human,system,endeavor}\n                                     --project PROJECT [--task TASK]\n                                     [--session SESSION] [--instance INSTANCE]\n                                     [--pid PID]\n\noptions:\n  -h, --help            show this help message and exit\n  --agent {codex,claude,human,system,endeavor}\n  --project PROJECT\n  --task TASK           Short free-text of what this process is doing\n  --session SESSION\n  --instance INSTANCE   Only needed to distinguish two concurrent instances of\n                        the same agent on the same project/machine; identity\n                        is otherwise (machine, agent, project), not pid --\n                        each CLI call is its own short-lived subprocess\n  --pid PID             Informational only; defaults to this process's own PID\n",
+        "presence-stop": "usage: endeavor_db.py presence-stop [-h] --agent {codex,claude,human,system,endeavor}\n                                    --project PROJECT [--instance INSTANCE]\n\noptions:\n  -h, --help            show this help message and exit\n  --agent {codex,claude,human,system,endeavor}\n  --project PROJECT\n  --instance INSTANCE\n",
         "query": "usage: endeavor_db.py query [-h] [--project PROJECT] [--category CATEGORY]\n                            [--status {open,resolved,accepted}]\n                            [--module MODULE] [--bug-id BUG_ID]\n                            [--session-label SESSION_LABEL] [--limit LIMIT]\n                            [--json] [--semantic {auto,on,off}] [--compact]\n                            [--check-stale]\n                            text\n\npositional arguments:\n  text\n\noptions:\n  -h, --help            show this help message and exit\n  --project PROJECT\n  --category CATEGORY\n  --status {open,resolved,accepted}\n  --module MODULE\n  --bug-id BUG_ID\n  --session-label SESSION_LABEL\n  --limit LIMIT\n  --json\n  --semantic {auto,on,off}\n                        auto: use MiniLM only if already warm (default, never\n                        stalls). on: spawn/wait for the companion if needed\n                        (~11s cold). off: lexical only.\n  --compact             Trim --json results to the ~8 fields an agent reads\n                        when browsing (id/title/project/category/excerpt/locat\n                        ion/match_reasons/rank) instead of the full ~29-field\n                        row\n  --check-stale         Flag markdown-sourced results whose source file has\n                        drifted from the indexed hash (reads each distinct\n                        source file once; on by default)\n",
         "readiness": "usage: endeavor_db.py readiness [-h] --project PROJECT [--json]\n\noptions:\n  -h, --help         show this help message and exit\n  --project PROJECT\n  --json             Emit the complete machine-readable report\n",
-        "record-add": "usage: endeavor_db.py record-add [-h] [--id RECORD_ID] --project PROJECT\n                                 --type\n                                 {audit,fix,verification,decision,knowledge}\n                                 --title TITLE [--content CONTENT]\n                                 [--content-file PATH]\n                                 [--status {open,current,resolved,accepted}]\n                                 [--action-state {actionable,deferred,blocked,nonactionable,done}]\n                                 [--metadata METADATA] [--source PATH]\n                                 [--link RELATION:TARGET] [--note NOTE]\n                                 --agent {codex,claude,human,system}\n\noptions:\n  -h, --help            show this help message and exit\n  --id RECORD_ID        Stable ID, for example AUDIT-MEM-001\n  --project PROJECT\n  --type {audit,fix,verification,decision,knowledge}\n  --title TITLE\n  --content CONTENT     Record body text; mutually exclusive with --content-\n                        file\n  --content-file PATH   Read record body text from PATH ('-' for stdin)\n                        instead of --content, so long/multi-line content never\n                        has to survive shell quoting\n  --status {open,current,resolved,accepted}\n  --action-state {actionable,deferred,blocked,nonactionable,done}\n                        Independent work-triage state; defaults by record\n                        type/status\n  --metadata METADATA   JSON object\n  --source PATH         Repo-relative path this record documents (e.g. a\n                        written report); stored as metadata.source so a later\n                        `record-show`/`query` result can be followed straight\n                        to the file, same convention as knowledge chunks'\n                        source_path\n  --link RELATION:TARGET\n                        Create an internal relation atomically; may be\n                        repeated\n  --note NOTE           Note applied to links created by this command\n  --agent {codex,claude,human,system}\n",
-        "record-link": "usage: endeavor_db.py record-link [-h] [--note NOTE] --agent\n                                  {codex,claude,human,system}\n                                  source_id\n                                  {references,resolves,verifies,supersedes,contradicts,duplicates}\n                                  target_id\n\npositional arguments:\n  source_id\n  {references,resolves,verifies,supersedes,contradicts,duplicates}\n  target_id\n\noptions:\n  -h, --help            show this help message and exit\n  --note NOTE\n  --agent {codex,claude,human,system}\n",
+        "record-add": "usage: endeavor_db.py record-add [-h] [--id RECORD_ID] --project PROJECT\n                                 --type\n                                 {audit,fix,verification,decision,knowledge}\n                                 --title TITLE [--content CONTENT]\n                                 [--content-file PATH]\n                                 [--status {open,current,resolved,accepted}]\n                                 [--action-state {actionable,deferred,blocked,nonactionable,done}]\n                                 [--metadata METADATA] [--source PATH]\n                                 [--link RELATION:TARGET] [--note NOTE]\n                                 --agent {codex,claude,human,system,endeavor}\n\noptions:\n  -h, --help            show this help message and exit\n  --id RECORD_ID        Stable ID, for example AUDIT-MEM-001\n  --project PROJECT\n  --type {audit,fix,verification,decision,knowledge}\n  --title TITLE\n  --content CONTENT     Record body text; mutually exclusive with --content-\n                        file\n  --content-file PATH   Read record body text from PATH ('-' for stdin)\n                        instead of --content, so long/multi-line content never\n                        has to survive shell quoting\n  --status {open,current,resolved,accepted}\n  --action-state {actionable,deferred,blocked,nonactionable,done}\n                        Independent work-triage state; defaults by record\n                        type/status\n  --metadata METADATA   JSON object\n  --source PATH         Repo-relative path this record documents (e.g. a\n                        written report); stored as metadata.source so a later\n                        `record-show`/`query` result can be followed straight\n                        to the file, same convention as knowledge chunks'\n                        source_path\n  --link RELATION:TARGET\n                        Create an internal relation atomically; may be\n                        repeated\n  --note NOTE           Note applied to links created by this command\n  --agent {codex,claude,human,system,endeavor}\n",
+        "record-link": "usage: endeavor_db.py record-link [-h] [--note NOTE] --agent\n                                  {codex,claude,human,system,endeavor}\n                                  source_id\n                                  {references,resolves,verifies,supersedes,contradicts,duplicates}\n                                  target_id\n\npositional arguments:\n  source_id\n  {references,resolves,verifies,supersedes,contradicts,duplicates}\n  target_id\n\noptions:\n  -h, --help            show this help message and exit\n  --note NOTE\n  --agent {codex,claude,human,system,endeavor}\n",
         "record-search": "usage: endeavor_db.py record-search [-h] [--project PROJECT]\n                                    [--type {audit,fix,verification,decision,knowledge}]\n                                    [--limit LIMIT] [--current-only]\n                                    text\n\npositional arguments:\n  text\n\noptions:\n  -h, --help            show this help message and exit\n  --project PROJECT\n  --type {audit,fix,verification,decision,knowledge}\n  --limit LIMIT\n  --current-only\n",
         "record-show": "usage: endeavor_db.py record-show [-h] [--depth DEPTH]\n                                  [--max-records MAX_RECORDS]\n                                  record_id\n\npositional arguments:\n  record_id\n\noptions:\n  -h, --help            show this help message and exit\n  --depth DEPTH\n  --max-records MAX_RECORDS\n                        Bound graph expansion (1-1000; default: 1000)\n",
-        "record-update": "usage: endeavor_db.py record-update [-h] [--project PROJECT]\n                                    [--type {audit,fix,verification,decision,knowledge}]\n                                    [--title TITLE] [--content CONTENT]\n                                    [--status {open,current,resolved,accepted}]\n                                    [--action-state {actionable,deferred,blocked,nonactionable,done}]\n                                    [--metadata METADATA] --agent\n                                    {codex,claude,human,system}\n                                    record_id\n\npositional arguments:\n  record_id\n\noptions:\n  -h, --help            show this help message and exit\n  --project PROJECT\n  --type {audit,fix,verification,decision,knowledge}\n  --title TITLE\n  --content CONTENT\n  --status {open,current,resolved,accepted}\n  --action-state {actionable,deferred,blocked,nonactionable,done}\n  --metadata METADATA   Replacement JSON object\n  --agent {codex,claude,human,system}\n",
+        "record-update": "usage: endeavor_db.py record-update [-h] [--project PROJECT]\n                                    [--type {audit,fix,verification,decision,knowledge}]\n                                    [--title TITLE] [--content CONTENT]\n                                    [--status {open,current,resolved,accepted}]\n                                    [--action-state {actionable,deferred,blocked,nonactionable,done}]\n                                    [--metadata METADATA] --agent\n                                    {codex,claude,human,system,endeavor}\n                                    record_id\n\npositional arguments:\n  record_id\n\noptions:\n  -h, --help            show this help message and exit\n  --project PROJECT\n  --type {audit,fix,verification,decision,knowledge}\n  --title TITLE\n  --content CONTENT\n  --status {open,current,resolved,accepted}\n  --action-state {actionable,deferred,blocked,nonactionable,done}\n  --metadata METADATA   Replacement JSON object\n  --agent {codex,claude,human,system,endeavor}\n",
         "seed": "usage: endeavor_db.py seed [-h]\n\noptions:\n  -h, --help  show this help message and exit\n",
-        "session-close": "usage: endeavor_db.py session-close [-h] [--session SESSION]\n                                    [--project PROJECT] --agent\n                                    {codex,claude,human,system}\n                                    [--status {completed,blocked}]\n\noptions:\n  -h, --help            show this help message and exit\n  --session SESSION\n  --project PROJECT\n  --agent {codex,claude,human,system}\n  --status {completed,blocked}\n",
-        "session-start": "usage: endeavor_db.py session-start [-h] --project PROJECT --goal GOAL --agent\n                                    {codex,claude,human,system}\n\noptions:\n  -h, --help            show this help message and exit\n  --project PROJECT\n  --goal GOAL\n  --agent {codex,claude,human,system}\n",
+        "session-close": "usage: endeavor_db.py session-close [-h] [--session SESSION]\n                                    [--project PROJECT] --agent\n                                    {codex,claude,human,system,endeavor}\n                                    [--status {completed,blocked}]\n\noptions:\n  -h, --help            show this help message and exit\n  --session SESSION\n  --project PROJECT\n  --agent {codex,claude,human,system,endeavor}\n  --status {completed,blocked}\n",
+        "session-start": "usage: endeavor_db.py session-start [-h] --project PROJECT --goal GOAL --agent\n                                    {codex,claude,human,system,endeavor}\n\noptions:\n  -h, --help            show this help message and exit\n  --project PROJECT\n  --goal GOAL\n  --agent {codex,claude,human,system,endeavor}\n",
         "stats": "usage: endeavor_db.py stats [-h]\n\noptions:\n  -h, --help  show this help message and exit\n",
         "sync-status": "usage: endeavor_db.py sync-status [-h] [--json]\n\noptions:\n  -h, --help  show this help message and exit\n  --json\n",
-        "timeline": "usage: endeavor_db.py timeline [-h] [--project PROJECT]\n                               [--agent {codex,claude,human,system}]\n                               [--status {active,paused,completed,blocked}]\n                               [--session SESSION] [--limit LIMIT]\n                               [--oldest-first] [--json]\n\noptions:\n  -h, --help            show this help message and exit\n  --project PROJECT\n  --agent {codex,claude,human,system}\n  --status {active,paused,completed,blocked}\n  --session SESSION\n  --limit LIMIT         Max checkpoints to return (default 100, capped at 500)\n  --oldest-first        Sort ascending instead of the newest-first default\n  --json\n",
-        "unpin-checkpoint": "usage: endeavor_db.py unpin-checkpoint [-h] --agent\n                                       {codex,claude,human,system}\n                                       checkpoint_id\n\npositional arguments:\n  checkpoint_id\n\noptions:\n  -h, --help            show this help message and exit\n  --agent {codex,claude,human,system}\n"
+        "timeline": "usage: endeavor_db.py timeline [-h] [--project PROJECT]\n                               [--agent {codex,claude,human,system,endeavor}]\n                               [--status {active,paused,completed,blocked}]\n                               [--session SESSION] [--limit LIMIT]\n                               [--oldest-first] [--json]\n\noptions:\n  -h, --help            show this help message and exit\n  --project PROJECT\n  --agent {codex,claude,human,system,endeavor}\n  --status {active,paused,completed,blocked}\n  --session SESSION\n  --limit LIMIT         Max checkpoints to return (default 100, capped at 500)\n  --oldest-first        Sort ascending instead of the newest-first default\n  --json\n",
+        "unpin-checkpoint": "usage: endeavor_db.py unpin-checkpoint [-h] --agent\n                                       {codex,claude,human,system,endeavor}\n                                       checkpoint_id\n\npositional arguments:\n  checkpoint_id\n\noptions:\n  -h, --help            show this help message and exit\n  --agent {codex,claude,human,system,endeavor}\n"
       },
       "errors": {
         "root-empty": {
@@ -5443,19 +5458,19 @@
         },
         "checkpoint": {
           "exit": 2,
-          "stderr": "usage: endeavor_db.py checkpoint [-h] [--session SESSION] [--project PROJECT]\n                                 --agent {codex,claude,human,system}\n                                 [--goal GOAL] [--payload PAYLOAD]\n                                 [--summary SUMMARY] [--work-done WORK_DONE]\n                                 [--current-state CURRENT_STATE]\n                                 [--next-steps NEXT_STEPS]\n                                 [--blockers BLOCKERS]\n                                 [--status {active,paused,completed,blocked}]\n                                 [--file FILES_CHANGED] [--auto-files]\n                                 [--command COMMANDS_RUN]\n                                 [--verify VERIFICATION] [--pin]\nendeavor_db.py checkpoint: error: the following arguments are required: --agent\n"
+          "stderr": "usage: endeavor_db.py checkpoint [-h] [--session SESSION] [--project PROJECT]\n                                 --agent {codex,claude,human,system,endeavor}\n                                 [--goal GOAL] [--payload PAYLOAD]\n                                 [--summary SUMMARY] [--work-done WORK_DONE]\n                                 [--current-state CURRENT_STATE]\n                                 [--next-steps NEXT_STEPS]\n                                 [--blockers BLOCKERS]\n                                 [--status {active,paused,completed,blocked}]\n                                 [--file FILES_CHANGED] [--auto-files]\n                                 [--command COMMANDS_RUN]\n                                 [--verify VERIFICATION] [--pin]\nendeavor_db.py checkpoint: error: the following arguments are required: --agent\n"
         },
         "event-ack": {
           "exit": 2,
-          "stderr": "usage: endeavor_db.py event-ack [-h] --agent {codex,claude,human,system}\n                                event_id\nendeavor_db.py event-ack: error: the following arguments are required: event_id, --agent\n"
+          "stderr": "usage: endeavor_db.py event-ack [-h] --agent {codex,claude,human,system,endeavor}\n                                event_id\nendeavor_db.py event-ack: error: the following arguments are required: event_id, --agent\n"
         },
         "event-add": {
           "exit": 2,
-          "stderr": "usage: endeavor_db.py event-add [-h] --type EVENT_TYPE --project PROJECT\n                                --subject SUBJECT_ID --dedupe-key DEDUPE_KEY\n                                [--payload PAYLOAD] --agent\n                                {codex,claude,human,system}\nendeavor_db.py event-add: error: the following arguments are required: --type, --project, --subject, --dedupe-key, --agent\n"
+          "stderr": "usage: endeavor_db.py event-add [-h] --type EVENT_TYPE --project PROJECT\n                                --subject SUBJECT_ID --dedupe-key DEDUPE_KEY\n                                [--payload PAYLOAD] --agent\n                                {codex,claude,human,system,endeavor}\nendeavor_db.py event-add: error: the following arguments are required: --type, --project, --subject, --dedupe-key, --agent\n"
         },
         "feedback": {
           "exit": 2,
-          "stderr": "usage: endeavor_db.py feedback [-h] --agent {codex,claude,human,system}\n                               --query QUERY [--result SELECTED_IDS]\n                               [--useful {yes,no}] [--note NOTE]\nendeavor_db.py feedback: error: the following arguments are required: --agent, --query\n"
+          "stderr": "usage: endeavor_db.py feedback [-h] --agent {codex,claude,human,system,endeavor}\n                               --query QUERY [--result SELECTED_IDS]\n                               [--useful {yes,no}] [--note NOTE]\nendeavor_db.py feedback: error: the following arguments are required: --agent, --query\n"
         },
         "ingest": {
           "exit": 2,
@@ -5471,19 +5486,19 @@
         },
         "pin-checkpoint": {
           "exit": 2,
-          "stderr": "usage: endeavor_db.py pin-checkpoint [-h] --agent {codex,claude,human,system}\n                                     checkpoint_id\nendeavor_db.py pin-checkpoint: error: the following arguments are required: checkpoint_id, --agent\n"
+          "stderr": "usage: endeavor_db.py pin-checkpoint [-h] --agent {codex,claude,human,system,endeavor}\n                                     checkpoint_id\nendeavor_db.py pin-checkpoint: error: the following arguments are required: checkpoint_id, --agent\n"
         },
         "presence-heartbeat": {
           "exit": 2,
-          "stderr": "usage: endeavor_db.py presence-heartbeat [-h] --agent\n                                         {codex,claude,human,system} --project\n                                         PROJECT [--instance INSTANCE]\n                                         [--task TASK] [--pid PID]\nendeavor_db.py presence-heartbeat: error: the following arguments are required: --agent, --project\n"
+          "stderr": "usage: endeavor_db.py presence-heartbeat [-h] --agent\n                                         {codex,claude,human,system,endeavor} --project\n                                         PROJECT [--instance INSTANCE]\n                                         [--task TASK] [--pid PID]\nendeavor_db.py presence-heartbeat: error: the following arguments are required: --agent, --project\n"
         },
         "presence-start": {
           "exit": 2,
-          "stderr": "usage: endeavor_db.py presence-start [-h] --agent {codex,claude,human,system}\n                                     --project PROJECT [--task TASK]\n                                     [--session SESSION] [--instance INSTANCE]\n                                     [--pid PID]\nendeavor_db.py presence-start: error: the following arguments are required: --agent, --project\n"
+          "stderr": "usage: endeavor_db.py presence-start [-h] --agent {codex,claude,human,system,endeavor}\n                                     --project PROJECT [--task TASK]\n                                     [--session SESSION] [--instance INSTANCE]\n                                     [--pid PID]\nendeavor_db.py presence-start: error: the following arguments are required: --agent, --project\n"
         },
         "presence-stop": {
           "exit": 2,
-          "stderr": "usage: endeavor_db.py presence-stop [-h] --agent {codex,claude,human,system}\n                                    --project PROJECT [--instance INSTANCE]\nendeavor_db.py presence-stop: error: the following arguments are required: --agent, --project\n"
+          "stderr": "usage: endeavor_db.py presence-stop [-h] --agent {codex,claude,human,system,endeavor}\n                                    --project PROJECT [--instance INSTANCE]\nendeavor_db.py presence-stop: error: the following arguments are required: --agent, --project\n"
         },
         "query": {
           "exit": 2,
@@ -5495,11 +5510,11 @@
         },
         "record-add": {
           "exit": 2,
-          "stderr": "usage: endeavor_db.py record-add [-h] [--id RECORD_ID] --project PROJECT\n                                 --type\n                                 {audit,fix,verification,decision,knowledge}\n                                 --title TITLE [--content CONTENT]\n                                 [--content-file PATH]\n                                 [--status {open,current,resolved,accepted}]\n                                 [--action-state {actionable,deferred,blocked,nonactionable,done}]\n                                 [--metadata METADATA] [--source PATH]\n                                 [--link RELATION:TARGET] [--note NOTE]\n                                 --agent {codex,claude,human,system}\nendeavor_db.py record-add: error: the following arguments are required: --project, --type, --title, --agent\n"
+          "stderr": "usage: endeavor_db.py record-add [-h] [--id RECORD_ID] --project PROJECT\n                                 --type\n                                 {audit,fix,verification,decision,knowledge}\n                                 --title TITLE [--content CONTENT]\n                                 [--content-file PATH]\n                                 [--status {open,current,resolved,accepted}]\n                                 [--action-state {actionable,deferred,blocked,nonactionable,done}]\n                                 [--metadata METADATA] [--source PATH]\n                                 [--link RELATION:TARGET] [--note NOTE]\n                                 --agent {codex,claude,human,system,endeavor}\nendeavor_db.py record-add: error: the following arguments are required: --project, --type, --title, --agent\n"
         },
         "record-link": {
           "exit": 2,
-          "stderr": "usage: endeavor_db.py record-link [-h] [--note NOTE] --agent\n                                  {codex,claude,human,system}\n                                  source_id\n                                  {references,resolves,verifies,supersedes,contradicts,duplicates}\n                                  target_id\nendeavor_db.py record-link: error: the following arguments are required: source_id, relation, target_id, --agent\n"
+          "stderr": "usage: endeavor_db.py record-link [-h] [--note NOTE] --agent\n                                  {codex,claude,human,system,endeavor}\n                                  source_id\n                                  {references,resolves,verifies,supersedes,contradicts,duplicates}\n                                  target_id\nendeavor_db.py record-link: error: the following arguments are required: source_id, relation, target_id, --agent\n"
         },
         "record-search": {
           "exit": 2,
@@ -5511,19 +5526,19 @@
         },
         "record-update": {
           "exit": 2,
-          "stderr": "usage: endeavor_db.py record-update [-h] [--project PROJECT]\n                                    [--type {audit,fix,verification,decision,knowledge}]\n                                    [--title TITLE] [--content CONTENT]\n                                    [--status {open,current,resolved,accepted}]\n                                    [--action-state {actionable,deferred,blocked,nonactionable,done}]\n                                    [--metadata METADATA] --agent\n                                    {codex,claude,human,system}\n                                    record_id\nendeavor_db.py record-update: error: the following arguments are required: record_id, --agent\n"
+          "stderr": "usage: endeavor_db.py record-update [-h] [--project PROJECT]\n                                    [--type {audit,fix,verification,decision,knowledge}]\n                                    [--title TITLE] [--content CONTENT]\n                                    [--status {open,current,resolved,accepted}]\n                                    [--action-state {actionable,deferred,blocked,nonactionable,done}]\n                                    [--metadata METADATA] --agent\n                                    {codex,claude,human,system,endeavor}\n                                    record_id\nendeavor_db.py record-update: error: the following arguments are required: record_id, --agent\n"
         },
         "session-close": {
           "exit": 2,
-          "stderr": "usage: endeavor_db.py session-close [-h] [--session SESSION]\n                                    [--project PROJECT] --agent\n                                    {codex,claude,human,system}\n                                    [--status {completed,blocked}]\nendeavor_db.py session-close: error: the following arguments are required: --agent\n"
+          "stderr": "usage: endeavor_db.py session-close [-h] [--session SESSION]\n                                    [--project PROJECT] --agent\n                                    {codex,claude,human,system,endeavor}\n                                    [--status {completed,blocked}]\nendeavor_db.py session-close: error: the following arguments are required: --agent\n"
         },
         "session-start": {
           "exit": 2,
-          "stderr": "usage: endeavor_db.py session-start [-h] --project PROJECT --goal GOAL --agent\n                                    {codex,claude,human,system}\nendeavor_db.py session-start: error: the following arguments are required: --project, --goal, --agent\n"
+          "stderr": "usage: endeavor_db.py session-start [-h] --project PROJECT --goal GOAL --agent\n                                    {codex,claude,human,system,endeavor}\nendeavor_db.py session-start: error: the following arguments are required: --project, --goal, --agent\n"
         },
         "unpin-checkpoint": {
           "exit": 2,
-          "stderr": "usage: endeavor_db.py unpin-checkpoint [-h] --agent\n                                       {codex,claude,human,system}\n                                       checkpoint_id\nendeavor_db.py unpin-checkpoint: error: the following arguments are required: checkpoint_id, --agent\n"
+          "stderr": "usage: endeavor_db.py unpin-checkpoint [-h] --agent\n                                       {codex,claude,human,system,endeavor}\n                                       checkpoint_id\nendeavor_db.py unpin-checkpoint: error: the following arguments are required: checkpoint_id, --agent\n"
         }
       }
     },
@@ -5932,7 +5947,8 @@
                   "codex",
                   "claude",
                   "human",
-                  "system"
+                  "system",
+                  "endeavor"
                 ],
                 "metavar": null,
                 "help": null
@@ -6432,7 +6448,8 @@
                   "codex",
                   "claude",
                   "human",
-                  "system"
+                  "system",
+                  "endeavor"
                 ],
                 "metavar": null,
                 "help": null
@@ -6543,7 +6560,8 @@
                   "codex",
                   "claude",
                   "human",
-                  "system"
+                  "system",
+                  "endeavor"
                 ],
                 "metavar": null,
                 "help": null
@@ -6676,7 +6694,8 @@
                   "codex",
                   "claude",
                   "human",
-                  "system"
+                  "system",
+                  "endeavor"
                 ],
                 "metavar": null,
                 "help": null
@@ -7164,7 +7183,8 @@
                   "codex",
                   "claude",
                   "human",
-                  "system"
+                  "system",
+                  "endeavor"
                 ],
                 "metavar": null,
                 "help": null
@@ -7255,7 +7275,8 @@
                   "codex",
                   "claude",
                   "human",
-                  "system"
+                  "system",
+                  "endeavor"
                 ],
                 "metavar": null,
                 "help": null
@@ -7352,7 +7373,8 @@
                   "codex",
                   "claude",
                   "human",
-                  "system"
+                  "system",
+                  "endeavor"
                 ],
                 "metavar": null,
                 "help": null
@@ -7463,7 +7485,8 @@
                   "codex",
                   "claude",
                   "human",
-                  "system"
+                  "system",
+                  "endeavor"
                 ],
                 "metavar": null,
                 "help": null
@@ -7977,7 +8000,8 @@
                   "codex",
                   "claude",
                   "human",
-                  "system"
+                  "system",
+                  "endeavor"
                 ],
                 "metavar": null,
                 "help": null
@@ -8075,7 +8099,8 @@
                   "codex",
                   "claude",
                   "human",
-                  "system"
+                  "system",
+                  "endeavor"
                 ],
                 "metavar": null,
                 "help": null
@@ -8401,7 +8426,8 @@
                   "codex",
                   "claude",
                   "human",
-                  "system"
+                  "system",
+                  "endeavor"
                 ],
                 "metavar": null,
                 "help": null
@@ -8492,7 +8518,8 @@
                   "codex",
                   "claude",
                   "human",
-                  "system"
+                  "system",
+                  "endeavor"
                 ],
                 "metavar": null,
                 "help": null
@@ -8578,7 +8605,8 @@
                   "codex",
                   "claude",
                   "human",
-                  "system"
+                  "system",
+                  "endeavor"
                 ],
                 "metavar": null,
                 "help": null
@@ -8691,7 +8719,8 @@
                   "codex",
                   "claude",
                   "human",
-                  "system"
+                  "system",
+                  "endeavor"
                 ],
                 "metavar": null,
                 "help": null
@@ -8819,7 +8848,8 @@
                   "codex",
                   "claude",
                   "human",
-                  "system"
+                  "system",
+                  "endeavor"
                 ],
                 "metavar": null,
                 "help": null
@@ -8835,7 +8865,7 @@
         "ann-build": "usage: endeavor_db.py ann-build [-h]\n\noptions:\n  -h, --help  show this help message and exit\n",
         "ann-status": "usage: endeavor_db.py ann-status [-h]\n\noptions:\n  -h, --help  show this help message and exit\n",
         "bootstrap": "usage: endeavor_db.py bootstrap [-h] --project PROJECT [--session SESSION]\n                                [--json] [--batch-size BATCH_SIZE]\n                                [--include-pending]\n\noptions:\n  -h, --help            show this help message and exit\n  --project PROJECT\n  --session SESSION     Explicit resumable session ID; must belong to\n                        --project\n  --json\n  --batch-size BATCH_SIZE\n  --include-pending     Also include lifecycle-aware pending work\n",
-        "checkpoint": "usage: endeavor_db.py checkpoint [-h] [--session SESSION] [--project PROJECT]\n                                 --agent {codex,claude,human,system}\n                                 [--goal GOAL] [--payload PAYLOAD]\n                                 [--summary SUMMARY] [--work-done WORK_DONE]\n                                 [--current-state CURRENT_STATE]\n                                 [--next-steps NEXT_STEPS]\n                                 [--blockers BLOCKERS]\n                                 [--status {active,paused,completed,blocked}]\n                                 [--file FILES_CHANGED] [--auto-files]\n                                 [--command COMMANDS_RUN]\n                                 [--verify VERIFICATION] [--pin]\n\noptions:\n  -h, --help            show this help message and exit\n  --session SESSION\n  --project PROJECT\n  --agent {codex,claude,human,system}\n  --goal GOAL           If --project has no active/paused/blocked session,\n                        start one with this goal before checkpointing,\n                        collapsing handoff+session-start+checkpoint into one\n                        call for the common single-session task\n  --payload PAYLOAD     JSON payload file; CLI flags override it\n  --summary SUMMARY\n  --work-done WORK_DONE\n  --current-state CURRENT_STATE\n  --next-steps NEXT_STEPS\n  --blockers BLOCKERS\n  --status {active,paused,completed,blocked}\n  --file FILES_CHANGED\n  --auto-files          Append git-status-detected changed files under\n                        ROOT/<project>/ to --file. Requires --project; a\n                        project label that isn't also a real top-level\n                        directory yields no files rather than guessing across\n                        the whole repo.\n  --command COMMANDS_RUN\n  --verify VERIFICATION\n  --pin                 Mark this checkpoint important: exempt it from the\n                        sliding-window prune (add_checkpoint's per-session cap\n                        and prune_checkpoints_globally) so it survives\n                        indefinitely regardless of age or session status.\n",
+        "checkpoint": "usage: endeavor_db.py checkpoint [-h] [--session SESSION] [--project PROJECT]\n                                 --agent {codex,claude,human,system,endeavor}\n                                 [--goal GOAL] [--payload PAYLOAD]\n                                 [--summary SUMMARY] [--work-done WORK_DONE]\n                                 [--current-state CURRENT_STATE]\n                                 [--next-steps NEXT_STEPS]\n                                 [--blockers BLOCKERS]\n                                 [--status {active,paused,completed,blocked}]\n                                 [--file FILES_CHANGED] [--auto-files]\n                                 [--command COMMANDS_RUN]\n                                 [--verify VERIFICATION] [--pin]\n\noptions:\n  -h, --help            show this help message and exit\n  --session SESSION\n  --project PROJECT\n  --agent {codex,claude,human,system,endeavor}\n  --goal GOAL           If --project has no active/paused/blocked session,\n                        start one with this goal before checkpointing,\n                        collapsing handoff+session-start+checkpoint into one\n                        call for the common single-session task\n  --payload PAYLOAD     JSON payload file; CLI flags override it\n  --summary SUMMARY\n  --work-done WORK_DONE\n  --current-state CURRENT_STATE\n  --next-steps NEXT_STEPS\n  --blockers BLOCKERS\n  --status {active,paused,completed,blocked}\n  --file FILES_CHANGED\n  --auto-files          Append git-status-detected changed files under\n                        ROOT/<project>/ to --file. Requires --project; a\n                        project label that isn't also a real top-level\n                        directory yields no files rather than guessing across\n                        the whole repo.\n  --command COMMANDS_RUN\n  --verify VERIFICATION\n  --pin                 Mark this checkpoint important: exempt it from the\n                        sliding-window prune (add_checkpoint's per-session cap\n                        and prune_checkpoints_globally) so it survives\n                        indefinitely regardless of age or session status.\n",
         "doctor": "usage: endeavor_db.py doctor [-h]\n\noptions:\n  -h, --help  show this help message and exit\n",
         "embed-backfill": "usage: endeavor_db.py embed-backfill [-h] [--batch-size BATCH_SIZE]\n\noptions:\n  -h, --help            show this help message and exit\n  --batch-size BATCH_SIZE\n",
         "embed-cool": "usage: endeavor_db.py embed-cool [-h]\n\noptions:\n  -h, --help  show this help message and exit\n",
@@ -8843,10 +8873,10 @@
         "embed-status": "usage: endeavor_db.py embed-status [-h]\n\noptions:\n  -h, --help  show this help message and exit\n",
         "embed-warm": "usage: endeavor_db.py embed-warm [-h] [--keep-alive]\n\noptions:\n  -h, --help    show this help message and exit\n  --keep-alive\n",
         "evaluate": "usage: endeavor_db.py evaluate [-h] [--file FILE] [--limit LIMIT] [--json]\n                               [--semantic {auto,on,off}]\n                               [--pipeline {markdown,unified,both}]\n\noptions:\n  -h, --help            show this help message and exit\n  --file FILE\n  --limit LIMIT\n  --json\n  --semantic {auto,on,off}\n  --pipeline {markdown,unified,both}\n                        Benchmark the Markdown-only baseline, the production\n                        unified query path, or both\n",
-        "event-ack": "usage: endeavor_db.py event-ack [-h] --agent {codex,claude,human,system}\n                                event_id\n\npositional arguments:\n  event_id\n\noptions:\n  -h, --help            show this help message and exit\n  --agent {codex,claude,human,system}\n",
-        "event-add": "usage: endeavor_db.py event-add [-h] --type EVENT_TYPE --project PROJECT\n                                --subject SUBJECT_ID --dedupe-key DEDUPE_KEY\n                                [--payload PAYLOAD]\n                                --agent {codex,claude,human,system}\n\noptions:\n  -h, --help            show this help message and exit\n  --type EVENT_TYPE\n  --project PROJECT\n  --subject SUBJECT_ID\n  --dedupe-key DEDUPE_KEY\n  --payload PAYLOAD     JSON object\n  --agent {codex,claude,human,system}\n",
+        "event-ack": "usage: endeavor_db.py event-ack [-h]\n                                --agent {codex,claude,human,system,endeavor}\n                                event_id\n\npositional arguments:\n  event_id\n\noptions:\n  -h, --help            show this help message and exit\n  --agent {codex,claude,human,system,endeavor}\n",
+        "event-add": "usage: endeavor_db.py event-add [-h] --type EVENT_TYPE --project PROJECT\n                                --subject SUBJECT_ID --dedupe-key DEDUPE_KEY\n                                [--payload PAYLOAD]\n                                --agent {codex,claude,human,system,endeavor}\n\noptions:\n  -h, --help            show this help message and exit\n  --type EVENT_TYPE\n  --project PROJECT\n  --subject SUBJECT_ID\n  --dedupe-key DEDUPE_KEY\n  --payload PAYLOAD     JSON object\n  --agent {codex,claude,human,system,endeavor}\n",
         "event-poll": "usage: endeavor_db.py event-poll [-h] [--after AFTER] [--project PROJECT]\n                                 [--limit LIMIT] [--include-acked] [--json]\n\noptions:\n  -h, --help         show this help message and exit\n  --after AFTER\n  --project PROJECT\n  --limit LIMIT\n  --include-acked\n  --json\n",
-        "feedback": "usage: endeavor_db.py feedback [-h] --agent {codex,claude,human,system}\n                               --query QUERY [--result SELECTED_IDS]\n                               [--useful {yes,no}] [--note NOTE]\n\noptions:\n  -h, --help            show this help message and exit\n  --agent {codex,claude,human,system}\n  --query QUERY\n  --result SELECTED_IDS\n                        Selected result ID (integer Markdown ID or stable\n                        SQLite record ID)\n  --useful {yes,no}\n  --note NOTE\n",
+        "feedback": "usage: endeavor_db.py feedback [-h]\n                               --agent {codex,claude,human,system,endeavor}\n                               --query QUERY [--result SELECTED_IDS]\n                               [--useful {yes,no}] [--note NOTE]\n\noptions:\n  -h, --help            show this help message and exit\n  --agent {codex,claude,human,system,endeavor}\n  --query QUERY\n  --result SELECTED_IDS\n                        Selected result ID (integer Markdown ID or stable\n                        SQLite record ID)\n  --useful {yes,no}\n  --note NOTE\n",
         "handoff": "usage: endeavor_db.py handoff [-h] [--session SESSION] [--project PROJECT]\n                              [--all-paused] [--json]\n\noptions:\n  -h, --help         show this help message and exit\n  --session SESSION\n  --project PROJECT\n  --all-paused       List the latest checkpoint for every paused session\n                     across all projects\n  --json\n",
         "ingest": "usage: endeavor_db.py ingest [-h] --project PROJECT [--kind KIND] [--no-embed]\n                             source\n\npositional arguments:\n  source\n\noptions:\n  -h, --help         show this help message and exit\n  --project PROJECT\n  --kind KIND\n  --no-embed         Skip the best-effort MiniLM embedding pass (lexical\n                     ingest always still runs)\n",
         "init": "usage: endeavor_db.py init [-h]\n\noptions:\n  -h, --help  show this help message and exit\n",
@@ -8854,25 +8884,25 @@
         "maintenance": "usage: endeavor_db.py maintenance [-h] [--yes]\n\noptions:\n  -h, --help  show this help message and exit\n  --yes       Required confirmation; rewrites the whole database file and\n              briefly blocks all writers\n",
         "pack": "usage: endeavor_db.py pack [-h] --project PROJECT [--session SESSION]\n                           [--budget BUDGET_CHARS] [--json]\n\noptions:\n  -h, --help            show this help message and exit\n  --project PROJECT\n  --session SESSION     Explicit resumable session ID; must belong to\n                        --project\n  --budget BUDGET_CHARS\n  --json\n",
         "pending": "usage: endeavor_db.py pending [-h] (--project PROJECT | --all-projects)\n                              [--json]\n\noptions:\n  -h, --help         show this help message and exit\n  --project PROJECT\n  --all-projects\n  --json\n",
-        "pin-checkpoint": "usage: endeavor_db.py pin-checkpoint [-h] --agent {codex,claude,human,system}\n                                     checkpoint_id\n\npositional arguments:\n  checkpoint_id\n\noptions:\n  -h, --help            show this help message and exit\n  --agent {codex,claude,human,system}\n",
+        "pin-checkpoint": "usage: endeavor_db.py pin-checkpoint [-h]\n                                     --agent {codex,claude,human,system,endeavor}\n                                     checkpoint_id\n\npositional arguments:\n  checkpoint_id\n\noptions:\n  -h, --help            show this help message and exit\n  --agent {codex,claude,human,system,endeavor}\n",
         "presence": "usage: endeavor_db.py presence [-h] [--project PROJECT] [--json]\n\noptions:\n  -h, --help         show this help message and exit\n  --project PROJECT\n  --json\n",
-        "presence-heartbeat": "usage: endeavor_db.py presence-heartbeat [-h]\n                                         --agent {codex,claude,human,system}\n                                         --project PROJECT\n                                         [--instance INSTANCE] [--task TASK]\n                                         [--pid PID]\n\noptions:\n  -h, --help            show this help message and exit\n  --agent {codex,claude,human,system}\n  --project PROJECT\n  --instance INSTANCE\n  --task TASK           Update the task description; omit to just refresh the\n                        timestamp\n  --pid PID             Informational only; defaults to this process's own PID\n",
-        "presence-start": "usage: endeavor_db.py presence-start [-h] --agent {codex,claude,human,system}\n                                     --project PROJECT [--task TASK]\n                                     [--session SESSION] [--instance INSTANCE]\n                                     [--pid PID]\n\noptions:\n  -h, --help            show this help message and exit\n  --agent {codex,claude,human,system}\n  --project PROJECT\n  --task TASK           Short free-text of what this process is doing\n  --session SESSION\n  --instance INSTANCE   Only needed to distinguish two concurrent instances of\n                        the same agent on the same project/machine; identity\n                        is otherwise (machine, agent, project), not pid --\n                        each CLI call is its own short-lived subprocess\n  --pid PID             Informational only; defaults to this process's own PID\n",
-        "presence-stop": "usage: endeavor_db.py presence-stop [-h] --agent {codex,claude,human,system}\n                                    --project PROJECT [--instance INSTANCE]\n\noptions:\n  -h, --help            show this help message and exit\n  --agent {codex,claude,human,system}\n  --project PROJECT\n  --instance INSTANCE\n",
+        "presence-heartbeat": "usage: endeavor_db.py presence-heartbeat [-h]\n                                         --agent {codex,claude,human,system,endeavor}\n                                         --project PROJECT\n                                         [--instance INSTANCE] [--task TASK]\n                                         [--pid PID]\n\noptions:\n  -h, --help            show this help message and exit\n  --agent {codex,claude,human,system,endeavor}\n  --project PROJECT\n  --instance INSTANCE\n  --task TASK           Update the task description; omit to just refresh the\n                        timestamp\n  --pid PID             Informational only; defaults to this process's own PID\n",
+        "presence-start": "usage: endeavor_db.py presence-start [-h]\n                                     --agent {codex,claude,human,system,endeavor}\n                                     --project PROJECT [--task TASK]\n                                     [--session SESSION] [--instance INSTANCE]\n                                     [--pid PID]\n\noptions:\n  -h, --help            show this help message and exit\n  --agent {codex,claude,human,system,endeavor}\n  --project PROJECT\n  --task TASK           Short free-text of what this process is doing\n  --session SESSION\n  --instance INSTANCE   Only needed to distinguish two concurrent instances of\n                        the same agent on the same project/machine; identity\n                        is otherwise (machine, agent, project), not pid --\n                        each CLI call is its own short-lived subprocess\n  --pid PID             Informational only; defaults to this process's own PID\n",
+        "presence-stop": "usage: endeavor_db.py presence-stop [-h]\n                                    --agent {codex,claude,human,system,endeavor}\n                                    --project PROJECT [--instance INSTANCE]\n\noptions:\n  -h, --help            show this help message and exit\n  --agent {codex,claude,human,system,endeavor}\n  --project PROJECT\n  --instance INSTANCE\n",
         "query": "usage: endeavor_db.py query [-h] [--project PROJECT] [--category CATEGORY]\n                            [--status {open,resolved,accepted}]\n                            [--module MODULE] [--bug-id BUG_ID]\n                            [--session-label SESSION_LABEL] [--limit LIMIT]\n                            [--json] [--semantic {auto,on,off}] [--compact]\n                            [--check-stale]\n                            text\n\npositional arguments:\n  text\n\noptions:\n  -h, --help            show this help message and exit\n  --project PROJECT\n  --category CATEGORY\n  --status {open,resolved,accepted}\n  --module MODULE\n  --bug-id BUG_ID\n  --session-label SESSION_LABEL\n  --limit LIMIT\n  --json\n  --semantic {auto,on,off}\n                        auto: use MiniLM only if already warm (default, never\n                        stalls). on: spawn/wait for the companion if needed\n                        (~11s cold). off: lexical only.\n  --compact             Trim --json results to the ~8 fields an agent reads\n                        when browsing (id/title/project/category/excerpt/locat\n                        ion/match_reasons/rank) instead of the full ~29-field\n                        row\n  --check-stale         Flag markdown-sourced results whose source file has\n                        drifted from the indexed hash (reads each distinct\n                        source file once; on by default)\n",
         "readiness": "usage: endeavor_db.py readiness [-h] --project PROJECT [--json]\n\noptions:\n  -h, --help         show this help message and exit\n  --project PROJECT\n  --json             Emit the complete machine-readable report\n",
-        "record-add": "usage: endeavor_db.py record-add [-h] [--id RECORD_ID] --project PROJECT\n                                 --type {audit,fix,verification,decision,knowledge}\n                                 --title TITLE [--content CONTENT]\n                                 [--content-file PATH]\n                                 [--status {open,current,resolved,accepted}]\n                                 [--action-state {actionable,deferred,blocked,nonactionable,done}]\n                                 [--metadata METADATA] [--source PATH]\n                                 [--link RELATION:TARGET] [--note NOTE]\n                                 --agent {codex,claude,human,system}\n\noptions:\n  -h, --help            show this help message and exit\n  --id RECORD_ID        Stable ID, for example AUDIT-MEM-001\n  --project PROJECT\n  --type {audit,fix,verification,decision,knowledge}\n  --title TITLE\n  --content CONTENT     Record body text; mutually exclusive with --content-\n                        file\n  --content-file PATH   Read record body text from PATH ('-' for stdin)\n                        instead of --content, so long/multi-line content never\n                        has to survive shell quoting\n  --status {open,current,resolved,accepted}\n  --action-state {actionable,deferred,blocked,nonactionable,done}\n                        Independent work-triage state; defaults by record\n                        type/status\n  --metadata METADATA   JSON object\n  --source PATH         Repo-relative path this record documents (e.g. a\n                        written report); stored as metadata.source so a later\n                        `record-show`/`query` result can be followed straight\n                        to the file, same convention as knowledge chunks'\n                        source_path\n  --link RELATION:TARGET\n                        Create an internal relation atomically; may be\n                        repeated\n  --note NOTE           Note applied to links created by this command\n  --agent {codex,claude,human,system}\n",
-        "record-link": "usage: endeavor_db.py record-link [-h] [--note NOTE]\n                                  --agent {codex,claude,human,system}\n                                  source_id\n                                  {references,resolves,verifies,supersedes,contradicts,duplicates}\n                                  target_id\n\npositional arguments:\n  source_id\n  {references,resolves,verifies,supersedes,contradicts,duplicates}\n  target_id\n\noptions:\n  -h, --help            show this help message and exit\n  --note NOTE\n  --agent {codex,claude,human,system}\n",
+        "record-add": "usage: endeavor_db.py record-add [-h] [--id RECORD_ID] --project PROJECT\n                                 --type {audit,fix,verification,decision,knowledge}\n                                 --title TITLE [--content CONTENT]\n                                 [--content-file PATH]\n                                 [--status {open,current,resolved,accepted}]\n                                 [--action-state {actionable,deferred,blocked,nonactionable,done}]\n                                 [--metadata METADATA] [--source PATH]\n                                 [--link RELATION:TARGET] [--note NOTE]\n                                 --agent {codex,claude,human,system,endeavor}\n\noptions:\n  -h, --help            show this help message and exit\n  --id RECORD_ID        Stable ID, for example AUDIT-MEM-001\n  --project PROJECT\n  --type {audit,fix,verification,decision,knowledge}\n  --title TITLE\n  --content CONTENT     Record body text; mutually exclusive with --content-\n                        file\n  --content-file PATH   Read record body text from PATH ('-' for stdin)\n                        instead of --content, so long/multi-line content never\n                        has to survive shell quoting\n  --status {open,current,resolved,accepted}\n  --action-state {actionable,deferred,blocked,nonactionable,done}\n                        Independent work-triage state; defaults by record\n                        type/status\n  --metadata METADATA   JSON object\n  --source PATH         Repo-relative path this record documents (e.g. a\n                        written report); stored as metadata.source so a later\n                        `record-show`/`query` result can be followed straight\n                        to the file, same convention as knowledge chunks'\n                        source_path\n  --link RELATION:TARGET\n                        Create an internal relation atomically; may be\n                        repeated\n  --note NOTE           Note applied to links created by this command\n  --agent {codex,claude,human,system,endeavor}\n",
+        "record-link": "usage: endeavor_db.py record-link [-h] [--note NOTE]\n                                  --agent {codex,claude,human,system,endeavor}\n                                  source_id\n                                  {references,resolves,verifies,supersedes,contradicts,duplicates}\n                                  target_id\n\npositional arguments:\n  source_id\n  {references,resolves,verifies,supersedes,contradicts,duplicates}\n  target_id\n\noptions:\n  -h, --help            show this help message and exit\n  --note NOTE\n  --agent {codex,claude,human,system,endeavor}\n",
         "record-search": "usage: endeavor_db.py record-search [-h] [--project PROJECT]\n                                    [--type {audit,fix,verification,decision,knowledge}]\n                                    [--limit LIMIT] [--current-only]\n                                    text\n\npositional arguments:\n  text\n\noptions:\n  -h, --help            show this help message and exit\n  --project PROJECT\n  --type {audit,fix,verification,decision,knowledge}\n  --limit LIMIT\n  --current-only\n",
         "record-show": "usage: endeavor_db.py record-show [-h] [--depth DEPTH]\n                                  [--max-records MAX_RECORDS]\n                                  record_id\n\npositional arguments:\n  record_id\n\noptions:\n  -h, --help            show this help message and exit\n  --depth DEPTH\n  --max-records MAX_RECORDS\n                        Bound graph expansion (1-1000; default: 1000)\n",
-        "record-update": "usage: endeavor_db.py record-update [-h] [--project PROJECT]\n                                    [--type {audit,fix,verification,decision,knowledge}]\n                                    [--title TITLE] [--content CONTENT]\n                                    [--status {open,current,resolved,accepted}]\n                                    [--action-state {actionable,deferred,blocked,nonactionable,done}]\n                                    [--metadata METADATA]\n                                    --agent {codex,claude,human,system}\n                                    record_id\n\npositional arguments:\n  record_id\n\noptions:\n  -h, --help            show this help message and exit\n  --project PROJECT\n  --type {audit,fix,verification,decision,knowledge}\n  --title TITLE\n  --content CONTENT\n  --status {open,current,resolved,accepted}\n  --action-state {actionable,deferred,blocked,nonactionable,done}\n  --metadata METADATA   Replacement JSON object\n  --agent {codex,claude,human,system}\n",
+        "record-update": "usage: endeavor_db.py record-update [-h] [--project PROJECT]\n                                    [--type {audit,fix,verification,decision,knowledge}]\n                                    [--title TITLE] [--content CONTENT]\n                                    [--status {open,current,resolved,accepted}]\n                                    [--action-state {actionable,deferred,blocked,nonactionable,done}]\n                                    [--metadata METADATA]\n                                    --agent {codex,claude,human,system,endeavor}\n                                    record_id\n\npositional arguments:\n  record_id\n\noptions:\n  -h, --help            show this help message and exit\n  --project PROJECT\n  --type {audit,fix,verification,decision,knowledge}\n  --title TITLE\n  --content CONTENT\n  --status {open,current,resolved,accepted}\n  --action-state {actionable,deferred,blocked,nonactionable,done}\n  --metadata METADATA   Replacement JSON object\n  --agent {codex,claude,human,system,endeavor}\n",
         "seed": "usage: endeavor_db.py seed [-h]\n\noptions:\n  -h, --help  show this help message and exit\n",
-        "session-close": "usage: endeavor_db.py session-close [-h] [--session SESSION]\n                                    [--project PROJECT]\n                                    --agent {codex,claude,human,system}\n                                    [--status {completed,blocked}]\n\noptions:\n  -h, --help            show this help message and exit\n  --session SESSION\n  --project PROJECT\n  --agent {codex,claude,human,system}\n  --status {completed,blocked}\n",
-        "session-start": "usage: endeavor_db.py session-start [-h] --project PROJECT --goal GOAL\n                                    --agent {codex,claude,human,system}\n\noptions:\n  -h, --help            show this help message and exit\n  --project PROJECT\n  --goal GOAL\n  --agent {codex,claude,human,system}\n",
+        "session-close": "usage: endeavor_db.py session-close [-h] [--session SESSION]\n                                    [--project PROJECT]\n                                    --agent {codex,claude,human,system,endeavor}\n                                    [--status {completed,blocked}]\n\noptions:\n  -h, --help            show this help message and exit\n  --session SESSION\n  --project PROJECT\n  --agent {codex,claude,human,system,endeavor}\n  --status {completed,blocked}\n",
+        "session-start": "usage: endeavor_db.py session-start [-h] --project PROJECT --goal GOAL\n                                    --agent {codex,claude,human,system,endeavor}\n\noptions:\n  -h, --help            show this help message and exit\n  --project PROJECT\n  --goal GOAL\n  --agent {codex,claude,human,system,endeavor}\n",
         "stats": "usage: endeavor_db.py stats [-h]\n\noptions:\n  -h, --help  show this help message and exit\n",
         "sync-status": "usage: endeavor_db.py sync-status [-h] [--json]\n\noptions:\n  -h, --help  show this help message and exit\n  --json\n",
-        "timeline": "usage: endeavor_db.py timeline [-h] [--project PROJECT]\n                               [--agent {codex,claude,human,system}]\n                               [--status {active,paused,completed,blocked}]\n                               [--session SESSION] [--limit LIMIT]\n                               [--oldest-first] [--json]\n\noptions:\n  -h, --help            show this help message and exit\n  --project PROJECT\n  --agent {codex,claude,human,system}\n  --status {active,paused,completed,blocked}\n  --session SESSION\n  --limit LIMIT         Max checkpoints to return (default 100, capped at 500)\n  --oldest-first        Sort ascending instead of the newest-first default\n  --json\n",
-        "unpin-checkpoint": "usage: endeavor_db.py unpin-checkpoint [-h]\n                                       --agent {codex,claude,human,system}\n                                       checkpoint_id\n\npositional arguments:\n  checkpoint_id\n\noptions:\n  -h, --help            show this help message and exit\n  --agent {codex,claude,human,system}\n"
+        "timeline": "usage: endeavor_db.py timeline [-h] [--project PROJECT]\n                               [--agent {codex,claude,human,system,endeavor}]\n                               [--status {active,paused,completed,blocked}]\n                               [--session SESSION] [--limit LIMIT]\n                               [--oldest-first] [--json]\n\noptions:\n  -h, --help            show this help message and exit\n  --project PROJECT\n  --agent {codex,claude,human,system,endeavor}\n  --status {active,paused,completed,blocked}\n  --session SESSION\n  --limit LIMIT         Max checkpoints to return (default 100, capped at 500)\n  --oldest-first        Sort ascending instead of the newest-first default\n  --json\n",
+        "unpin-checkpoint": "usage: endeavor_db.py unpin-checkpoint [-h]\n                                       --agent {codex,claude,human,system,endeavor}\n                                       checkpoint_id\n\npositional arguments:\n  checkpoint_id\n\noptions:\n  -h, --help            show this help message and exit\n  --agent {codex,claude,human,system,endeavor}\n"
       },
       "errors": {
         "root-empty": {
@@ -8885,19 +8915,19 @@
         },
         "checkpoint": {
           "exit": 2,
-          "stderr": "usage: endeavor_db.py checkpoint [-h] [--session SESSION] [--project PROJECT]\n                                 --agent {codex,claude,human,system}\n                                 [--goal GOAL] [--payload PAYLOAD]\n                                 [--summary SUMMARY] [--work-done WORK_DONE]\n                                 [--current-state CURRENT_STATE]\n                                 [--next-steps NEXT_STEPS]\n                                 [--blockers BLOCKERS]\n                                 [--status {active,paused,completed,blocked}]\n                                 [--file FILES_CHANGED] [--auto-files]\n                                 [--command COMMANDS_RUN]\n                                 [--verify VERIFICATION] [--pin]\nendeavor_db.py checkpoint: error: the following arguments are required: --agent\n"
+          "stderr": "usage: endeavor_db.py checkpoint [-h] [--session SESSION] [--project PROJECT]\n                                 --agent {codex,claude,human,system,endeavor}\n                                 [--goal GOAL] [--payload PAYLOAD]\n                                 [--summary SUMMARY] [--work-done WORK_DONE]\n                                 [--current-state CURRENT_STATE]\n                                 [--next-steps NEXT_STEPS]\n                                 [--blockers BLOCKERS]\n                                 [--status {active,paused,completed,blocked}]\n                                 [--file FILES_CHANGED] [--auto-files]\n                                 [--command COMMANDS_RUN]\n                                 [--verify VERIFICATION] [--pin]\nendeavor_db.py checkpoint: error: the following arguments are required: --agent\n"
         },
         "event-ack": {
           "exit": 2,
-          "stderr": "usage: endeavor_db.py event-ack [-h] --agent {codex,claude,human,system}\n                                event_id\nendeavor_db.py event-ack: error: the following arguments are required: event_id, --agent\n"
+          "stderr": "usage: endeavor_db.py event-ack [-h]\n                                --agent {codex,claude,human,system,endeavor}\n                                event_id\nendeavor_db.py event-ack: error: the following arguments are required: event_id, --agent\n"
         },
         "event-add": {
           "exit": 2,
-          "stderr": "usage: endeavor_db.py event-add [-h] --type EVENT_TYPE --project PROJECT\n                                --subject SUBJECT_ID --dedupe-key DEDUPE_KEY\n                                [--payload PAYLOAD]\n                                --agent {codex,claude,human,system}\nendeavor_db.py event-add: error: the following arguments are required: --type, --project, --subject, --dedupe-key, --agent\n"
+          "stderr": "usage: endeavor_db.py event-add [-h] --type EVENT_TYPE --project PROJECT\n                                --subject SUBJECT_ID --dedupe-key DEDUPE_KEY\n                                [--payload PAYLOAD]\n                                --agent {codex,claude,human,system,endeavor}\nendeavor_db.py event-add: error: the following arguments are required: --type, --project, --subject, --dedupe-key, --agent\n"
         },
         "feedback": {
           "exit": 2,
-          "stderr": "usage: endeavor_db.py feedback [-h] --agent {codex,claude,human,system}\n                               --query QUERY [--result SELECTED_IDS]\n                               [--useful {yes,no}] [--note NOTE]\nendeavor_db.py feedback: error: the following arguments are required: --agent, --query\n"
+          "stderr": "usage: endeavor_db.py feedback [-h]\n                               --agent {codex,claude,human,system,endeavor}\n                               --query QUERY [--result SELECTED_IDS]\n                               [--useful {yes,no}] [--note NOTE]\nendeavor_db.py feedback: error: the following arguments are required: --agent, --query\n"
         },
         "ingest": {
           "exit": 2,
@@ -8913,19 +8943,19 @@
         },
         "pin-checkpoint": {
           "exit": 2,
-          "stderr": "usage: endeavor_db.py pin-checkpoint [-h] --agent {codex,claude,human,system}\n                                     checkpoint_id\nendeavor_db.py pin-checkpoint: error: the following arguments are required: checkpoint_id, --agent\n"
+          "stderr": "usage: endeavor_db.py pin-checkpoint [-h]\n                                     --agent {codex,claude,human,system,endeavor}\n                                     checkpoint_id\nendeavor_db.py pin-checkpoint: error: the following arguments are required: checkpoint_id, --agent\n"
         },
         "presence-heartbeat": {
           "exit": 2,
-          "stderr": "usage: endeavor_db.py presence-heartbeat [-h]\n                                         --agent {codex,claude,human,system}\n                                         --project PROJECT\n                                         [--instance INSTANCE] [--task TASK]\n                                         [--pid PID]\nendeavor_db.py presence-heartbeat: error: the following arguments are required: --agent, --project\n"
+          "stderr": "usage: endeavor_db.py presence-heartbeat [-h]\n                                         --agent {codex,claude,human,system,endeavor}\n                                         --project PROJECT\n                                         [--instance INSTANCE] [--task TASK]\n                                         [--pid PID]\nendeavor_db.py presence-heartbeat: error: the following arguments are required: --agent, --project\n"
         },
         "presence-start": {
           "exit": 2,
-          "stderr": "usage: endeavor_db.py presence-start [-h] --agent {codex,claude,human,system}\n                                     --project PROJECT [--task TASK]\n                                     [--session SESSION] [--instance INSTANCE]\n                                     [--pid PID]\nendeavor_db.py presence-start: error: the following arguments are required: --agent, --project\n"
+          "stderr": "usage: endeavor_db.py presence-start [-h]\n                                     --agent {codex,claude,human,system,endeavor}\n                                     --project PROJECT [--task TASK]\n                                     [--session SESSION] [--instance INSTANCE]\n                                     [--pid PID]\nendeavor_db.py presence-start: error: the following arguments are required: --agent, --project\n"
         },
         "presence-stop": {
           "exit": 2,
-          "stderr": "usage: endeavor_db.py presence-stop [-h] --agent {codex,claude,human,system}\n                                    --project PROJECT [--instance INSTANCE]\nendeavor_db.py presence-stop: error: the following arguments are required: --agent, --project\n"
+          "stderr": "usage: endeavor_db.py presence-stop [-h]\n                                    --agent {codex,claude,human,system,endeavor}\n                                    --project PROJECT [--instance INSTANCE]\nendeavor_db.py presence-stop: error: the following arguments are required: --agent, --project\n"
         },
         "query": {
           "exit": 2,
@@ -8937,11 +8967,11 @@
         },
         "record-add": {
           "exit": 2,
-          "stderr": "usage: endeavor_db.py record-add [-h] [--id RECORD_ID] --project PROJECT\n                                 --type {audit,fix,verification,decision,knowledge}\n                                 --title TITLE [--content CONTENT]\n                                 [--content-file PATH]\n                                 [--status {open,current,resolved,accepted}]\n                                 [--action-state {actionable,deferred,blocked,nonactionable,done}]\n                                 [--metadata METADATA] [--source PATH]\n                                 [--link RELATION:TARGET] [--note NOTE]\n                                 --agent {codex,claude,human,system}\nendeavor_db.py record-add: error: the following arguments are required: --project, --type, --title, --agent\n"
+          "stderr": "usage: endeavor_db.py record-add [-h] [--id RECORD_ID] --project PROJECT\n                                 --type {audit,fix,verification,decision,knowledge}\n                                 --title TITLE [--content CONTENT]\n                                 [--content-file PATH]\n                                 [--status {open,current,resolved,accepted}]\n                                 [--action-state {actionable,deferred,blocked,nonactionable,done}]\n                                 [--metadata METADATA] [--source PATH]\n                                 [--link RELATION:TARGET] [--note NOTE]\n                                 --agent {codex,claude,human,system,endeavor}\nendeavor_db.py record-add: error: the following arguments are required: --project, --type, --title, --agent\n"
         },
         "record-link": {
           "exit": 2,
-          "stderr": "usage: endeavor_db.py record-link [-h] [--note NOTE]\n                                  --agent {codex,claude,human,system}\n                                  source_id\n                                  {references,resolves,verifies,supersedes,contradicts,duplicates}\n                                  target_id\nendeavor_db.py record-link: error: the following arguments are required: source_id, relation, target_id, --agent\n"
+          "stderr": "usage: endeavor_db.py record-link [-h] [--note NOTE]\n                                  --agent {codex,claude,human,system,endeavor}\n                                  source_id\n                                  {references,resolves,verifies,supersedes,contradicts,duplicates}\n                                  target_id\nendeavor_db.py record-link: error: the following arguments are required: source_id, relation, target_id, --agent\n"
         },
         "record-search": {
           "exit": 2,
@@ -8953,19 +8983,19 @@
         },
         "record-update": {
           "exit": 2,
-          "stderr": "usage: endeavor_db.py record-update [-h] [--project PROJECT]\n                                    [--type {audit,fix,verification,decision,knowledge}]\n                                    [--title TITLE] [--content CONTENT]\n                                    [--status {open,current,resolved,accepted}]\n                                    [--action-state {actionable,deferred,blocked,nonactionable,done}]\n                                    [--metadata METADATA]\n                                    --agent {codex,claude,human,system}\n                                    record_id\nendeavor_db.py record-update: error: the following arguments are required: record_id, --agent\n"
+          "stderr": "usage: endeavor_db.py record-update [-h] [--project PROJECT]\n                                    [--type {audit,fix,verification,decision,knowledge}]\n                                    [--title TITLE] [--content CONTENT]\n                                    [--status {open,current,resolved,accepted}]\n                                    [--action-state {actionable,deferred,blocked,nonactionable,done}]\n                                    [--metadata METADATA]\n                                    --agent {codex,claude,human,system,endeavor}\n                                    record_id\nendeavor_db.py record-update: error: the following arguments are required: record_id, --agent\n"
         },
         "session-close": {
           "exit": 2,
-          "stderr": "usage: endeavor_db.py session-close [-h] [--session SESSION]\n                                    [--project PROJECT]\n                                    --agent {codex,claude,human,system}\n                                    [--status {completed,blocked}]\nendeavor_db.py session-close: error: the following arguments are required: --agent\n"
+          "stderr": "usage: endeavor_db.py session-close [-h] [--session SESSION]\n                                    [--project PROJECT]\n                                    --agent {codex,claude,human,system,endeavor}\n                                    [--status {completed,blocked}]\nendeavor_db.py session-close: error: the following arguments are required: --agent\n"
         },
         "session-start": {
           "exit": 2,
-          "stderr": "usage: endeavor_db.py session-start [-h] --project PROJECT --goal GOAL\n                                    --agent {codex,claude,human,system}\nendeavor_db.py session-start: error: the following arguments are required: --project, --goal, --agent\n"
+          "stderr": "usage: endeavor_db.py session-start [-h] --project PROJECT --goal GOAL\n                                    --agent {codex,claude,human,system,endeavor}\nendeavor_db.py session-start: error: the following arguments are required: --project, --goal, --agent\n"
         },
         "unpin-checkpoint": {
           "exit": 2,
-          "stderr": "usage: endeavor_db.py unpin-checkpoint [-h]\n                                       --agent {codex,claude,human,system}\n                                       checkpoint_id\nendeavor_db.py unpin-checkpoint: error: the following arguments are required: checkpoint_id, --agent\n"
+          "stderr": "usage: endeavor_db.py unpin-checkpoint [-h]\n                                       --agent {codex,claude,human,system,endeavor}\n                                       checkpoint_id\nendeavor_db.py unpin-checkpoint: error: the following arguments are required: checkpoint_id, --agent\n"
         }
       }
     },
@@ -9374,7 +9404,8 @@
                   "codex",
                   "claude",
                   "human",
-                  "system"
+                  "system",
+                  "endeavor"
                 ],
                 "metavar": null,
                 "help": null
@@ -9874,7 +9905,8 @@
                   "codex",
                   "claude",
                   "human",
-                  "system"
+                  "system",
+                  "endeavor"
                 ],
                 "metavar": null,
                 "help": null
@@ -9985,7 +10017,8 @@
                   "codex",
                   "claude",
                   "human",
-                  "system"
+                  "system",
+                  "endeavor"
                 ],
                 "metavar": null,
                 "help": null
@@ -10118,7 +10151,8 @@
                   "codex",
                   "claude",
                   "human",
-                  "system"
+                  "system",
+                  "endeavor"
                 ],
                 "metavar": null,
                 "help": null
@@ -10606,7 +10640,8 @@
                   "codex",
                   "claude",
                   "human",
-                  "system"
+                  "system",
+                  "endeavor"
                 ],
                 "metavar": null,
                 "help": null
@@ -10697,7 +10732,8 @@
                   "codex",
                   "claude",
                   "human",
-                  "system"
+                  "system",
+                  "endeavor"
                 ],
                 "metavar": null,
                 "help": null
@@ -10794,7 +10830,8 @@
                   "codex",
                   "claude",
                   "human",
-                  "system"
+                  "system",
+                  "endeavor"
                 ],
                 "metavar": null,
                 "help": null
@@ -10905,7 +10942,8 @@
                   "codex",
                   "claude",
                   "human",
-                  "system"
+                  "system",
+                  "endeavor"
                 ],
                 "metavar": null,
                 "help": null
@@ -11419,7 +11457,8 @@
                   "codex",
                   "claude",
                   "human",
-                  "system"
+                  "system",
+                  "endeavor"
                 ],
                 "metavar": null,
                 "help": null
@@ -11517,7 +11556,8 @@
                   "codex",
                   "claude",
                   "human",
-                  "system"
+                  "system",
+                  "endeavor"
                 ],
                 "metavar": null,
                 "help": null
@@ -11843,7 +11883,8 @@
                   "codex",
                   "claude",
                   "human",
-                  "system"
+                  "system",
+                  "endeavor"
                 ],
                 "metavar": null,
                 "help": null
@@ -11934,7 +11975,8 @@
                   "codex",
                   "claude",
                   "human",
-                  "system"
+                  "system",
+                  "endeavor"
                 ],
                 "metavar": null,
                 "help": null
@@ -12020,7 +12062,8 @@
                   "codex",
                   "claude",
                   "human",
-                  "system"
+                  "system",
+                  "endeavor"
                 ],
                 "metavar": null,
                 "help": null
@@ -12133,7 +12176,8 @@
                   "codex",
                   "claude",
                   "human",
-                  "system"
+                  "system",
+                  "endeavor"
                 ],
                 "metavar": null,
                 "help": null
@@ -12261,7 +12305,8 @@
                   "codex",
                   "claude",
                   "human",
-                  "system"
+                  "system",
+                  "endeavor"
                 ],
                 "metavar": null,
                 "help": null
@@ -12277,7 +12322,7 @@
         "ann-build": "usage: endeavor_db.py ann-build [-h]\n\noptions:\n  -h, --help  show this help message and exit\n",
         "ann-status": "usage: endeavor_db.py ann-status [-h]\n\noptions:\n  -h, --help  show this help message and exit\n",
         "bootstrap": "usage: endeavor_db.py bootstrap [-h] --project PROJECT [--session SESSION]\n                                [--json] [--batch-size BATCH_SIZE]\n                                [--include-pending]\n\noptions:\n  -h, --help            show this help message and exit\n  --project PROJECT\n  --session SESSION     Explicit resumable session ID; must belong to\n                        --project\n  --json\n  --batch-size BATCH_SIZE\n  --include-pending     Also include lifecycle-aware pending work\n",
-        "checkpoint": "usage: endeavor_db.py checkpoint [-h] [--session SESSION] [--project PROJECT]\n                                 --agent {codex,claude,human,system}\n                                 [--goal GOAL] [--payload PAYLOAD]\n                                 [--summary SUMMARY] [--work-done WORK_DONE]\n                                 [--current-state CURRENT_STATE]\n                                 [--next-steps NEXT_STEPS]\n                                 [--blockers BLOCKERS]\n                                 [--status {active,paused,completed,blocked}]\n                                 [--file FILES_CHANGED] [--auto-files]\n                                 [--command COMMANDS_RUN]\n                                 [--verify VERIFICATION] [--pin]\n\noptions:\n  -h, --help            show this help message and exit\n  --session SESSION\n  --project PROJECT\n  --agent {codex,claude,human,system}\n  --goal GOAL           If --project has no active/paused/blocked session,\n                        start one with this goal before checkpointing,\n                        collapsing handoff+session-start+checkpoint into one\n                        call for the common single-session task\n  --payload PAYLOAD     JSON payload file; CLI flags override it\n  --summary SUMMARY\n  --work-done WORK_DONE\n  --current-state CURRENT_STATE\n  --next-steps NEXT_STEPS\n  --blockers BLOCKERS\n  --status {active,paused,completed,blocked}\n  --file FILES_CHANGED\n  --auto-files          Append git-status-detected changed files under\n                        ROOT/<project>/ to --file. Requires --project; a\n                        project label that isn't also a real top-level\n                        directory yields no files rather than guessing across\n                        the whole repo.\n  --command COMMANDS_RUN\n  --verify VERIFICATION\n  --pin                 Mark this checkpoint important: exempt it from the\n                        sliding-window prune (add_checkpoint's per-session cap\n                        and prune_checkpoints_globally) so it survives\n                        indefinitely regardless of age or session status.\n",
+        "checkpoint": "usage: endeavor_db.py checkpoint [-h] [--session SESSION] [--project PROJECT]\n                                 --agent {codex,claude,human,system,endeavor}\n                                 [--goal GOAL] [--payload PAYLOAD]\n                                 [--summary SUMMARY] [--work-done WORK_DONE]\n                                 [--current-state CURRENT_STATE]\n                                 [--next-steps NEXT_STEPS]\n                                 [--blockers BLOCKERS]\n                                 [--status {active,paused,completed,blocked}]\n                                 [--file FILES_CHANGED] [--auto-files]\n                                 [--command COMMANDS_RUN]\n                                 [--verify VERIFICATION] [--pin]\n\noptions:\n  -h, --help            show this help message and exit\n  --session SESSION\n  --project PROJECT\n  --agent {codex,claude,human,system,endeavor}\n  --goal GOAL           If --project has no active/paused/blocked session,\n                        start one with this goal before checkpointing,\n                        collapsing handoff+session-start+checkpoint into one\n                        call for the common single-session task\n  --payload PAYLOAD     JSON payload file; CLI flags override it\n  --summary SUMMARY\n  --work-done WORK_DONE\n  --current-state CURRENT_STATE\n  --next-steps NEXT_STEPS\n  --blockers BLOCKERS\n  --status {active,paused,completed,blocked}\n  --file FILES_CHANGED\n  --auto-files          Append git-status-detected changed files under\n                        ROOT/<project>/ to --file. Requires --project; a\n                        project label that isn't also a real top-level\n                        directory yields no files rather than guessing across\n                        the whole repo.\n  --command COMMANDS_RUN\n  --verify VERIFICATION\n  --pin                 Mark this checkpoint important: exempt it from the\n                        sliding-window prune (add_checkpoint's per-session cap\n                        and prune_checkpoints_globally) so it survives\n                        indefinitely regardless of age or session status.\n",
         "doctor": "usage: endeavor_db.py doctor [-h]\n\noptions:\n  -h, --help  show this help message and exit\n",
         "embed-backfill": "usage: endeavor_db.py embed-backfill [-h] [--batch-size BATCH_SIZE]\n\noptions:\n  -h, --help            show this help message and exit\n  --batch-size BATCH_SIZE\n",
         "embed-cool": "usage: endeavor_db.py embed-cool [-h]\n\noptions:\n  -h, --help  show this help message and exit\n",
@@ -12285,10 +12330,10 @@
         "embed-status": "usage: endeavor_db.py embed-status [-h]\n\noptions:\n  -h, --help  show this help message and exit\n",
         "embed-warm": "usage: endeavor_db.py embed-warm [-h] [--keep-alive]\n\noptions:\n  -h, --help    show this help message and exit\n  --keep-alive\n",
         "evaluate": "usage: endeavor_db.py evaluate [-h] [--file FILE] [--limit LIMIT] [--json]\n                               [--semantic {auto,on,off}]\n                               [--pipeline {markdown,unified,both}]\n\noptions:\n  -h, --help            show this help message and exit\n  --file FILE\n  --limit LIMIT\n  --json\n  --semantic {auto,on,off}\n  --pipeline {markdown,unified,both}\n                        Benchmark the Markdown-only baseline, the production\n                        unified query path, or both\n",
-        "event-ack": "usage: endeavor_db.py event-ack [-h] --agent {codex,claude,human,system}\n                                event_id\n\npositional arguments:\n  event_id\n\noptions:\n  -h, --help            show this help message and exit\n  --agent {codex,claude,human,system}\n",
-        "event-add": "usage: endeavor_db.py event-add [-h] --type EVENT_TYPE --project PROJECT\n                                --subject SUBJECT_ID --dedupe-key DEDUPE_KEY\n                                [--payload PAYLOAD]\n                                --agent {codex,claude,human,system}\n\noptions:\n  -h, --help            show this help message and exit\n  --type EVENT_TYPE\n  --project PROJECT\n  --subject SUBJECT_ID\n  --dedupe-key DEDUPE_KEY\n  --payload PAYLOAD     JSON object\n  --agent {codex,claude,human,system}\n",
+        "event-ack": "usage: endeavor_db.py event-ack [-h]\n                                --agent {codex,claude,human,system,endeavor}\n                                event_id\n\npositional arguments:\n  event_id\n\noptions:\n  -h, --help            show this help message and exit\n  --agent {codex,claude,human,system,endeavor}\n",
+        "event-add": "usage: endeavor_db.py event-add [-h] --type EVENT_TYPE --project PROJECT\n                                --subject SUBJECT_ID --dedupe-key DEDUPE_KEY\n                                [--payload PAYLOAD]\n                                --agent {codex,claude,human,system,endeavor}\n\noptions:\n  -h, --help            show this help message and exit\n  --type EVENT_TYPE\n  --project PROJECT\n  --subject SUBJECT_ID\n  --dedupe-key DEDUPE_KEY\n  --payload PAYLOAD     JSON object\n  --agent {codex,claude,human,system,endeavor}\n",
         "event-poll": "usage: endeavor_db.py event-poll [-h] [--after AFTER] [--project PROJECT]\n                                 [--limit LIMIT] [--include-acked] [--json]\n\noptions:\n  -h, --help         show this help message and exit\n  --after AFTER\n  --project PROJECT\n  --limit LIMIT\n  --include-acked\n  --json\n",
-        "feedback": "usage: endeavor_db.py feedback [-h] --agent {codex,claude,human,system}\n                               --query QUERY [--result SELECTED_IDS]\n                               [--useful {yes,no}] [--note NOTE]\n\noptions:\n  -h, --help            show this help message and exit\n  --agent {codex,claude,human,system}\n  --query QUERY\n  --result SELECTED_IDS\n                        Selected result ID (integer Markdown ID or stable\n                        SQLite record ID)\n  --useful {yes,no}\n  --note NOTE\n",
+        "feedback": "usage: endeavor_db.py feedback [-h]\n                               --agent {codex,claude,human,system,endeavor}\n                               --query QUERY [--result SELECTED_IDS]\n                               [--useful {yes,no}] [--note NOTE]\n\noptions:\n  -h, --help            show this help message and exit\n  --agent {codex,claude,human,system,endeavor}\n  --query QUERY\n  --result SELECTED_IDS\n                        Selected result ID (integer Markdown ID or stable\n                        SQLite record ID)\n  --useful {yes,no}\n  --note NOTE\n",
         "handoff": "usage: endeavor_db.py handoff [-h] [--session SESSION] [--project PROJECT]\n                              [--all-paused] [--json]\n\noptions:\n  -h, --help         show this help message and exit\n  --session SESSION\n  --project PROJECT\n  --all-paused       List the latest checkpoint for every paused session\n                     across all projects\n  --json\n",
         "ingest": "usage: endeavor_db.py ingest [-h] --project PROJECT [--kind KIND] [--no-embed]\n                             source\n\npositional arguments:\n  source\n\noptions:\n  -h, --help         show this help message and exit\n  --project PROJECT\n  --kind KIND\n  --no-embed         Skip the best-effort MiniLM embedding pass (lexical\n                     ingest always still runs)\n",
         "init": "usage: endeavor_db.py init [-h]\n\noptions:\n  -h, --help  show this help message and exit\n",
@@ -12296,25 +12341,25 @@
         "maintenance": "usage: endeavor_db.py maintenance [-h] [--yes]\n\noptions:\n  -h, --help  show this help message and exit\n  --yes       Required confirmation; rewrites the whole database file and\n              briefly blocks all writers\n",
         "pack": "usage: endeavor_db.py pack [-h] --project PROJECT [--session SESSION]\n                           [--budget BUDGET_CHARS] [--json]\n\noptions:\n  -h, --help            show this help message and exit\n  --project PROJECT\n  --session SESSION     Explicit resumable session ID; must belong to\n                        --project\n  --budget BUDGET_CHARS\n  --json\n",
         "pending": "usage: endeavor_db.py pending [-h] (--project PROJECT | --all-projects)\n                              [--json]\n\noptions:\n  -h, --help         show this help message and exit\n  --project PROJECT\n  --all-projects\n  --json\n",
-        "pin-checkpoint": "usage: endeavor_db.py pin-checkpoint [-h] --agent {codex,claude,human,system}\n                                     checkpoint_id\n\npositional arguments:\n  checkpoint_id\n\noptions:\n  -h, --help            show this help message and exit\n  --agent {codex,claude,human,system}\n",
+        "pin-checkpoint": "usage: endeavor_db.py pin-checkpoint [-h]\n                                     --agent {codex,claude,human,system,endeavor}\n                                     checkpoint_id\n\npositional arguments:\n  checkpoint_id\n\noptions:\n  -h, --help            show this help message and exit\n  --agent {codex,claude,human,system,endeavor}\n",
         "presence": "usage: endeavor_db.py presence [-h] [--project PROJECT] [--json]\n\noptions:\n  -h, --help         show this help message and exit\n  --project PROJECT\n  --json\n",
-        "presence-heartbeat": "usage: endeavor_db.py presence-heartbeat [-h]\n                                         --agent {codex,claude,human,system}\n                                         --project PROJECT\n                                         [--instance INSTANCE] [--task TASK]\n                                         [--pid PID]\n\noptions:\n  -h, --help            show this help message and exit\n  --agent {codex,claude,human,system}\n  --project PROJECT\n  --instance INSTANCE\n  --task TASK           Update the task description; omit to just refresh the\n                        timestamp\n  --pid PID             Informational only; defaults to this process's own PID\n",
-        "presence-start": "usage: endeavor_db.py presence-start [-h] --agent {codex,claude,human,system}\n                                     --project PROJECT [--task TASK]\n                                     [--session SESSION] [--instance INSTANCE]\n                                     [--pid PID]\n\noptions:\n  -h, --help            show this help message and exit\n  --agent {codex,claude,human,system}\n  --project PROJECT\n  --task TASK           Short free-text of what this process is doing\n  --session SESSION\n  --instance INSTANCE   Only needed to distinguish two concurrent instances of\n                        the same agent on the same project/machine; identity\n                        is otherwise (machine, agent, project), not pid --\n                        each CLI call is its own short-lived subprocess\n  --pid PID             Informational only; defaults to this process's own PID\n",
-        "presence-stop": "usage: endeavor_db.py presence-stop [-h] --agent {codex,claude,human,system}\n                                    --project PROJECT [--instance INSTANCE]\n\noptions:\n  -h, --help            show this help message and exit\n  --agent {codex,claude,human,system}\n  --project PROJECT\n  --instance INSTANCE\n",
+        "presence-heartbeat": "usage: endeavor_db.py presence-heartbeat [-h]\n                                         --agent {codex,claude,human,system,endeavor}\n                                         --project PROJECT\n                                         [--instance INSTANCE] [--task TASK]\n                                         [--pid PID]\n\noptions:\n  -h, --help            show this help message and exit\n  --agent {codex,claude,human,system,endeavor}\n  --project PROJECT\n  --instance INSTANCE\n  --task TASK           Update the task description; omit to just refresh the\n                        timestamp\n  --pid PID             Informational only; defaults to this process's own PID\n",
+        "presence-start": "usage: endeavor_db.py presence-start [-h]\n                                     --agent {codex,claude,human,system,endeavor}\n                                     --project PROJECT [--task TASK]\n                                     [--session SESSION] [--instance INSTANCE]\n                                     [--pid PID]\n\noptions:\n  -h, --help            show this help message and exit\n  --agent {codex,claude,human,system,endeavor}\n  --project PROJECT\n  --task TASK           Short free-text of what this process is doing\n  --session SESSION\n  --instance INSTANCE   Only needed to distinguish two concurrent instances of\n                        the same agent on the same project/machine; identity\n                        is otherwise (machine, agent, project), not pid --\n                        each CLI call is its own short-lived subprocess\n  --pid PID             Informational only; defaults to this process's own PID\n",
+        "presence-stop": "usage: endeavor_db.py presence-stop [-h]\n                                    --agent {codex,claude,human,system,endeavor}\n                                    --project PROJECT [--instance INSTANCE]\n\noptions:\n  -h, --help            show this help message and exit\n  --agent {codex,claude,human,system,endeavor}\n  --project PROJECT\n  --instance INSTANCE\n",
         "query": "usage: endeavor_db.py query [-h] [--project PROJECT] [--category CATEGORY]\n                            [--status {open,resolved,accepted}]\n                            [--module MODULE] [--bug-id BUG_ID]\n                            [--session-label SESSION_LABEL] [--limit LIMIT]\n                            [--json] [--semantic {auto,on,off}] [--compact]\n                            [--check-stale]\n                            text\n\npositional arguments:\n  text\n\noptions:\n  -h, --help            show this help message and exit\n  --project PROJECT\n  --category CATEGORY\n  --status {open,resolved,accepted}\n  --module MODULE\n  --bug-id BUG_ID\n  --session-label SESSION_LABEL\n  --limit LIMIT\n  --json\n  --semantic {auto,on,off}\n                        auto: use MiniLM only if already warm (default, never\n                        stalls). on: spawn/wait for the companion if needed\n                        (~11s cold). off: lexical only.\n  --compact             Trim --json results to the ~8 fields an agent reads\n                        when browsing (id/title/project/category/excerpt/locat\n                        ion/match_reasons/rank) instead of the full ~29-field\n                        row\n  --check-stale         Flag markdown-sourced results whose source file has\n                        drifted from the indexed hash (reads each distinct\n                        source file once; on by default)\n",
         "readiness": "usage: endeavor_db.py readiness [-h] --project PROJECT [--json]\n\noptions:\n  -h, --help         show this help message and exit\n  --project PROJECT\n  --json             Emit the complete machine-readable report\n",
-        "record-add": "usage: endeavor_db.py record-add [-h] [--id RECORD_ID] --project PROJECT\n                                 --type {audit,fix,verification,decision,knowledge}\n                                 --title TITLE [--content CONTENT]\n                                 [--content-file PATH]\n                                 [--status {open,current,resolved,accepted}]\n                                 [--action-state {actionable,deferred,blocked,nonactionable,done}]\n                                 [--metadata METADATA] [--source PATH]\n                                 [--link RELATION:TARGET] [--note NOTE]\n                                 --agent {codex,claude,human,system}\n\noptions:\n  -h, --help            show this help message and exit\n  --id RECORD_ID        Stable ID, for example AUDIT-MEM-001\n  --project PROJECT\n  --type {audit,fix,verification,decision,knowledge}\n  --title TITLE\n  --content CONTENT     Record body text; mutually exclusive with --content-\n                        file\n  --content-file PATH   Read record body text from PATH ('-' for stdin)\n                        instead of --content, so long/multi-line content never\n                        has to survive shell quoting\n  --status {open,current,resolved,accepted}\n  --action-state {actionable,deferred,blocked,nonactionable,done}\n                        Independent work-triage state; defaults by record\n                        type/status\n  --metadata METADATA   JSON object\n  --source PATH         Repo-relative path this record documents (e.g. a\n                        written report); stored as metadata.source so a later\n                        `record-show`/`query` result can be followed straight\n                        to the file, same convention as knowledge chunks'\n                        source_path\n  --link RELATION:TARGET\n                        Create an internal relation atomically; may be\n                        repeated\n  --note NOTE           Note applied to links created by this command\n  --agent {codex,claude,human,system}\n",
-        "record-link": "usage: endeavor_db.py record-link [-h] [--note NOTE]\n                                  --agent {codex,claude,human,system}\n                                  source_id\n                                  {references,resolves,verifies,supersedes,contradicts,duplicates}\n                                  target_id\n\npositional arguments:\n  source_id\n  {references,resolves,verifies,supersedes,contradicts,duplicates}\n  target_id\n\noptions:\n  -h, --help            show this help message and exit\n  --note NOTE\n  --agent {codex,claude,human,system}\n",
+        "record-add": "usage: endeavor_db.py record-add [-h] [--id RECORD_ID] --project PROJECT\n                                 --type {audit,fix,verification,decision,knowledge}\n                                 --title TITLE [--content CONTENT]\n                                 [--content-file PATH]\n                                 [--status {open,current,resolved,accepted}]\n                                 [--action-state {actionable,deferred,blocked,nonactionable,done}]\n                                 [--metadata METADATA] [--source PATH]\n                                 [--link RELATION:TARGET] [--note NOTE]\n                                 --agent {codex,claude,human,system,endeavor}\n\noptions:\n  -h, --help            show this help message and exit\n  --id RECORD_ID        Stable ID, for example AUDIT-MEM-001\n  --project PROJECT\n  --type {audit,fix,verification,decision,knowledge}\n  --title TITLE\n  --content CONTENT     Record body text; mutually exclusive with --content-\n                        file\n  --content-file PATH   Read record body text from PATH ('-' for stdin)\n                        instead of --content, so long/multi-line content never\n                        has to survive shell quoting\n  --status {open,current,resolved,accepted}\n  --action-state {actionable,deferred,blocked,nonactionable,done}\n                        Independent work-triage state; defaults by record\n                        type/status\n  --metadata METADATA   JSON object\n  --source PATH         Repo-relative path this record documents (e.g. a\n                        written report); stored as metadata.source so a later\n                        `record-show`/`query` result can be followed straight\n                        to the file, same convention as knowledge chunks'\n                        source_path\n  --link RELATION:TARGET\n                        Create an internal relation atomically; may be\n                        repeated\n  --note NOTE           Note applied to links created by this command\n  --agent {codex,claude,human,system,endeavor}\n",
+        "record-link": "usage: endeavor_db.py record-link [-h] [--note NOTE]\n                                  --agent {codex,claude,human,system,endeavor}\n                                  source_id\n                                  {references,resolves,verifies,supersedes,contradicts,duplicates}\n                                  target_id\n\npositional arguments:\n  source_id\n  {references,resolves,verifies,supersedes,contradicts,duplicates}\n  target_id\n\noptions:\n  -h, --help            show this help message and exit\n  --note NOTE\n  --agent {codex,claude,human,system,endeavor}\n",
         "record-search": "usage: endeavor_db.py record-search [-h] [--project PROJECT]\n                                    [--type {audit,fix,verification,decision,knowledge}]\n                                    [--limit LIMIT] [--current-only]\n                                    text\n\npositional arguments:\n  text\n\noptions:\n  -h, --help            show this help message and exit\n  --project PROJECT\n  --type {audit,fix,verification,decision,knowledge}\n  --limit LIMIT\n  --current-only\n",
         "record-show": "usage: endeavor_db.py record-show [-h] [--depth DEPTH]\n                                  [--max-records MAX_RECORDS]\n                                  record_id\n\npositional arguments:\n  record_id\n\noptions:\n  -h, --help            show this help message and exit\n  --depth DEPTH\n  --max-records MAX_RECORDS\n                        Bound graph expansion (1-1000; default: 1000)\n",
-        "record-update": "usage: endeavor_db.py record-update [-h] [--project PROJECT]\n                                    [--type {audit,fix,verification,decision,knowledge}]\n                                    [--title TITLE] [--content CONTENT]\n                                    [--status {open,current,resolved,accepted}]\n                                    [--action-state {actionable,deferred,blocked,nonactionable,done}]\n                                    [--metadata METADATA]\n                                    --agent {codex,claude,human,system}\n                                    record_id\n\npositional arguments:\n  record_id\n\noptions:\n  -h, --help            show this help message and exit\n  --project PROJECT\n  --type {audit,fix,verification,decision,knowledge}\n  --title TITLE\n  --content CONTENT\n  --status {open,current,resolved,accepted}\n  --action-state {actionable,deferred,blocked,nonactionable,done}\n  --metadata METADATA   Replacement JSON object\n  --agent {codex,claude,human,system}\n",
+        "record-update": "usage: endeavor_db.py record-update [-h] [--project PROJECT]\n                                    [--type {audit,fix,verification,decision,knowledge}]\n                                    [--title TITLE] [--content CONTENT]\n                                    [--status {open,current,resolved,accepted}]\n                                    [--action-state {actionable,deferred,blocked,nonactionable,done}]\n                                    [--metadata METADATA]\n                                    --agent {codex,claude,human,system,endeavor}\n                                    record_id\n\npositional arguments:\n  record_id\n\noptions:\n  -h, --help            show this help message and exit\n  --project PROJECT\n  --type {audit,fix,verification,decision,knowledge}\n  --title TITLE\n  --content CONTENT\n  --status {open,current,resolved,accepted}\n  --action-state {actionable,deferred,blocked,nonactionable,done}\n  --metadata METADATA   Replacement JSON object\n  --agent {codex,claude,human,system,endeavor}\n",
         "seed": "usage: endeavor_db.py seed [-h]\n\noptions:\n  -h, --help  show this help message and exit\n",
-        "session-close": "usage: endeavor_db.py session-close [-h] [--session SESSION]\n                                    [--project PROJECT]\n                                    --agent {codex,claude,human,system}\n                                    [--status {completed,blocked}]\n\noptions:\n  -h, --help            show this help message and exit\n  --session SESSION\n  --project PROJECT\n  --agent {codex,claude,human,system}\n  --status {completed,blocked}\n",
-        "session-start": "usage: endeavor_db.py session-start [-h] --project PROJECT --goal GOAL\n                                    --agent {codex,claude,human,system}\n\noptions:\n  -h, --help            show this help message and exit\n  --project PROJECT\n  --goal GOAL\n  --agent {codex,claude,human,system}\n",
+        "session-close": "usage: endeavor_db.py session-close [-h] [--session SESSION]\n                                    [--project PROJECT]\n                                    --agent {codex,claude,human,system,endeavor}\n                                    [--status {completed,blocked}]\n\noptions:\n  -h, --help            show this help message and exit\n  --session SESSION\n  --project PROJECT\n  --agent {codex,claude,human,system,endeavor}\n  --status {completed,blocked}\n",
+        "session-start": "usage: endeavor_db.py session-start [-h] --project PROJECT --goal GOAL\n                                    --agent {codex,claude,human,system,endeavor}\n\noptions:\n  -h, --help            show this help message and exit\n  --project PROJECT\n  --goal GOAL\n  --agent {codex,claude,human,system,endeavor}\n",
         "stats": "usage: endeavor_db.py stats [-h]\n\noptions:\n  -h, --help  show this help message and exit\n",
         "sync-status": "usage: endeavor_db.py sync-status [-h] [--json]\n\noptions:\n  -h, --help  show this help message and exit\n  --json\n",
-        "timeline": "usage: endeavor_db.py timeline [-h] [--project PROJECT]\n                               [--agent {codex,claude,human,system}]\n                               [--status {active,paused,completed,blocked}]\n                               [--session SESSION] [--limit LIMIT]\n                               [--oldest-first] [--json]\n\noptions:\n  -h, --help            show this help message and exit\n  --project PROJECT\n  --agent {codex,claude,human,system}\n  --status {active,paused,completed,blocked}\n  --session SESSION\n  --limit LIMIT         Max checkpoints to return (default 100, capped at 500)\n  --oldest-first        Sort ascending instead of the newest-first default\n  --json\n",
-        "unpin-checkpoint": "usage: endeavor_db.py unpin-checkpoint [-h]\n                                       --agent {codex,claude,human,system}\n                                       checkpoint_id\n\npositional arguments:\n  checkpoint_id\n\noptions:\n  -h, --help            show this help message and exit\n  --agent {codex,claude,human,system}\n"
+        "timeline": "usage: endeavor_db.py timeline [-h] [--project PROJECT]\n                               [--agent {codex,claude,human,system,endeavor}]\n                               [--status {active,paused,completed,blocked}]\n                               [--session SESSION] [--limit LIMIT]\n                               [--oldest-first] [--json]\n\noptions:\n  -h, --help            show this help message and exit\n  --project PROJECT\n  --agent {codex,claude,human,system,endeavor}\n  --status {active,paused,completed,blocked}\n  --session SESSION\n  --limit LIMIT         Max checkpoints to return (default 100, capped at 500)\n  --oldest-first        Sort ascending instead of the newest-first default\n  --json\n",
+        "unpin-checkpoint": "usage: endeavor_db.py unpin-checkpoint [-h]\n                                       --agent {codex,claude,human,system,endeavor}\n                                       checkpoint_id\n\npositional arguments:\n  checkpoint_id\n\noptions:\n  -h, --help            show this help message and exit\n  --agent {codex,claude,human,system,endeavor}\n"
       },
       "errors": {
         "root-empty": {
@@ -12327,19 +12372,19 @@
         },
         "checkpoint": {
           "exit": 2,
-          "stderr": "usage: endeavor_db.py checkpoint [-h] [--session SESSION] [--project PROJECT]\n                                 --agent {codex,claude,human,system}\n                                 [--goal GOAL] [--payload PAYLOAD]\n                                 [--summary SUMMARY] [--work-done WORK_DONE]\n                                 [--current-state CURRENT_STATE]\n                                 [--next-steps NEXT_STEPS]\n                                 [--blockers BLOCKERS]\n                                 [--status {active,paused,completed,blocked}]\n                                 [--file FILES_CHANGED] [--auto-files]\n                                 [--command COMMANDS_RUN]\n                                 [--verify VERIFICATION] [--pin]\nendeavor_db.py checkpoint: error: the following arguments are required: --agent\n"
+          "stderr": "usage: endeavor_db.py checkpoint [-h] [--session SESSION] [--project PROJECT]\n                                 --agent {codex,claude,human,system,endeavor}\n                                 [--goal GOAL] [--payload PAYLOAD]\n                                 [--summary SUMMARY] [--work-done WORK_DONE]\n                                 [--current-state CURRENT_STATE]\n                                 [--next-steps NEXT_STEPS]\n                                 [--blockers BLOCKERS]\n                                 [--status {active,paused,completed,blocked}]\n                                 [--file FILES_CHANGED] [--auto-files]\n                                 [--command COMMANDS_RUN]\n                                 [--verify VERIFICATION] [--pin]\nendeavor_db.py checkpoint: error: the following arguments are required: --agent\n"
         },
         "event-ack": {
           "exit": 2,
-          "stderr": "usage: endeavor_db.py event-ack [-h] --agent {codex,claude,human,system}\n                                event_id\nendeavor_db.py event-ack: error: the following arguments are required: event_id, --agent\n"
+          "stderr": "usage: endeavor_db.py event-ack [-h]\n                                --agent {codex,claude,human,system,endeavor}\n                                event_id\nendeavor_db.py event-ack: error: the following arguments are required: event_id, --agent\n"
         },
         "event-add": {
           "exit": 2,
-          "stderr": "usage: endeavor_db.py event-add [-h] --type EVENT_TYPE --project PROJECT\n                                --subject SUBJECT_ID --dedupe-key DEDUPE_KEY\n                                [--payload PAYLOAD]\n                                --agent {codex,claude,human,system}\nendeavor_db.py event-add: error: the following arguments are required: --type, --project, --subject, --dedupe-key, --agent\n"
+          "stderr": "usage: endeavor_db.py event-add [-h] --type EVENT_TYPE --project PROJECT\n                                --subject SUBJECT_ID --dedupe-key DEDUPE_KEY\n                                [--payload PAYLOAD]\n                                --agent {codex,claude,human,system,endeavor}\nendeavor_db.py event-add: error: the following arguments are required: --type, --project, --subject, --dedupe-key, --agent\n"
         },
         "feedback": {
           "exit": 2,
-          "stderr": "usage: endeavor_db.py feedback [-h] --agent {codex,claude,human,system}\n                               --query QUERY [--result SELECTED_IDS]\n                               [--useful {yes,no}] [--note NOTE]\nendeavor_db.py feedback: error: the following arguments are required: --agent, --query\n"
+          "stderr": "usage: endeavor_db.py feedback [-h]\n                               --agent {codex,claude,human,system,endeavor}\n                               --query QUERY [--result SELECTED_IDS]\n                               [--useful {yes,no}] [--note NOTE]\nendeavor_db.py feedback: error: the following arguments are required: --agent, --query\n"
         },
         "ingest": {
           "exit": 2,
@@ -12355,19 +12400,19 @@
         },
         "pin-checkpoint": {
           "exit": 2,
-          "stderr": "usage: endeavor_db.py pin-checkpoint [-h] --agent {codex,claude,human,system}\n                                     checkpoint_id\nendeavor_db.py pin-checkpoint: error: the following arguments are required: checkpoint_id, --agent\n"
+          "stderr": "usage: endeavor_db.py pin-checkpoint [-h]\n                                     --agent {codex,claude,human,system,endeavor}\n                                     checkpoint_id\nendeavor_db.py pin-checkpoint: error: the following arguments are required: checkpoint_id, --agent\n"
         },
         "presence-heartbeat": {
           "exit": 2,
-          "stderr": "usage: endeavor_db.py presence-heartbeat [-h]\n                                         --agent {codex,claude,human,system}\n                                         --project PROJECT\n                                         [--instance INSTANCE] [--task TASK]\n                                         [--pid PID]\nendeavor_db.py presence-heartbeat: error: the following arguments are required: --agent, --project\n"
+          "stderr": "usage: endeavor_db.py presence-heartbeat [-h]\n                                         --agent {codex,claude,human,system,endeavor}\n                                         --project PROJECT\n                                         [--instance INSTANCE] [--task TASK]\n                                         [--pid PID]\nendeavor_db.py presence-heartbeat: error: the following arguments are required: --agent, --project\n"
         },
         "presence-start": {
           "exit": 2,
-          "stderr": "usage: endeavor_db.py presence-start [-h] --agent {codex,claude,human,system}\n                                     --project PROJECT [--task TASK]\n                                     [--session SESSION] [--instance INSTANCE]\n                                     [--pid PID]\nendeavor_db.py presence-start: error: the following arguments are required: --agent, --project\n"
+          "stderr": "usage: endeavor_db.py presence-start [-h]\n                                     --agent {codex,claude,human,system,endeavor}\n                                     --project PROJECT [--task TASK]\n                                     [--session SESSION] [--instance INSTANCE]\n                                     [--pid PID]\nendeavor_db.py presence-start: error: the following arguments are required: --agent, --project\n"
         },
         "presence-stop": {
           "exit": 2,
-          "stderr": "usage: endeavor_db.py presence-stop [-h] --agent {codex,claude,human,system}\n                                    --project PROJECT [--instance INSTANCE]\nendeavor_db.py presence-stop: error: the following arguments are required: --agent, --project\n"
+          "stderr": "usage: endeavor_db.py presence-stop [-h]\n                                    --agent {codex,claude,human,system,endeavor}\n                                    --project PROJECT [--instance INSTANCE]\nendeavor_db.py presence-stop: error: the following arguments are required: --agent, --project\n"
         },
         "query": {
           "exit": 2,
@@ -12379,11 +12424,11 @@
         },
         "record-add": {
           "exit": 2,
-          "stderr": "usage: endeavor_db.py record-add [-h] [--id RECORD_ID] --project PROJECT\n                                 --type {audit,fix,verification,decision,knowledge}\n                                 --title TITLE [--content CONTENT]\n                                 [--content-file PATH]\n                                 [--status {open,current,resolved,accepted}]\n                                 [--action-state {actionable,deferred,blocked,nonactionable,done}]\n                                 [--metadata METADATA] [--source PATH]\n                                 [--link RELATION:TARGET] [--note NOTE]\n                                 --agent {codex,claude,human,system}\nendeavor_db.py record-add: error: the following arguments are required: --project, --type, --title, --agent\n"
+          "stderr": "usage: endeavor_db.py record-add [-h] [--id RECORD_ID] --project PROJECT\n                                 --type {audit,fix,verification,decision,knowledge}\n                                 --title TITLE [--content CONTENT]\n                                 [--content-file PATH]\n                                 [--status {open,current,resolved,accepted}]\n                                 [--action-state {actionable,deferred,blocked,nonactionable,done}]\n                                 [--metadata METADATA] [--source PATH]\n                                 [--link RELATION:TARGET] [--note NOTE]\n                                 --agent {codex,claude,human,system,endeavor}\nendeavor_db.py record-add: error: the following arguments are required: --project, --type, --title, --agent\n"
         },
         "record-link": {
           "exit": 2,
-          "stderr": "usage: endeavor_db.py record-link [-h] [--note NOTE]\n                                  --agent {codex,claude,human,system}\n                                  source_id\n                                  {references,resolves,verifies,supersedes,contradicts,duplicates}\n                                  target_id\nendeavor_db.py record-link: error: the following arguments are required: source_id, relation, target_id, --agent\n"
+          "stderr": "usage: endeavor_db.py record-link [-h] [--note NOTE]\n                                  --agent {codex,claude,human,system,endeavor}\n                                  source_id\n                                  {references,resolves,verifies,supersedes,contradicts,duplicates}\n                                  target_id\nendeavor_db.py record-link: error: the following arguments are required: source_id, relation, target_id, --agent\n"
         },
         "record-search": {
           "exit": 2,
@@ -12395,19 +12440,19 @@
         },
         "record-update": {
           "exit": 2,
-          "stderr": "usage: endeavor_db.py record-update [-h] [--project PROJECT]\n                                    [--type {audit,fix,verification,decision,knowledge}]\n                                    [--title TITLE] [--content CONTENT]\n                                    [--status {open,current,resolved,accepted}]\n                                    [--action-state {actionable,deferred,blocked,nonactionable,done}]\n                                    [--metadata METADATA]\n                                    --agent {codex,claude,human,system}\n                                    record_id\nendeavor_db.py record-update: error: the following arguments are required: record_id, --agent\n"
+          "stderr": "usage: endeavor_db.py record-update [-h] [--project PROJECT]\n                                    [--type {audit,fix,verification,decision,knowledge}]\n                                    [--title TITLE] [--content CONTENT]\n                                    [--status {open,current,resolved,accepted}]\n                                    [--action-state {actionable,deferred,blocked,nonactionable,done}]\n                                    [--metadata METADATA]\n                                    --agent {codex,claude,human,system,endeavor}\n                                    record_id\nendeavor_db.py record-update: error: the following arguments are required: record_id, --agent\n"
         },
         "session-close": {
           "exit": 2,
-          "stderr": "usage: endeavor_db.py session-close [-h] [--session SESSION]\n                                    [--project PROJECT]\n                                    --agent {codex,claude,human,system}\n                                    [--status {completed,blocked}]\nendeavor_db.py session-close: error: the following arguments are required: --agent\n"
+          "stderr": "usage: endeavor_db.py session-close [-h] [--session SESSION]\n                                    [--project PROJECT]\n                                    --agent {codex,claude,human,system,endeavor}\n                                    [--status {completed,blocked}]\nendeavor_db.py session-close: error: the following arguments are required: --agent\n"
         },
         "session-start": {
           "exit": 2,
-          "stderr": "usage: endeavor_db.py session-start [-h] --project PROJECT --goal GOAL\n                                    --agent {codex,claude,human,system}\nendeavor_db.py session-start: error: the following arguments are required: --project, --goal, --agent\n"
+          "stderr": "usage: endeavor_db.py session-start [-h] --project PROJECT --goal GOAL\n                                    --agent {codex,claude,human,system,endeavor}\nendeavor_db.py session-start: error: the following arguments are required: --project, --goal, --agent\n"
         },
         "unpin-checkpoint": {
           "exit": 2,
-          "stderr": "usage: endeavor_db.py unpin-checkpoint [-h]\n                                       --agent {codex,claude,human,system}\n                                       checkpoint_id\nendeavor_db.py unpin-checkpoint: error: the following arguments are required: checkpoint_id, --agent\n"
+          "stderr": "usage: endeavor_db.py unpin-checkpoint [-h]\n                                       --agent {codex,claude,human,system,endeavor}\n                                       checkpoint_id\nendeavor_db.py unpin-checkpoint: error: the following arguments are required: checkpoint_id, --agent\n"
         }
       }
     }
@@ -12670,9 +12715,10 @@
                 "codex",
                 "claude",
                 "human",
-                "system"
+                "system",
+                "endeavor"
               ],
-              "description": "Actor that performed the recorded work; do not claim another actor's work as your own."
+              "description": "Actor that performed the recorded work; use endeavor when the Endeavor runtime itself writes; do not claim another actor's work as your own."
             },
             "status": {
               "type": "string",
@@ -12848,9 +12894,10 @@
                 "codex",
                 "claude",
                 "human",
-                "system"
+                "system",
+                "endeavor"
               ],
-              "description": "Actor that performed the recorded work; do not claim another actor's work as your own."
+              "description": "Actor that performed the recorded work; use endeavor when the Endeavor runtime itself writes; do not claim another actor's work as your own."
             },
             "summary": {
               "type": "string",
@@ -12956,9 +13003,10 @@
                 "codex",
                 "claude",
                 "human",
-                "system"
+                "system",
+                "endeavor"
               ],
-              "description": "Actor that performed the recorded work; do not claim another actor's work as your own."
+              "description": "Actor that performed the recorded work; use endeavor when the Endeavor runtime itself writes; do not claim another actor's work as your own."
             },
             "pinned": {
               "type": "boolean",
@@ -13065,9 +13113,10 @@
                 "codex",
                 "claude",
                 "human",
-                "system"
+                "system",
+                "endeavor"
               ],
-              "description": "Actor that performed the recorded work; do not claim another actor's work as your own."
+              "description": "Actor that performed the recorded work; use endeavor when the Endeavor runtime itself writes; do not claim another actor's work as your own."
             },
             "confirm": {
               "type": "boolean",
@@ -13155,9 +13204,10 @@
                 "codex",
                 "claude",
                 "human",
-                "system"
+                "system",
+                "endeavor"
               ],
-              "description": "Actor that performed the recorded work; do not claim another actor's work as your own."
+              "description": "Actor that performed the recorded work; use endeavor when the Endeavor runtime itself writes; do not claim another actor's work as your own."
             },
             "confirm": {
               "type": "boolean",
@@ -13212,9 +13262,10 @@
                 "codex",
                 "claude",
                 "human",
-                "system"
+                "system",
+                "endeavor"
               ],
-              "description": "Actor that performed the recorded work; do not claim another actor's work as your own."
+              "description": "Actor that performed the recorded work; use endeavor when the Endeavor runtime itself writes; do not claim another actor's work as your own."
             },
             "confirm": {
               "type": "boolean",
@@ -13267,9 +13318,10 @@
                 "codex",
                 "claude",
                 "human",
-                "system"
+                "system",
+                "endeavor"
               ],
-              "description": "Actor that performed the recorded work; do not claim another actor's work as your own."
+              "description": "Actor that performed the recorded work; use endeavor when the Endeavor runtime itself writes; do not claim another actor's work as your own."
             },
             "confirm": {
               "type": "boolean",
@@ -13313,9 +13365,10 @@
                 "codex",
                 "claude",
                 "human",
-                "system"
+                "system",
+                "endeavor"
               ],
-              "description": "Actor that performed the recorded work; do not claim another actor's work as your own."
+              "description": "Actor that performed the recorded work; use endeavor when the Endeavor runtime itself writes; do not claim another actor's work as your own."
             },
             "query": {
               "type": "string",
@@ -13413,9 +13466,10 @@
                 "codex",
                 "claude",
                 "human",
-                "system"
+                "system",
+                "endeavor"
               ],
-              "description": "Actor that performed the recorded work; do not claim another actor's work as your own."
+              "description": "Actor that performed the recorded work; use endeavor when the Endeavor runtime itself writes; do not claim another actor's work as your own."
             },
             "confirm": {
               "type": "boolean",
@@ -13448,9 +13502,10 @@
                 "codex",
                 "claude",
                 "human",
-                "system"
+                "system",
+                "endeavor"
               ],
-              "description": "Actor that performed the recorded work; do not claim another actor's work as your own."
+              "description": "Actor that performed the recorded work; use endeavor when the Endeavor runtime itself writes; do not claim another actor's work as your own."
             },
             "project": {
               "type": "string",
@@ -13501,9 +13556,10 @@
                 "codex",
                 "claude",
                 "human",
-                "system"
+                "system",
+                "endeavor"
               ],
-              "description": "Actor that performed the recorded work; do not claim another actor's work as your own."
+              "description": "Actor that performed the recorded work; use endeavor when the Endeavor runtime itself writes; do not claim another actor's work as your own."
             },
             "project": {
               "type": "string",
@@ -13549,9 +13605,10 @@
                 "codex",
                 "claude",
                 "human",
-                "system"
+                "system",
+                "endeavor"
               ],
-              "description": "Actor that performed the recorded work; do not claim another actor's work as your own."
+              "description": "Actor that performed the recorded work; use endeavor when the Endeavor runtime itself writes; do not claim another actor's work as your own."
             },
             "project": {
               "type": "string",
@@ -13620,7 +13677,7 @@
     "tools": [
       {
         "name": "endeavor_agent_start",
-        "description": "WRITE, NON-IDEMPOTENT, OPEN WORLD. Starts one bounded managed sub-agent in the background and returns JSON containing run_id and status. Runs default to read-only. Explicit workspace_write is allowed only for role=worker: Codex uses its workspace sandbox; Claude receives Read/Grep/Glob/Edit/Write without Bash or bare edit preapproval; Antigravity (agy) gets --mode accept-edits, which auto-applies file edits but still denies shell/run_command. Reviewer and advisor roles are always read-only. The child starts cold, so include all needed context or tell it which ENDMEMEX handoff to read. Never include secrets; local run artifacts retain the request and output.",
+        "description": "WRITE, NON-IDEMPOTENT, OPEN WORLD. Starts one bounded managed sub-agent in the background and returns JSON containing run_id and status. Runs default to read-only. Correct usage example: {\"target\": \"codex\", \"prompt\": \"Review the current diff; do not edit files.\", \"role\": \"reviewer\", \"access\": \"read_only\", \"model\": \"gpt-5.6-sol\", \"reasoning_effort\": \"medium\", \"timeout\": 900}. Claude example: {\"target\": \"claude\", \"prompt\": \"Review the current diff; do not edit files.\", \"role\": \"reviewer\", \"access\": \"read_only\", \"model\": \"claude-sonnet-5\", \"reasoning_effort\": \"medium\", \"timeout\": 900}. Antigravity example: {\"target\": \"antigravity\", \"prompt\": \"Review the current diff; do not edit files.\", \"role\": \"reviewer\", \"access\": \"read_only\", \"model\": \"gemini-3.7-flash-medium\", \"reasoning_effort\": \"medium\", \"timeout\": 900}. Model catalog updated/verified 2026-08-30: Codex full model IDs are gpt-5.6-sol, gpt-5.6-terra, and gpt-5.6-luna (do not shorten them to sol/terra/luna); Claude Code deterministic full IDs are claude-fable-5, claude-opus-5, claude-sonnet-5, and claude-haiku-4-5-20251001, while its documented moving aliases are fable, opus, sonnet, and haiku; Antigravity uses an exact agy slug, with gemini-3.7-flash-medium verified on agy 1.1.22. Run `agy models` and copy its exact slug if the live account/CLI list differs; do not use an Antigravity display name as a slug. Operating principles from AGENT.md, CLAUDE.md, and AGENT_PROCEDURE.md: (1) start a worker only after explicit user authorization; for a generic review/second opinion, use the connected endeavor-agents server and use the direct wrapper only as its bounded fallback; (2) give the cold child one bounded, self-contained deliverable with exact scope, constraints, and done criteria; (3) reviewers and advisors are always read-only, and workspace_write is only for an explicitly authorized worker; (4) never put secrets in prompts or stored artifacts; (5) retain run_id, poll status, and relay only new progress; (6) the parent owns commands, decisions, and final verification; (7) use ENDMEMEX bootstrap/query before non-trivial work and checkpoint/handoff for each material phase or multi-phase task; (8) use memory actor endeavor only when the Endeavor runtime writes, keep SQLite writes local to one host, and use the authenticated write gateway for remote mutations. The required fields are target and prompt; invalid arguments return [error] with a usage hint. Explicit workspace_write is allowed only for role=worker: Codex uses its workspace sandbox; Claude receives Read/Grep/Glob/Edit/Write without Bash or bare edit preapproval; Antigravity (agy) gets --mode accept-edits, which auto-applies file edits but still denies shell/run_command. Reviewer and advisor roles are always read-only. The child starts cold, so include all needed context or tell it which ENDMEMEX handoff to read. Never include secrets; local run artifacts retain the request and output.",
         "annotations": {
           "readOnlyHint": false,
           "destructiveHint": true,
@@ -13667,7 +13724,7 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 200,
-              "description": "Optional target CLI model alias or full ID; passed through without an allowlist. Use an explicit value when deterministic model selection matters; isolated Codex runs ignore user configuration."
+              "description": "Optional target CLI model alias or full ID; passed through without an allowlist. Model catalog updated/verified 2026-08-30: Codex full model IDs are gpt-5.6-sol, gpt-5.6-terra, and gpt-5.6-luna (do not shorten them to sol/terra/luna); Claude Code deterministic full IDs are claude-fable-5, claude-opus-5, claude-sonnet-5, and claude-haiku-4-5-20251001, while its documented moving aliases are fable, opus, sonnet, and haiku; Antigravity uses an exact agy slug, with gemini-3.7-flash-medium verified on agy 1.1.22. Run `agy models` and copy its exact slug if the live account/CLI list differs; do not use an Antigravity display name as a slug. Use an explicit value when deterministic model selection matters; isolated Codex runs ignore user configuration."
             },
             "reasoning_effort": {
               "type": "string",
@@ -13742,7 +13799,7 @@
         }
       }
     ],
-    "server_instructions": "Endeavor Agents runs bounded Codex, Claude, or Antigravity (agy) sub-agents. Runs default to read-only; workspace_write must be requested explicitly and is restricted to the worker role. Use start for one cold, self-contained task, then poll status with the returned run_id; status includes incremental progress_tail chunks while the model is running. Report those chunks to the user instead of waiting silently for terminal output. Use cancel only when the run should stop. Reviewer and advisor roles always remain read-only. Claude and Antigravity workspace-write workers receive edit tools but no shell: Claude gets Read/Grep/Glob/Edit/Write with acceptEdits and no Bash preapproval; Antigravity gets --mode accept-edits, which auto-applies file edits but still denies run_command since --dangerously-skip-permissions is never passed. Use Codex or the parent when command execution is needed. The parent agent owns final conclusions and verification. Nested delegation is refused. Never put secrets in prompts because run requests and outputs are stored in local ENDMEMEX audit artifacts.",
+    "server_instructions": "Endeavor Agents runs bounded Codex, Claude, or Antigravity (agy) sub-agents. Runs default to read-only; workspace_write must be requested explicitly and is restricted to the worker role. Use start for one cold, self-contained task, then poll status with the returned run_id; status includes incremental progress_tail chunks while the model is running. Report those chunks to the user instead of waiting silently for terminal output. Use cancel only when the run should stop. Reviewer and advisor roles always remain read-only. Claude and Antigravity workspace-write workers receive edit tools but no shell: Claude gets Read/Grep/Glob/Edit/Write with acceptEdits and no Bash preapproval; Antigravity gets --mode accept-edits, which auto-applies file edits but still denies run_command since --dangerously-skip-permissions is never passed. Use Codex or the parent when command execution is needed. The parent agent owns final conclusions and verification. Nested delegation is refused. Never put secrets in prompts because run requests and outputs are stored in local ENDMEMEX audit artifacts. To start a run, use endeavor_agent_start with arguments like {\"target\": \"codex\", \"prompt\": \"Review the current diff; do not edit files.\", \"role\": \"reviewer\", \"access\": \"read_only\", \"model\": \"gpt-5.6-sol\", \"reasoning_effort\": \"medium\", \"timeout\": 900}. Model catalog updated/verified 2026-08-30: Codex full model IDs are gpt-5.6-sol, gpt-5.6-terra, and gpt-5.6-luna (do not shorten them to sol/terra/luna); Claude Code deterministic full IDs are claude-fable-5, claude-opus-5, claude-sonnet-5, and claude-haiku-4-5-20251001, while its documented moving aliases are fable, opus, sonnet, and haiku; Antigravity uses an exact agy slug, with gemini-3.7-flash-medium verified on agy 1.1.22. Run `agy models` and copy its exact slug if the live account/CLI list differs; do not use an Antigravity display name as a slug. Operating principles from AGENT.md, CLAUDE.md, and AGENT_PROCEDURE.md: (1) start a worker only after explicit user authorization; for a generic review/second opinion, use the connected endeavor-agents server and use the direct wrapper only as its bounded fallback; (2) give the cold child one bounded, self-contained deliverable with exact scope, constraints, and done criteria; (3) reviewers and advisors are always read-only, and workspace_write is only for an explicitly authorized worker; (4) never put secrets in prompts or stored artifacts; (5) retain run_id, poll status, and relay only new progress; (6) the parent owns commands, decisions, and final verification; (7) use ENDMEMEX bootstrap/query before non-trivial work and checkpoint/handoff for each material phase or multi-phase task; (8) use memory actor endeavor only when the Endeavor runtime writes, keep SQLite writes local to one host, and use the authenticated write gateway for remote mutations. Invalid start arguments return [error] with the same usage hint.",
     "protocols": [
       "2024-11-05",
       "2025-03-26"

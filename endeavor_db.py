@@ -53,7 +53,8 @@ from config import (
     HERE, INDEX_VERSION, KNOWLEDGE_CATEGORIES, KNOWLEDGE_FTS_IDENTITY_EXPRESSION,
     MAX_ACTIVITY_LOG_ROWS, MAX_CHECKPOINTS, MAX_CHUNK_CHARS, MAX_TEXTS_PER_REQUEST,
     MAX_MEMORY_CONTEXT_RECORDS, MAX_PINNED_CHECKPOINTS_WARN,
-    MAX_TOTAL_CHECKPOINTS, MEMORY_ACTION_STATES, MEMORY_RECORD_STATUSES, MEMORY_RECORD_TYPES,
+    MAX_TOTAL_CHECKPOINTS, MEMORY_ACTION_STATES, MEMORY_AGENT_CHOICES,
+    MEMORY_RECORD_STATUSES, MEMORY_RECORD_TYPES,
     MEMORY_RELATIONS, PACK_DEFAULT_BUDGET_CHARS, PRESENCE_DIR, PRESENCE_ROW_MAX_AGE_DAYS,
     PRESENCE_STALE_SEC, RESULT_CANDIDATES, ROOT, SCHEMA_PATH, SCHEMA_VERSION,
     SEMANTIC_CHUNKS_PER_RECORD_LIMIT, SEMANTIC_FULL_SCAN_LIMIT,
@@ -3191,6 +3192,11 @@ only fires when PROJECT is also a real top-level directory):
     --summary "<what happened>" --status active|paused|blocked|completed \\
     --auto-files --next-steps "<exact continuation>"
 
+Memory actor IDs accepted by every --agent flag and the memory MCP schemas:
+  codex|claude|human|system|endeavor
+Use `endeavor` when the Endeavor runtime itself performed the write. This is
+an attribution identity, not a managed child target for agent delegation.
+
 Pin a checkpoint so the sliding-window prune never deletes it (--pin at
 creation, or retroactively by id; unpin returns it to normal pruning):
   python3 endeavor_db.py checkpoint ... --pin
@@ -3245,6 +3251,36 @@ one cold/self-contained task, role=worker|reviewer|advisor, and access=read_only
 by default. Retain run_id, poll endeavor_agent_status, relay only new progress,
 and let the parent verify the terminal result. workspace_write is explicit,
 worker-only, and Claude/Antigravity write workers have no shell.
+MCP start example:
+  {"target": "codex", "prompt": "Review the current diff; do not edit files.",
+   "role": "reviewer", "access": "read_only", "model": "gpt-5.6-sol",
+   "reasoning_effort": "medium", "timeout": 900}
+Model catalog updated/verified: 2026-08-30.
+  Codex full IDs: gpt-5.6-sol | gpt-5.6-terra | gpt-5.6-luna
+  Claude Code full IDs: claude-fable-5 | claude-opus-5 |
+    claude-sonnet-5 | claude-haiku-4-5-20251001
+  Claude Code moving aliases: fable | opus | sonnet | haiku
+  Antigravity copy-ready slug verified on agy 1.1.22:
+    gemini-3.7-flash-medium (run `agy models` when the live list differs)
+Copy-ready Claude payload:
+  {"target": "claude", "prompt": "Review the current diff; do not edit files.",
+   "role": "reviewer", "access": "read_only", "model": "claude-sonnet-5",
+   "reasoning_effort": "medium", "timeout": 900}
+Copy-ready Antigravity payload:
+  {"target": "antigravity", "prompt": "Review the current diff; do not edit files.",
+   "role": "reviewer", "access": "read_only", "model": "gemini-3.7-flash-medium",
+   "reasoning_effort": "medium", "timeout": 900}
+Short server contract: delegate only with user authorization; give the cold
+child one bounded self-contained task; keep reviewers/advisors read-only;
+never include secrets; retain run_id and poll status for new progress; the
+parent owns commands and final verification; use ENDMEMEX bootstrap/query and
+checkpoint/handoff for non-trivial or multi-phase work.
+If the start payload is malformed, the server returns [error] plus this example
+and the allowed target/role/access values. The live error-hint source of truth
+is agent_mcp_server.py: update MODEL_CATALOG_DATE, the model tuples,
+MODEL_SELECTION_GUIDANCE, and START_USAGE_EXAMPLES there; then mirror the
+copy-ready values in this help text and ENDMEMEX_USER_MANUAL.md, regenerate
+developer/phase0_golden_contract.json, and run the compatibility tests.
 
 Direct one-shot fallback when the managed MCP is unavailable (child starts
 cold; nested delegation is refused):

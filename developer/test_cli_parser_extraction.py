@@ -82,7 +82,7 @@ class CliParserExtractionTest(unittest.TestCase):
         status_action = next(a for a in timeline._actions if a.dest == "status")
         self.assertEqual(status_action.choices, ("active", "paused", "completed", "blocked"))
         agent_action = next(a for a in timeline._actions if a.dest == "agent")
-        self.assertEqual(agent_action.choices, ("codex", "claude", "human", "system"))
+        self.assertEqual(agent_action.choices, ("codex", "claude", "human", "system", "endeavor"))
         parsed = timeline.parse_args([])
         self.assertIsNone(parsed.project)
         self.assertFalse(parsed.oldest_first)

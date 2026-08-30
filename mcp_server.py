@@ -17,7 +17,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from config import ROOT
+from config import MEMORY_AGENT_CHOICES, ROOT
 
 HERE = Path(__file__).resolve().parent
 DB = HERE / "endeavor_db.py"
@@ -73,8 +73,8 @@ CONFIRM_PROPERTY = {
 }
 AGENT_PROPERTY = {
     "type": "string",
-    "enum": ["codex", "claude", "human", "system"],
-    "description": "Actor that performed the recorded work; do not claim another actor's work as your own.",
+    "enum": list(MEMORY_AGENT_CHOICES),
+    "description": "Actor that performed the recorded work; use endeavor when the Endeavor runtime itself writes; do not claim another actor's work as your own.",
 }
 INSTANCE_PROPERTY = {
     "type": "string",

@@ -268,6 +268,19 @@ class McpServerContractTest(unittest.TestCase):
             "--session", "sess-1",
         ])
 
+    def test_endeavor_is_a_valid_memory_actor(self):
+        self.assertIn("endeavor", mcp.AGENT_PROPERTY["enum"])
+        self.assertIsNone(mcp.validate_arguments("endeavor_memory_checkpoint", {
+            "project": "DEMO", "agent": "endeavor", "summary": "runtime wrote",
+        }))
+        with mock.patch.object(mcp, "run", return_value="{}") as run:
+            self.assertEqual(mcp.call("endeavor_memory_checkpoint", {
+                "project": "DEMO", "agent": "endeavor", "summary": "runtime wrote",
+            }), "{}")
+        self.assertEqual(run.call_args.args[0], [
+            "checkpoint", "--project", "DEMO", "--agent", "endeavor", "--summary", "runtime wrote",
+        ])
+
     def test_invalid_arguments_fail_before_dispatch(self):
         with mock.patch.object(mcp, "run") as run:
             unknown = mcp.call("endeavor_memory_query", {"query": "x", "typo": True})

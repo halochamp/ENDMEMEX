@@ -21,7 +21,8 @@ from activity import ACTIVITY_EXPORT_LIMIT, ACTIVITY_EXPORT_NAME
 from cli_validators import nonempty_text, pack_budget, positive_int
 from config import (
     EMBED_BATCH_SIZE, HERE, MAX_MEMORY_CONTEXT_RECORDS, MEMORY_RECORD_STATUSES,
-    MEMORY_ACTION_STATES, MEMORY_RECORD_TYPES, MEMORY_RELATIONS, PACK_DEFAULT_BUDGET_CHARS,
+    MEMORY_ACTION_STATES, MEMORY_AGENT_CHOICES, MEMORY_RECORD_TYPES, MEMORY_RELATIONS,
+    PACK_DEFAULT_BUDGET_CHARS,
 )
 from primitives import parse_feedback_result_id
 
@@ -172,7 +173,7 @@ def build_parser(module_doc: str) -> argparse.ArgumentParser:
         help="With --follow, seconds between polls (default 3.0)",
     )
     feedback = sub.add_parser("feedback", help="Record whether query results were useful")
-    feedback.add_argument("--agent", required=True, choices=("codex", "claude", "human", "system"))
+    feedback.add_argument("--agent", required=True, choices=MEMORY_AGENT_CHOICES)
     feedback.add_argument("--query", required=True)
     feedback.add_argument(
         "--result", dest="selected_ids", action="append", type=parse_feedback_result_id, default=[],
@@ -187,7 +188,7 @@ def build_parser(module_doc: str) -> argparse.ArgumentParser:
     event_add.add_argument("--subject", dest="subject_id", required=True)
     event_add.add_argument("--dedupe-key", required=True)
     event_add.add_argument("--payload", default="{}", help="JSON object")
-    event_add.add_argument("--agent", required=True, choices=("codex", "claude", "human", "system"))
+    event_add.add_argument("--agent", required=True, choices=MEMORY_AGENT_CHOICES)
 
     event_poll = sub.add_parser("event-poll", help="Read durable events in monotonic ID order")
     event_poll.add_argument("--after", type=int, default=0)
@@ -198,7 +199,7 @@ def build_parser(module_doc: str) -> argparse.ArgumentParser:
 
     event_ack = sub.add_parser("event-ack", help="Acknowledge a durable event after host handling")
     event_ack.add_argument("event_id", type=positive_int)
-    event_ack.add_argument("--agent", required=True, choices=("codex", "claude", "human", "system"))
+    event_ack.add_argument("--agent", required=True, choices=MEMORY_AGENT_CHOICES)
 
     record_add = sub.add_parser("record-add", help="Add a durable SQLite-native audit/fix/knowledge record")
     record_add.add_argument("--id", dest="record_id", help="Stable ID, for example AUDIT-MEM-001")
@@ -229,7 +230,7 @@ def build_parser(module_doc: str) -> argparse.ArgumentParser:
         help="Create an internal relation atomically; may be repeated",
     )
     record_add.add_argument("--note", default="", help="Note applied to links created by this command")
-    record_add.add_argument("--agent", required=True, choices=("codex", "claude", "human", "system"))
+    record_add.add_argument("--agent", required=True, choices=MEMORY_AGENT_CHOICES)
 
     record_update = sub.add_parser("record-update", help="Update the content or explicit status of a record")
     record_update.add_argument("record_id")
@@ -240,14 +241,14 @@ def build_parser(module_doc: str) -> argparse.ArgumentParser:
     record_update.add_argument("--status", choices=MEMORY_RECORD_STATUSES)
     record_update.add_argument("--action-state", choices=MEMORY_ACTION_STATES)
     record_update.add_argument("--metadata", help="Replacement JSON object")
-    record_update.add_argument("--agent", required=True, choices=("codex", "claude", "human", "system"))
+    record_update.add_argument("--agent", required=True, choices=MEMORY_AGENT_CHOICES)
 
     record_link = sub.add_parser("record-link", help="Create a typed foreign-key relation between SQLite records")
     record_link.add_argument("source_id")
     record_link.add_argument("relation", choices=MEMORY_RELATIONS)
     record_link.add_argument("target_id")
     record_link.add_argument("--note", default="")
-    record_link.add_argument("--agent", required=True, choices=("codex", "claude", "human", "system"))
+    record_link.add_argument("--agent", required=True, choices=MEMORY_AGENT_CHOICES)
 
     record_show = sub.add_parser("record-show", help="Show a record, current successor, conflicts, and relation graph")
     record_show.add_argument("record_id")
@@ -267,12 +268,12 @@ def build_parser(module_doc: str) -> argparse.ArgumentParser:
     start = sub.add_parser("session-start", help="Start a shared work session")
     start.add_argument("--project", required=True)
     start.add_argument("--goal", required=True)
-    start.add_argument("--agent", required=True, choices=("codex", "claude", "human", "system"))
+    start.add_argument("--agent", required=True, choices=MEMORY_AGENT_CHOICES)
 
     checkpoint = sub.add_parser("checkpoint", help="Record resumable session state")
     checkpoint.add_argument("--session")
     checkpoint.add_argument("--project")
-    checkpoint.add_argument("--agent", required=True, choices=("codex", "claude", "human", "system"))
+    checkpoint.add_argument("--agent", required=True, choices=MEMORY_AGENT_CHOICES)
     checkpoint.add_argument(
         "--goal",
         help="If --project has no active/paused/blocked session, start one with this "
@@ -306,13 +307,13 @@ def build_parser(module_doc: str) -> argparse.ArgumentParser:
         "pin-checkpoint", help="Retroactively pin an existing checkpoint so pruning never deletes it",
     )
     pin_cp.add_argument("checkpoint_id", type=int)
-    pin_cp.add_argument("--agent", required=True, choices=("codex", "claude", "human", "system"))
+    pin_cp.add_argument("--agent", required=True, choices=MEMORY_AGENT_CHOICES)
 
     unpin_cp = sub.add_parser(
         "unpin-checkpoint", help="Unpin a checkpoint, returning it to normal sliding-window pruning",
     )
     unpin_cp.add_argument("checkpoint_id", type=int)
-    unpin_cp.add_argument("--agent", required=True, choices=("codex", "claude", "human", "system"))
+    unpin_cp.add_argument("--agent", required=True, choices=MEMORY_AGENT_CHOICES)
 
     latest = sub.add_parser("handoff", help="Read the latest resumable checkpoint")
     latest.add_argument("--session")
@@ -328,7 +329,7 @@ def build_parser(module_doc: str) -> argparse.ArgumentParser:
         help="Read-only checkpoint timeline (who did what, affected files, statuses) across sessions",
     )
     timeline.add_argument("--project")
-    timeline.add_argument("--agent", choices=("codex", "claude", "human", "system"))
+    timeline.add_argument("--agent", choices=MEMORY_AGENT_CHOICES)
     timeline.add_argument("--status", choices=("active", "paused", "completed", "blocked"))
     timeline.add_argument("--session")
     timeline.add_argument(
@@ -343,7 +344,7 @@ def build_parser(module_doc: str) -> argparse.ArgumentParser:
     close = sub.add_parser("session-close", help="Mark a session completed or blocked")
     close.add_argument("--session")
     close.add_argument("--project")
-    close.add_argument("--agent", required=True, choices=("codex", "claude", "human", "system"))
+    close.add_argument("--agent", required=True, choices=MEMORY_AGENT_CHOICES)
     close.add_argument("--status", choices=("completed", "blocked"), default="completed")
 
     pstart = sub.add_parser(
@@ -352,7 +353,7 @@ def build_parser(module_doc: str) -> argparse.ArgumentParser:
              "(same-machine real-time; mirrored to a per-machine sidecar file for "
              "cross-machine visibility)",
     )
-    pstart.add_argument("--agent", required=True, choices=("codex", "claude", "human", "system"))
+    pstart.add_argument("--agent", required=True, choices=MEMORY_AGENT_CHOICES)
     pstart.add_argument("--project", required=True)
     pstart.add_argument("--task", default="", help="Short free-text of what this process is doing")
     pstart.add_argument("--session")
@@ -371,14 +372,14 @@ def build_parser(module_doc: str) -> argparse.ArgumentParser:
              "wherever checkpoint is already called -- do not add a new polling loop "
              "just for this)",
     )
-    pheartbeat.add_argument("--agent", required=True, choices=("codex", "claude", "human", "system"))
+    pheartbeat.add_argument("--agent", required=True, choices=MEMORY_AGENT_CHOICES)
     pheartbeat.add_argument("--project", required=True)
     pheartbeat.add_argument("--instance", default="")
     pheartbeat.add_argument("--task", help="Update the task description; omit to just refresh the timestamp")
     pheartbeat.add_argument("--pid", type=int, help="Informational only; defaults to this process's own PID")
 
     pstop = sub.add_parser("presence-stop", help="Mark the (machine, agent, project[, instance]) presence row stopped")
-    pstop.add_argument("--agent", required=True, choices=("codex", "claude", "human", "system"))
+    pstop.add_argument("--agent", required=True, choices=MEMORY_AGENT_CHOICES)
     pstop.add_argument("--project", required=True)
     pstop.add_argument("--instance", default="")
 
