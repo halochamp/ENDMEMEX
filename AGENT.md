@@ -1,7 +1,9 @@
 # Agent guide for ENDMEMEX
 
 Quick rules for Codex, Claude, and other agents operating an ENDMEMEX
-workspace.
+workspace. Read [`CLAUDE.md`](CLAUDE.md) for hard constraints and
+[`AGENT_PROCEDURE.md`](AGENT_PROCEDURE.md) for the full agent workflow; exact
+command/lifecycle semantics remain authoritative in the User Manual.
 
 Read [README §Urgent rules](README.md#urgent-rules--read-before-writing)
 before any write. Use the

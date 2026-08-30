@@ -3,8 +3,7 @@
 Quick rules for agents working in ENDMEMEX as either a standalone public
 repository or an `ENDMEMEX/` directory inside a parent monorepo.
 
-- Read [README](README.md) before any write. The detailed workflow is in
-  [ENDMEMEX User Manual](ENDMEMEX_USER_MANUAL.md); keep this file short.
+- Read [`CLAUDE.md`](CLAUDE.md), [`AGENT.md`](AGENT.md), and [README](README.md) before substantial work. The agent workflow is in [`AGENT_PROCEDURE.md`](AGENT_PROCEDURE.md), while exact command/lifecycle semantics remain authoritative in the [ENDMEMEX User Manual](ENDMEMEX_USER_MANUAL.md); keep this file short.
 - Before non-trivial work, bootstrap the selected project once and query
   existing knowledge before rediscovering prior decisions.
 - Keep a writable ENDMEMEX database local to one host. For a remote mutation,
