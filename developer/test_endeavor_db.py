@@ -1763,9 +1763,9 @@ class EndeavorDatabaseTest(unittest.TestCase):
         self.assertTrue(all(item["session_id"] == session_id for item in recent))
         self.assertTrue(all(item["goal"] == "orientation demo" for item in recent))
 
-    def test_build_orientation_keeps_a_brand_new_project_visible(self):
+    def test_build_orientation_keeps_a_brand_new_project_visible_without_counting_it_as_stored(self):
         orientation = db.build_orientation(self.conn, "fresh-project")
-        self.assertEqual(orientation["database"]["projects"], 1)
+        self.assertEqual(orientation["database"]["projects"], 0)
         self.assertEqual(orientation["project_map"], [{
             "project": "fresh-project",
             "knowledge": 0,
@@ -1774,6 +1774,20 @@ class EndeavorDatabaseTest(unittest.TestCase):
             "latest_checkpoint_at": None,
         }])
         self.assertEqual(orientation["recent_checkpoints"], [])
+
+    def test_build_orientation_database_project_count_excludes_unseen_requested_project(self):
+        for project in ("A", "B"):
+            session_id = db.start_session(self.conn, project, f"{project} work", "codex", {})
+            session = db.resolve_session(self.conn, session_id, None)
+            db.add_checkpoint(self.conn, session, "codex", {"summary": f"{project} checkpoint"})
+
+        orientation = db.build_orientation(self.conn, "C")
+        self.assertEqual(orientation["database"]["projects"], 2)
+        self.assertEqual(
+            [item["project"] for item in orientation["project_map"]],
+            ["C", "A", "B"],
+        )
+        self.assertEqual(orientation["project_map"][0]["checkpoints"], 0)
 
     def test_bootstrap_and_pack_preserve_an_explicit_session_selection(self):
         first_id = db.start_session(self.conn, "demo", "first", "codex", {})

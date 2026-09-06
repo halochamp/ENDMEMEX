@@ -2850,6 +2850,7 @@ def build_orientation(
         return table_count(conn, table) if table_exists(conn, table) else 0
 
     project_rows: dict[str, dict[str, Any]] = {}
+    represented_projects: set[str] = set()
 
     def ensure_project(name: str) -> dict[str, Any]:
         item = project_rows.get(name)
@@ -2879,6 +2880,7 @@ def build_orientation(
         for row in conn.execute(sql):
             name = row["project"]
             if name:
+                represented_projects.add(name)
                 item = ensure_project(name)
                 if field is not None:
                     item[field] = row["n"]
@@ -2889,6 +2891,7 @@ def build_orientation(
             "JOIN sessions s ON s.id = c.session_id GROUP BY s.project"
         ):
             if row["project"]:
+                represented_projects.add(row["project"])
                 ensure_project(row["project"])["checkpoints"] = row["n"]
 
         # Checkpoints are retention-bounded, so this scan stays small while
@@ -2922,7 +2925,7 @@ def build_orientation(
         ]
 
     database = {
-        "projects": len(project_map),
+        "projects": len(represented_projects),
         "documents": count_rows("documents"),
         "knowledge": count_rows("knowledge"),
         "records": count_rows("memory_records"),
