@@ -38,7 +38,7 @@ touch the filesystem, are destructive, or are meant for a human to read).
 |---|---|---|---|
 | `init` | Create or migrate the database | — | [README §Start a project session](README.md#start-a-project-session) |
 | `agent-help` | Print a CLI cheat sheet, no DB access | — | — |
-| `bootstrap` | One-call session start: handoff + embedding backfill + doc freshness + hooks | `endeavor_memory_bootstrap` | [§Session Briefing](#session-briefing-pack) |
+| `bootstrap` | One-call session start: database/project orientation + recency-weighted recent 10 checkpoints + handoff + embedding backfill + doc freshness + hooks | `endeavor_memory_bootstrap` | [§Session Briefing](#session-briefing-pack) |
 | `readiness` | One read-only preflight: machine role + DB + embeddings + ANN + docs + ordered next actions | `endeavor_memory_readiness` | [§Readiness preflight](#readiness-preflight-readiness) |
 | `pack` | Wider session briefing: handoff + open records + knowledge + activity, budget-bounded | `endeavor_memory_pack` | [§Session Briefing](#session-briefing-pack) |
 | `pending` | Lifecycle-aware pending work (presence + resumable/blocked sessions + open records) | `endeavor_memory_pending` | [README §Inspecting all pending work](README.md#inspecting-all-pending-work--mandatory-procedure) |
@@ -324,14 +324,26 @@ python3 endeavor_db.py query "prompt cache" --check-stale --json
 
 ## Session Briefing (pack)
 
-`bootstrap` gives the latest handoff; `pack` widens that into a fuller
-session-start briefing in one call — handoff, open SQLite-native records
-(`status = 'open'`, a raw filter, not lifecycle-resolved — use `record-show`/
-`record-search --current-only` for a precise current-truth read), the most
-recently updated `knowledge` chunks for the project, and the last 10 activity
-log entries. The complete serialized response is bounded by the character
-budget (default 6,000), including handoff and actionable records, so no
-section can grow around the limit:
+`bootstrap` now gives both orientation and the latest handoff. Its
+`orientation.database` section reports whole-database counts;
+`orientation.project_map` lists every project currently represented in
+documents, knowledge, native records, sessions, or checkpoints using only
+compact knowledge/record/checkpoint counts plus latest-checkpoint time; and
+`orientation.recent_checkpoints` returns the 10 most recent retained
+checkpoints for the selected project. Checkpoint 1 (newest) is complete,
+including files/commands/verification/metadata. Checkpoints 2–10 use a
+recency-weighted detail budget of 2,000, 1,800, ... 400 characters across the
+high-signal summary/current-state/next-step/work-done/blocker fields. This
+orientation is derived live from SQLite and is never written back as a second
+summary layer.
+
+`pack` widens that into a fuller session-start briefing in one call — handoff,
+open SQLite-native records (`status = 'open'`, a raw filter, not
+lifecycle-resolved — use `record-show`/`record-search --current-only` for a
+precise current-truth read), the most recently updated `knowledge` chunks for
+the project, and the last 10 activity log entries. The complete serialized
+response is bounded by the character budget (default 6,000), including handoff
+and actionable records, so no section can grow around the limit:
 
 ```bash
 python3 endeavor_db.py pack --project DEMO_APP --json

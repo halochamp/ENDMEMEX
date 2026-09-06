@@ -1683,6 +1683,97 @@ class EndeavorDatabaseTest(unittest.TestCase):
             data = db.bootstrap(self.conn, "demo")
         self.assertEqual(data["session"]["id"], session_id)
         self.assertEqual(data["checkpoint"]["summary"], "left off here")
+        self.assertIn("orientation", data)
+        self.assertEqual(data["orientation"]["recent_checkpoints"][0]["summary"], "left off here")
+
+    def test_build_orientation_maps_database_and_recent_project_checkpoints(self):
+        source = self.root / "demo.md"
+        source.write_text("# Demo\n\nSearchable project knowledge.\n", encoding="utf-8")
+        db.ingest_markdown(self.conn, source, "demo", "project_memory", embed=False)
+        db.create_memory_record(
+            self.conn, "KNOWLEDGE-OTHER-001", "other", "knowledge",
+            "Other project fact", "Other project content.", "open", "codex",
+        )
+
+        session_id = db.start_session(self.conn, "demo", "orientation demo", "codex", {})
+        session = db.resolve_session(self.conn, session_id, None)
+        for index in range(12):
+            payload = {
+                "summary": f"demo checkpoint {index}",
+                "current_state": f"state {index}",
+                "next_steps": f"next {index}",
+            }
+            if index == 2:
+                payload.update({
+                    "summary": "demo checkpoint 2 " + ("s" * 600),
+                    "current_state": "state 2 " + ("c" * 600),
+                    "next_steps": "next 2 " + ("n" * 600),
+                    "work_done": "work 2 " + ("w" * 600),
+                    "blockers": "blockers 2 " + ("b" * 200),
+                })
+            if index == 11:
+                payload.update({
+                    "work_done": "latest work",
+                    "blockers": "latest blocker",
+                    "files_changed": ["demo.py"],
+                    "commands_run": ["python3 demo.py"],
+                    "verification": ["demo passed"],
+                    "metadata": {"detail": "must survive in newest full checkpoint"},
+                })
+            db.add_checkpoint(self.conn, session, "codex", payload)
+
+        other_id = db.start_session(self.conn, "other", "other work", "claude", {})
+        other_session = db.resolve_session(self.conn, other_id, None)
+        db.add_checkpoint(self.conn, other_session, "claude", {"summary": "other checkpoint"})
+
+        orientation = db.build_orientation(self.conn, "demo")
+        self.assertEqual(orientation["database"]["projects"], 2)
+        self.assertGreaterEqual(orientation["database"]["knowledge"], 1)
+        self.assertEqual(orientation["database"]["records"], 1)
+        self.assertEqual(orientation["database"]["sessions"], 2)
+        self.assertEqual(orientation["database"]["checkpoints"], 13)
+
+        self.assertEqual(orientation["project_map"][0]["project"], "demo")
+        projects = {item["project"]: item for item in orientation["project_map"]}
+        self.assertGreaterEqual(projects["demo"]["knowledge"], 1)
+        self.assertEqual(projects["demo"]["checkpoints"], 12)
+        self.assertIsNotNone(projects["demo"]["latest_checkpoint_at"])
+        self.assertEqual(projects["other"]["records"], 1)
+        self.assertIsNotNone(projects["other"]["latest_checkpoint_at"])
+
+        recent = orientation["recent_checkpoints"]
+        self.assertEqual(len(recent), 10)
+        self.assertEqual(recent[0]["summary"], "demo checkpoint 11")
+        self.assertEqual(recent[0]["detail_mode"], "full")
+        self.assertIsNone(recent[0]["detail_budget_chars"])
+        self.assertEqual(recent[0]["work_done"], "latest work")
+        self.assertEqual(recent[0]["files_changed"], ["demo.py"])
+        self.assertEqual(recent[0]["commands_run"], ["python3 demo.py"])
+        self.assertEqual(recent[0]["verification"], ["demo passed"])
+        self.assertEqual(recent[0]["metadata"]["detail"], "must survive in newest full checkpoint")
+
+        budgets = [item["detail_budget_chars"] for item in recent[1:]]
+        self.assertEqual(budgets, [2000, 1800, 1600, 1400, 1200, 1000, 800, 600, 400])
+        self.assertTrue(all(item["detail_mode"] == "progressive" for item in recent[1:]))
+        self.assertTrue(recent[-1]["summary"].startswith("demo checkpoint 2 "))
+        self.assertLess(len(recent[-1]["summary"]), 200)
+        self.assertNotIn("commands_run", recent[-1])
+        self.assertNotIn("files_changed", recent[-1])
+        self.assertNotIn("verification", recent[-1])
+        self.assertTrue(all(item["session_id"] == session_id for item in recent))
+        self.assertTrue(all(item["goal"] == "orientation demo" for item in recent))
+
+    def test_build_orientation_keeps_a_brand_new_project_visible(self):
+        orientation = db.build_orientation(self.conn, "fresh-project")
+        self.assertEqual(orientation["database"]["projects"], 1)
+        self.assertEqual(orientation["project_map"], [{
+            "project": "fresh-project",
+            "knowledge": 0,
+            "records": 0,
+            "checkpoints": 0,
+            "latest_checkpoint_at": None,
+        }])
+        self.assertEqual(orientation["recent_checkpoints"], [])
 
     def test_bootstrap_and_pack_preserve_an_explicit_session_selection(self):
         first_id = db.start_session(self.conn, "demo", "first", "codex", {})
@@ -1717,6 +1808,8 @@ class EndeavorDatabaseTest(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         data = json.loads(stdout.getvalue())
         self.assertEqual(data["project"], "demo")
+        self.assertIn("orientation", data)
+        self.assertEqual(data["orientation"]["recent_limit"], 10)
         self.assertIn("embedding", data)
         self.assertIn("docs", data)
         self.assertIn("hooks", data)

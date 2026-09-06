@@ -12829,7 +12829,7 @@
       {
         "name": "endeavor_memory_bootstrap",
         "title": "Bootstrap ENDMEMEX task context",
-        "description": "WRITE. Use once at the start of a non-trivial task. Returns JSON text with latest handoff, embedding backfill diagnostics, document freshness, and hook state. It may initialize/update local database state. Do not call for a simple one-off question.",
+        "description": "WRITE. Use once at the start of a non-trivial task. Returns JSON text with deterministic database/project orientation, the 10 most recent retained checkpoints for the selected project (newest full, then progressively compressed to checkpoint 10), latest handoff, embedding backfill diagnostics, document freshness, and hook state. It may initialize/update local database state. Do not call for a simple one-off question.",
         "annotations": {
           "readOnlyHint": false,
           "destructiveHint": false,

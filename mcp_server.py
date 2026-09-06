@@ -130,7 +130,7 @@ TOOLS = [
         "limit": {"type": "integer", "minimum": 1, "maximum": 50, "description": "Maximum results (default 10)."},
         "current_only": {"type": "boolean", "description": "Resolve lifecycle heads and omit records that are no longer current."},
     }, "required": ["query"]}},
-    {"name": "endeavor_memory_bootstrap", "title": "Bootstrap ENDMEMEX task context", "description": "WRITE. Use once at the start of a non-trivial task. Returns JSON text with latest handoff, embedding backfill diagnostics, document freshness, and hook state. It may initialize/update local database state. Do not call for a simple one-off question.", "annotations": WRITE_ANNOTATIONS, "inputSchema": {"type": "object", "additionalProperties": False, "properties": {
+    {"name": "endeavor_memory_bootstrap", "title": "Bootstrap ENDMEMEX task context", "description": "WRITE. Use once at the start of a non-trivial task. Returns JSON text with deterministic database/project orientation, the 10 most recent retained checkpoints for the selected project (newest full, then progressively compressed to checkpoint 10), latest handoff, embedding backfill diagnostics, document freshness, and hook state. It may initialize/update local database state. Do not call for a simple one-off question.", "annotations": WRITE_ANNOTATIONS, "inputSchema": {"type": "object", "additionalProperties": False, "properties": {
         "project": PROJECT_PROPERTY,
         "session": SESSION_PROPERTY,
         "include_pending": {"type": "boolean", "description": "Also return this project's lifecycle-aware pending-work view. Default false for response compatibility."},

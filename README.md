@@ -97,10 +97,17 @@ Before non-trivial work, bootstrap the selected project once:
 python3 endeavor_db.py bootstrap --project <PROJECT> --json
 ```
 
-`bootstrap` returns the resumable handoff (null is a normal empty state), runs
-best-effort embedding backfill, and reports tracked-document freshness and hook
-state. Continue the returned session when relevant. Otherwise, the first
-`checkpoint --project <PROJECT> --goal "..."` can auto-start a session.
+`bootstrap` returns a deterministic orientation map first: whole-database counts,
+a compact per-project map (knowledge/records/checkpoints plus latest checkpoint
+time), and the 10 most recent retained checkpoints for the selected project.
+The newest checkpoint is returned in full; older checkpoints use a progressively
+smaller deterministic detail budget, ending at 400 detail characters for
+checkpoint 10. It then returns the resumable handoff (null is a normal empty
+state), runs best-effort embedding backfill, and reports tracked-document
+freshness and hook state. Orientation is derived live from SQLite truth; it is
+not stored as a second AI-generated summary layer. Continue the returned session
+when relevant. Otherwise, the first `checkpoint --project <PROJECT> --goal "..."`
+can auto-start a session.
 
 For a one-command, read-only preflight before starting a project session, run
 `readiness --project <PROJECT>`; it reports the local host, database health,

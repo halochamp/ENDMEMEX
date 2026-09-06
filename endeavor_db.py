@@ -2779,15 +2779,174 @@ def render_readiness(report: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+_ORIENTATION_CHECKPOINT_DETAIL_BUDGET_START = 2000
+_ORIENTATION_CHECKPOINT_DETAIL_BUDGET_STEP = 200
+_ORIENTATION_CHECKPOINT_DETAIL_BUDGET_MIN = 200
+
+
+def _orientation_checkpoint_view(record: dict[str, Any], rank: int) -> dict[str, Any]:
+    """Keep the newest checkpoint complete, then progressively compress older ones."""
+    if rank <= 1:
+        return {
+            **record,
+            "detail_rank": 1,
+            "detail_mode": "full",
+            "detail_budget_chars": None,
+        }
+
+    budget = max(
+        _ORIENTATION_CHECKPOINT_DETAIL_BUDGET_MIN,
+        _ORIENTATION_CHECKPOINT_DETAIL_BUDGET_START
+        - ((rank - 2) * _ORIENTATION_CHECKPOINT_DETAIL_BUDGET_STEP),
+    )
+    result = {
+        key: record.get(key)
+        for key in ("id", "session_id", "sequence", "agent", "created_at", "goal", "session_status")
+    }
+    result.update({
+        "detail_rank": rank,
+        "detail_mode": "progressive",
+        "detail_budget_chars": budget,
+    })
+
+    fields = (
+        ("summary", 3),
+        ("current_state", 2),
+        ("next_steps", 2),
+        ("work_done", 1),
+        ("blockers", 1),
+    )
+    nonempty: list[tuple[str, int, str]] = []
+    for key, weight in fields:
+        value = record.get(key, "")
+        if value:
+            text = value if isinstance(value, str) else json_text(value)
+            nonempty.append((key, weight, text))
+
+    total_weight = sum(weight for _, weight, _ in nonempty)
+    for key, weight, text in nonempty:
+        allowance = max(1, (budget * weight) // total_weight)
+        if len(text) > allowance:
+            text = text[: max(0, allowance - 1)] + "…"
+        result[key] = text
+    return result
+
+
+def build_orientation(
+    conn: sqlite3.Connection, project: str, recent_limit: int = 10,
+) -> dict[str, Any]:
+    """Deterministic, read-only mental map for an agent starting work.
+
+    The overview is derived from current SQLite truth rather than stored as a
+    second summary layer. It answers two breadth questions cheaply: what
+    projects/data exist in this database, and what happened most recently in
+    the selected project. Detailed retrieval remains the job of query/pack/
+    record-show/timeline.
+    """
+    if recent_limit < 1:
+        raise ValueError("recent_limit must be >= 1")
+
+    def count_rows(table: str) -> int:
+        return table_count(conn, table) if table_exists(conn, table) else 0
+
+    project_rows: dict[str, dict[str, Any]] = {}
+
+    def ensure_project(name: str) -> dict[str, Any]:
+        item = project_rows.get(name)
+        if item is None:
+            item = {
+                "project": name,
+                "knowledge": 0,
+                "records": 0,
+                "checkpoints": 0,
+                "latest_checkpoint_at": None,
+            }
+            project_rows[name] = item
+        return item
+
+    # Always include the requested project, even when it is brand new.
+    ensure_project(project)
+
+    grouped_queries = (
+        (None, "documents", "SELECT project, COUNT(*) AS n FROM documents GROUP BY project"),
+        ("knowledge", "knowledge", "SELECT project, COUNT(*) AS n FROM knowledge GROUP BY project"),
+        ("records", "memory_records", "SELECT project, COUNT(*) AS n FROM memory_records GROUP BY project"),
+        (None, "sessions", "SELECT project, COUNT(*) AS n FROM sessions GROUP BY project"),
+    )
+    for field, table, sql in grouped_queries:
+        if not table_exists(conn, table):
+            continue
+        for row in conn.execute(sql):
+            name = row["project"]
+            if name:
+                item = ensure_project(name)
+                if field is not None:
+                    item[field] = row["n"]
+
+    if table_exists(conn, "checkpoints") and table_exists(conn, "sessions"):
+        for row in conn.execute(
+            "SELECT s.project, COUNT(*) AS n FROM checkpoints c "
+            "JOIN sessions s ON s.id = c.session_id GROUP BY s.project"
+        ):
+            if row["project"]:
+                ensure_project(row["project"])["checkpoints"] = row["n"]
+
+        # Checkpoints are retention-bounded, so this scan stays small while
+        # avoiding one query per project. Project-map entries intentionally
+        # keep only recency here; recent checkpoint content belongs to the
+        # selected project's recency-weighted history below.
+        for row in conn.execute(
+            "SELECT s.project, c.created_at "
+            "FROM checkpoints c JOIN sessions s ON s.id = c.session_id "
+            "ORDER BY c.created_at DESC, c.id DESC"
+        ):
+            item = ensure_project(row["project"])
+            if item["latest_checkpoint_at"] is None:
+                item["latest_checkpoint_at"] = row["created_at"]
+
+    project_map = sorted(project_rows.values(), key=lambda item: item["project"].casefold())
+    project_map.sort(key=lambda item: item["project"] != project)
+
+    recent_checkpoints: list[dict[str, Any]] = []
+    if table_exists(conn, "checkpoints") and table_exists(conn, "sessions"):
+        rows = conn.execute(
+            "SELECT c.*, s.goal AS goal, s.status AS session_status "
+            "FROM checkpoints c JOIN sessions s ON s.id = c.session_id "
+            "WHERE s.project = ? "
+            "ORDER BY c.created_at DESC, c.id DESC LIMIT ?",
+            (project, recent_limit),
+        ).fetchall()
+        recent_checkpoints = [
+            _orientation_checkpoint_view(row_dict(row), rank)
+            for rank, row in enumerate(rows, start=1)
+        ]
+
+    database = {
+        "projects": len(project_map),
+        "documents": count_rows("documents"),
+        "knowledge": count_rows("knowledge"),
+        "records": count_rows("memory_records"),
+        "sessions": count_rows("sessions"),
+        "checkpoints": count_rows("checkpoints"),
+    }
+    return {
+        "database": database,
+        "project_map": project_map,
+        "recent_checkpoints": recent_checkpoints,
+        "recent_limit": recent_limit,
+    }
+
+
 def bootstrap(
     conn: sqlite3.Connection, project: str, batch_size: int = EMBED_BATCH_SIZE,
     include_pending: bool = False, session_id: str | None = None,
 ) -> dict[str, Any]:
-    """One-call session start replacing the multi-step §7.5 ritual: latest
-    handoff (nulls when the project has nothing resumable — the normal state
-    of a new task), best-effort embedding backfill, tracked-doc freshness
-    counts, and hook installation state. Every part degrades independently;
-    a cold companion or a missing git binary never hides the handoff."""
+    """One-call session start replacing the multi-step §7.5 ritual: project
+    orientation, latest handoff (nulls when the project has nothing resumable
+    — the normal state of a new task), best-effort embedding backfill,
+    tracked-doc freshness counts, and hook installation state. Every part
+    degrades independently; a cold companion or a missing git binary never
+    hides the handoff."""
     try:
         data = handoff(conn, session_id, project)
     except SessionNotFoundError:
@@ -2796,6 +2955,7 @@ def bootstrap(
         data = {"session": None, "checkpoint": None}
     result = {
         "project": project,
+        "orientation": build_orientation(conn, project),
         **data,
         "embedding": backfill_embeddings(conn, batch_size),
         "docs": _tracked_docs_summary(conn),
@@ -3169,11 +3329,12 @@ def refresh_activity_export(
 AGENT_HELP_TEXT = """\
 ENDMEMEX — agent cheat sheet (README.md = overview; ENDMEMEX_USER_MANUAL.md = full reference)
 
-Start of session (one call — handoff + embed backfill + doc freshness + hooks):
+Start of session (one call — database/project orientation + recency-weighted
+recent 10 checkpoints + handoff + embed backfill + doc freshness + hooks):
   python3 endeavor_db.py bootstrap --project <PROJECT> --json
 
 Broader session briefing (handoff + open records + recent knowledge/activity,
-capped to a char budget — use when bootstrap's handoff alone isn't enough
+capped to a char budget — use when bootstrap's orientation/handoff isn't enough
 context):
   python3 endeavor_db.py pack --project <PROJECT> --json
 
