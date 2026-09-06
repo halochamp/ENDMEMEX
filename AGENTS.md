@@ -4,8 +4,7 @@ Quick rules for agents working in ENDMEMEX as either a standalone public
 repository or an `ENDMEMEX/` directory inside a parent monorepo.
 
 - Read [`CLAUDE.md`](CLAUDE.md), [`AGENT.md`](AGENT.md), and [README](README.md) before substantial work. The agent workflow is in [`AGENT_PROCEDURE.md`](AGENT_PROCEDURE.md), while exact command/lifecycle semantics remain authoritative in the [ENDMEMEX User Manual](ENDMEMEX_USER_MANUAL.md); keep this file short.
-- Before non-trivial work, bootstrap the selected project once and query
-  existing knowledge before rediscovering prior decisions.
+- Before non-trivial work, run the read-only bootstrap for the selected project once before planning or implementation, follow its ordered `next_actions`, then query existing knowledge before rediscovering prior decisions. If bootstrap reports `database.init_required=true` or `embedding.backfill_required=true`, use the reported explicit write path through the local writable owner (or authenticated write gateway for remote mutation), then rerun bootstrap.
 - Keep a writable ENDMEMEX database local to one host. For a remote mutation,
   use the authenticated write gateway; never use a filesystem-sync folder as
   distributed SQLite.

@@ -91,7 +91,7 @@ python3 endeavor_db.py init
 python3 endeavor_db.py install-hooks
 ```
 
-Before non-trivial work, bootstrap the selected project once:
+Before non-trivial work, run the read-only bootstrap once before planning or implementation:
 
 ```bash
 python3 endeavor_db.py bootstrap --project <PROJECT> --json
@@ -103,15 +103,22 @@ time), and the 10 most recent retained checkpoints for the selected project.
 The newest checkpoint is returned in full; older checkpoints use a progressively
 smaller deterministic detail budget, ending at 400 detail characters for
 checkpoint 10. It then returns the resumable handoff (null is a normal empty
-state), runs best-effort embedding backfill, and reports tracked-document
-freshness and hook state. Orientation is derived live from SQLite truth; it is
-not stored as a second AI-generated summary layer. Continue the returned session
-when relevant. Otherwise, the first `checkpoint --project <PROJECT> --goal "..."`
+state), read-only database/schema state, embedding coverage, tracked-document
+freshness, hook state, and ordered `next_actions`. `database.init_required` and
+`embedding.backfill_required` tell the agent whether a separate write is needed;
+their `next_tool` fields name the MCP write tool. Bootstrap never initializes or
+migrates SQLite, starts MiniLM, backfills embeddings, or writes ENDMEMEX state.
+Follow `next_actions` in order; use the local writable owner (or authenticated
+write gateway for remote mutation) for any reported write, then rerun bootstrap
+to confirm the requirement cleared. Orientation is derived live from SQLite truth
+and is not stored as a second AI-generated summary layer. Continue the returned
+session when relevant. Otherwise, the first `checkpoint --project <PROJECT> --goal "..."`
 can auto-start a session.
 
-For a one-command, read-only preflight before starting a project session, run
+After bootstrap, when you need a one-command read-only health preflight, run
 `readiness --project <PROJECT>`; it reports the local host, database health,
-embedding/ANN state, tracked-document freshness, and ordered next actions. See
+embedding/ANN state, tracked-document freshness, and ordered next actions without
+replacing bootstrap. See
 [Readiness preflight](ENDMEMEX_USER_MANUAL.md#readiness-preflight-readiness).
 
 Before rediscovering prior work or making a high-impact decision, query memory:

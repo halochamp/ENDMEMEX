@@ -17,15 +17,18 @@ For installation and public-release privacy, use
 
 ## Safe workflow
 
-1. Before non-trivial work, bootstrap the selected project once:
+1. Before non-trivial work, run the read-only bootstrap once before planning or implementation:
 
    ```bash
    python3 endeavor_db.py bootstrap --project <PROJECT> --json
    ```
 
-   A null handoff is normal. Continue a relevant returned session; use
-   [`pack`](ENDMEMEX_USER_MANUAL.md#session-briefing-pack) only when the
-   handoff needs wider context.
+   Follow its ordered `next_actions`. If it reports `database.init_required=true`
+   or `embedding.backfill_required=true`, perform only that explicit write via the
+   local writable owner (or authenticated write gateway for remote mutation), then
+   rerun bootstrap. A null handoff is normal. Continue a relevant returned session;
+   use [`pack`](ENDMEMEX_USER_MANUAL.md#session-briefing-pack) only when bootstrap's
+   orientation/handoff needs wider context.
 
 2. Query existing knowledge before rediscovering prior work or making a
    high-impact decision:

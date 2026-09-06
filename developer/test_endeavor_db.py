@@ -162,6 +162,12 @@ class EndeavorDatabaseTest(unittest.TestCase):
             (external / "TOPLEVEL.md").write_text("# top\n", encoding="utf-8")
             (external / "sub-project" / ".pytest_cache").mkdir()
             (external / "sub-project" / ".pytest_cache" / "README.md").write_text("junk\n", encoding="utf-8")
+            (external / "sub-project" / "logs").mkdir()
+            (external / "sub-project" / "logs" / "memory.md").write_text("runtime log\n", encoding="utf-8")
+            (external / "sub-project" / "workspace").mkdir()
+            (external / "sub-project" / "workspace" / "news.md").write_text("runtime output\n", encoding="utf-8")
+            (external / "sub-project" / "#developer").mkdir()
+            (external / "sub-project" / "#developer" / "audit.md").write_text("reviewed internal doc\n", encoding="utf-8")
 
             with mock.patch.object(sync_tracked, "_git_tracked_markdown", return_value=[]), \
                  mock.patch.object(sync_tracked, "ROOT", self.root), \
@@ -175,6 +181,9 @@ class EndeavorDatabaseTest(unittest.TestCase):
             self.assertNotIn(
                 str((external / "sub-project" / ".pytest_cache" / "README.md").resolve()), docs,
             )
+            self.assertNotIn(str((external / "sub-project" / "logs" / "memory.md").resolve()), docs)
+            self.assertNotIn(str((external / "sub-project" / "workspace" / "news.md").resolve()), docs)
+            self.assertIn(str((external / "sub-project" / "#developer" / "audit.md").resolve()), docs)
 
     def test_discover_knowledge_docs_excludes_external_root_overlapping_root(self):
         # An EXTERNAL_TRACKED_ROOTS entry equal to, containing, or contained by
@@ -1656,30 +1665,72 @@ class EndeavorDatabaseTest(unittest.TestCase):
 
     def _bootstrap_mocks(self):
         return (
-            mock.patch.object(db, "backfill_embeddings", return_value={
-                "status": "ok", "candidates": 0, "embedded": 0, "attempts": 0,
+            mock.patch.object(db, "_bootstrap_embedding_status", return_value={
+                "status": "ok", "backfill_required": False, "pending": 0,
+                "knowledge_pending": 0, "memory_record_pending": 0,
+                "invalid_blobs": 0, "stale_hashes": 0, "companion_warm": False,
+                "next_tool": None,
             }),
             mock.patch.object(db, "_tracked_docs_summary", return_value={"ok": True}),
             mock.patch.object(db, "hook_status", return_value={"pre-commit": "installed"}),
         )
 
-    def test_bootstrap_reports_null_session_for_a_new_project(self):
-        backfill, docs, hooks = self._bootstrap_mocks()
-        with backfill as backfill_call, docs, hooks:
+    def test_bootstrap_reports_null_session_for_a_new_project_without_backfill(self):
+        embedding, docs, hooks = self._bootstrap_mocks()
+        with embedding as embedding_call, docs, hooks, mock.patch.object(
+            db, "backfill_embeddings"
+        ) as backfill_call:
             data = db.bootstrap(self.conn, "fresh-project")
         self.assertIsNone(data["session"])
         self.assertIsNone(data["checkpoint"])
+        self.assertFalse(data["database"]["init_required"])
         self.assertEqual(data["embedding"]["status"], "ok")
+        self.assertFalse(data["embedding"]["backfill_required"])
         self.assertEqual(data["docs"], {"ok": True})
         self.assertEqual(data["hooks"], {"pre-commit": "installed"})
-        backfill_call.assert_called_once()
+        self.assertEqual(data["next_actions"], [])
+        embedding_call.assert_called_once()
+        backfill_call.assert_not_called()
+
+    def test_bootstrap_reports_explicit_backfill_requirement_without_writing(self):
+        source = self.root / "needs-embedding.md"
+        source.write_text("# Needs embedding\n\nPending semantic row.\n", encoding="utf-8")
+        db.ingest_markdown(self.conn, source, "demo", "project_memory", embed=False)
+        with mock.patch.object(db, "_embed_health", return_value=None), mock.patch.object(
+            db, "_tracked_docs_summary", return_value={"ok": True}
+        ), mock.patch.object(db, "hook_status", return_value={"pre-commit": "installed"}), mock.patch.object(
+            db, "backfill_embeddings"
+        ) as backfill_call:
+            data = db.bootstrap(self.conn, "demo")
+        self.assertTrue(data["embedding"]["backfill_required"])
+        self.assertGreaterEqual(data["embedding"]["pending"], 1)
+        self.assertEqual(data["embedding"]["next_tool"], "endeavor_memory_embed_backfill")
+        self.assertEqual(data["next_actions"][0]["code"], "backfill_embeddings")
+        self.assertEqual(data["next_actions"][0]["tool"], "endeavor_memory_embed_backfill")
+        backfill_call.assert_not_called()
+
+    def test_tracked_document_next_actions_share_policy_across_callers(self):
+        docs = {
+            "ok": False, "stale": 2, "missing": 1,
+            "metadata_mismatch": 3, "orphaned": 4,
+        }
+        readiness_actions = db._tracked_document_next_actions(docs, priority="P1")
+        bootstrap_actions = db._tracked_document_next_actions(docs, priority="P2")
+        self.assertEqual(
+            [item["code"] for item in readiness_actions],
+            ["sync_tracked_documents", "review_orphaned_documents"],
+        )
+        self.assertEqual(
+            [{k: v for k, v in item.items() if k != "priority"} for item in readiness_actions],
+            [{k: v for k, v in item.items() if k != "priority"} for item in bootstrap_actions],
+        )
 
     def test_bootstrap_includes_latest_checkpoint_when_session_exists(self):
         session_id = db.start_session(self.conn, "demo", "resume me", "codex", {})
         session = db.resolve_session(self.conn, session_id, None)
         db.add_checkpoint(self.conn, session, "codex", {"summary": "left off here", "status": "paused"})
-        backfill, docs, hooks = self._bootstrap_mocks()
-        with backfill, docs, hooks:
+        embedding, docs, hooks = self._bootstrap_mocks()
+        with embedding, docs, hooks:
             data = db.bootstrap(self.conn, "demo")
         self.assertEqual(data["session"]["id"], session_id)
         self.assertEqual(data["checkpoint"]["summary"], "left off here")
@@ -1796,8 +1847,8 @@ class EndeavorDatabaseTest(unittest.TestCase):
         second = db.resolve_session(self.conn, second_id, "demo")
         db.add_checkpoint(self.conn, first, "codex", {"summary": "first checkpoint", "status": "paused"})
         db.add_checkpoint(self.conn, second, "claude", {"summary": "second checkpoint", "status": "paused"})
-        backfill, docs, hooks = self._bootstrap_mocks()
-        with backfill, docs, hooks:
+        embedding, docs, hooks = self._bootstrap_mocks()
+        with embedding, docs, hooks:
             boot = db.bootstrap(self.conn, "demo", session_id=first_id)
         self.assertEqual(boot["session"]["id"], first_id)
         self.assertEqual(boot["checkpoint"]["summary"], "first checkpoint")
@@ -1808,25 +1859,42 @@ class EndeavorDatabaseTest(unittest.TestCase):
             db.build_pack(self.conn, "demo")
 
     def test_bootstrap_and_pack_reject_an_unknown_explicit_session(self):
-        backfill, docs, hooks = self._bootstrap_mocks()
-        with backfill, docs, hooks, self.assertRaises(db.SessionNotFoundError):
+        embedding, docs, hooks = self._bootstrap_mocks()
+        with embedding, docs, hooks, self.assertRaises(db.SessionNotFoundError):
             db.bootstrap(self.conn, "demo", session_id="missing-session")
         with self.assertRaises(db.SessionNotFoundError):
             db.build_pack(self.conn, "demo", session_id="missing-session")
 
-    def test_bootstrap_cli_is_a_single_call(self):
-        backfill, docs, hooks = self._bootstrap_mocks()
+    def test_bootstrap_cli_is_read_only_and_reports_follow_up_requirements(self):
+        embedding, docs, hooks = self._bootstrap_mocks()
         stdout = io.StringIO()
-        with backfill, docs, hooks, redirect_stdout(stdout):
+        with embedding, docs, hooks, mock.patch.object(db, "initialize") as initialize_call, mock.patch.object(
+            db, "backfill_embeddings"
+        ) as backfill_call, redirect_stdout(stdout):
             exit_code = db.main(["--db", str(self.database), "bootstrap", "--project", "demo", "--json"])
         self.assertEqual(exit_code, 0)
         data = json.loads(stdout.getvalue())
         self.assertEqual(data["project"], "demo")
         self.assertIn("orientation", data)
         self.assertEqual(data["orientation"]["recent_limit"], 10)
-        self.assertIn("embedding", data)
+        self.assertFalse(data["database"]["init_required"])
+        self.assertFalse(data["embedding"]["backfill_required"])
         self.assertIn("docs", data)
         self.assertIn("hooks", data)
+        initialize_call.assert_not_called()
+        backfill_call.assert_not_called()
+
+    def test_bootstrap_missing_database_reports_initialize_without_creating_file(self):
+        missing = self.root / "bootstrap-missing.sqlite3"
+        stdout = io.StringIO()
+        with redirect_stdout(stdout):
+            exit_code = db.main(["--db", str(missing), "bootstrap", "--project", "demo", "--json"])
+        self.assertEqual(exit_code, 0)
+        data = json.loads(stdout.getvalue())
+        self.assertTrue(data["database"]["init_required"])
+        self.assertEqual(data["database"]["next_tool"], "endeavor_memory_initialize")
+        self.assertEqual(data["next_actions"][0]["code"], "initialize_database")
+        self.assertFalse(missing.exists())
 
     def test_render_activity_enriches_every_action_type(self):
         source = self.root / "memo.md"

@@ -21,11 +21,12 @@ Before non-trivial work:
 1. Read `CLAUDE.md` and the README urgent rules.
 2. Inspect Git status.
 3. Identify the selected ENDMEMEX project label/database context.
-4. Bootstrap once using the documented `bootstrap --project <PROJECT> --json` flow.
-5. Query existing knowledge before rediscovering prior work or making a high-impact decision.
-6. Open/validate cited sources before relying on stale results.
-7. Read only the relevant User Manual section for the task.
-8. Define the exact lifecycle/write/retrieval invariant before editing code.
+4. Run the read-only `bootstrap --project <PROJECT> --json` once before planning or implementation and follow its ordered `next_actions`.
+5. If bootstrap reports `database.init_required=true` or `embedding.backfill_required=true`, perform only the reported explicit write through the local writable owner (or authenticated write gateway for remote mutation), then rerun bootstrap and confirm the requirement cleared.
+6. Query existing knowledge before rediscovering prior work or making a high-impact decision.
+7. Open/validate cited sources before relying on stale results.
+8. Read only the relevant User Manual section for the task.
+9. Define the exact lifecycle/write/retrieval invariant before editing code.
 
 ## 2. Memory write lifecycle
 
@@ -61,6 +62,8 @@ After changing tracked knowledge Markdown:
 ```bash
 python3 sync_tracked.py <path>...
 ```
+
+For health diagnostics, use the shared policy returned by both bootstrap and readiness: `stale`, `missing`, and `metadata_mismatch` are sync candidates after path review; `orphaned` is a separate hash-pinned review/prune workflow and must never be auto-pruned. External filesystem-walk roots exclude `logs/` and `workspace/` runtime Markdown so transient output does not become tracked-document health noise.
 
 Use `ingest` for a persistent untracked document only when the source will remain available.
 

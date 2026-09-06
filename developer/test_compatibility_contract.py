@@ -160,7 +160,7 @@ AGENT_MCP_CONSTANTS = {
 
 GOLDEN_FIXTURE = Path(__file__).with_name("phase0_golden_contract.json")
 _GOLDEN = json.loads(GOLDEN_FIXTURE.read_text(encoding="utf-8"))
-PARSER_ERROR_CHOICE_BY_MINOR = _GOLDEN["parser_error_choice_by_python_minor"]
+PARSER_ERROR_PROBES_BY_MINOR = _GOLDEN["parser_error_probes_by_python_minor"]
 # Stored as full structural payloads, not opaque hashes: a future drift shows
 # unittest's own dict diff (which field changed) instead of two hex strings
 # that give no signal about what broke or where.
@@ -588,17 +588,12 @@ class CompatibilityContractTest(unittest.TestCase):
 
     def test_parser_error_probes_are_exact_and_deterministic(self):
         minor = f"{sys.version_info.major}.{sys.version_info.minor}"
-        expected_choice = PARSER_ERROR_CHOICE_BY_MINOR.get(minor)
+        expected = PARSER_ERROR_PROBES_BY_MINOR.get(minor)
         self.assertIsNotNone(
-            expected_choice,
+            expected,
             f"unsupported Python minor {minor}; add an exact parser-error fixture before running this contract",
         )
-        actual = _parser_error_probe_payload()
-        # Replace the version-sensitive probe on a fresh mapping so test order
-        # cannot mutate the module-level golden fixture.
-        expected = dict(_GOLDEN["parser_error_probes"])
-        expected["invalid_choice"] = expected_choice
-        self.assertEqual(actual, expected)
+        self.assertEqual(_parser_error_probe_payload(), expected)
 
     def test_mcp_schema_and_instructions_are_complete_golden_contracts(self):
         payload = {"tools": mcp_server.TOOLS, "server_instructions": mcp_server.SERVER_INSTRUCTIONS}
@@ -788,7 +783,9 @@ class CompatibilityContractTest(unittest.TestCase):
             ("endeavor_memory_timeline", {"project": "DEMO", "agent": "codex", "status": "paused", "session": "S1", "limit": 500, "oldest_first": True}, ["timeline", "--json", "--project", "DEMO", "--agent", "codex", "--status", "paused", "--session", "S1", "--limit", "500", "--oldest-first"]),
             ("endeavor_memory_record_show", {"id": "AUDIT-MEM-001"}, ["record-show", "AUDIT-MEM-001"]),
             ("endeavor_memory_record_search", {"query": "needle", "project": "DEMO", "type": "audit", "limit": 50, "current_only": True}, ["record-search", "needle", "--project", "DEMO", "--type", "audit", "--limit", "50", "--current-only"]),
-            ("endeavor_memory_bootstrap", {"project": "DEMO", "session": "S1", "include_pending": True, "confirm": True}, ["bootstrap", "--project", "DEMO", "--json", "--session", "S1", "--include-pending"]),
+            ("endeavor_memory_initialize", {"confirm": True}, ["init"]),
+            ("endeavor_memory_embed_backfill", {"batch_size": 1024, "confirm": True}, ["embed-backfill", "--batch-size", "1024"]),
+            ("endeavor_memory_bootstrap", {"project": "DEMO", "session": "S1", "include_pending": True}, ["bootstrap", "--project", "DEMO", "--json", "--session", "S1", "--include-pending"]),
             ("endeavor_memory_checkpoint", {"project": "DEMO", "session": "S1", "agent": "codex", "summary": "summary", "goal": "goal", "work_done": "done", "current_state": "state", "next_steps": "next", "blockers": "none", "status": "paused", "files": ["a.py", "b.py"], "auto_files": True, "commands": ["cmd"], "verify": ["test"], "pinned": True, "confirm": True}, ["checkpoint", "--project", "DEMO", "--agent", "codex", "--summary", "summary", "--session", "S1", "--goal", "goal", "--work-done", "done", "--current-state", "state", "--next-steps", "next", "--blockers", "none", "--status", "paused", "--file", "a.py", "--file", "b.py", "--auto-files", "--command", "cmd", "--verify", "test", "--pin"]),
             ("endeavor_memory_pin_checkpoint", {"checkpoint_id": 7, "agent": "codex", "pinned": True, "confirm": True}, ["pin-checkpoint", "7", "--agent", "codex"]),
             ("endeavor_memory_pin_checkpoint", {"checkpoint_id": 7, "agent": "codex", "pinned": False, "confirm": True}, ["unpin-checkpoint", "7", "--agent", "codex"]),
@@ -924,7 +921,7 @@ class CompatibilityContractTest(unittest.TestCase):
                             replacements["write_sync_freshness_signal"].assert_not_called()
 
         self.assertEqual(observed_read_only, set(_GOLDEN["read_only_commands"]))
-        self.assertEqual(len(observed_read_only), 20)
+        self.assertEqual(len(observed_read_only), 21)
 
     def test_every_cli_command_has_a_side_effect_free_runtime_route(self):
         cases = _GOLDEN["cli_runtime_cases"]

@@ -36,9 +36,9 @@ touch the filesystem, are destructive, or are meant for a human to read).
 
 | Command | Purpose | MCP tool | Details |
 |---|---|---|---|
-| `init` | Create or migrate the database | — | [README §Start a project session](README.md#start-a-project-session) |
+| `init` | Create or migrate the database | `endeavor_memory_initialize` | [README §Start a project session](README.md#start-a-project-session) |
 | `agent-help` | Print a CLI cheat sheet, no DB access | — | — |
-| `bootstrap` | One-call session start: database/project orientation + recency-weighted recent 10 checkpoints + handoff + embedding backfill + doc freshness + hooks | `endeavor_memory_bootstrap` | [§Session Briefing](#session-briefing-pack) |
+| `bootstrap` | Read-only first-step orientation: database/project map + recency-weighted recent 10 checkpoints + handoff + schema/backfill requirements + doc freshness + hooks + ordered next actions | `endeavor_memory_bootstrap` | [§Session Briefing](#session-briefing-pack) |
 | `readiness` | One read-only preflight: machine role + DB + embeddings + ANN + docs + ordered next actions | `endeavor_memory_readiness` | [§Readiness preflight](#readiness-preflight-readiness) |
 | `pack` | Wider session briefing: handoff + open records + knowledge + activity, budget-bounded | `endeavor_memory_pack` | [§Session Briefing](#session-briefing-pack) |
 | `pending` | Lifecycle-aware pending work (presence + resumable/blocked sessions + open records) | `endeavor_memory_pending` | [README §Inspecting all pending work](README.md#inspecting-all-pending-work--mandatory-procedure) |
@@ -52,7 +52,7 @@ touch the filesystem, are destructive, or are meant for a human to read).
 | `embed-diagnose` | Interpreter/dependency/socket diagnosis (never spawns) — required first step before any embedding fix | — | [§Semantic Search](#semantic-search-optional-minilm-companion) |
 | `embed-warm` | Start the MiniLM companion now, optionally `--keep-alive` | — | [§Semantic Search](#semantic-search-optional-minilm-companion) |
 | `embed-cool` | Return a `--keep-alive` companion to its normal 1-hour idle timeout | — | [§Semantic Search](#semantic-search-optional-minilm-companion) |
-| `embed-backfill` | Spawn the companion if needed and embed any missing/stale rows | — | [§Semantic Search](#semantic-search-optional-minilm-companion) |
+| `embed-backfill` | Spawn the companion if needed and embed any missing/stale rows | `endeavor_memory_embed_backfill` | [§Semantic Search](#semantic-search-optional-minilm-companion) |
 | `ann-status` / `ann-build` | Inspect or build the optional per-machine HNSW sidecar | — | [§Semantic Search](#semantic-search-optional-minilm-companion) |
 | `record-add` | Add a durable SQLite-native audit/fix/verification/decision/knowledge record | `endeavor_memory_record_add` | [§SQLite-Native Records](#sqlite-native-records-and-references) |
 | `record-update` | Correct/enrich truth fields or independent action state | `endeavor_memory_record_update` | [§SQLite-Native Records](#sqlite-native-records-and-references) |
@@ -90,7 +90,7 @@ after a hook-script change — re-run `install-hooks` to pick it up; a running
 git process does not auto-update its own hooks the same way a running server
 doesn't auto-reload edited code.
 
-### MCP tools (23, `endmemex` server)
+### MCP tools (25, `endmemex` server)
 
 Every tool name below is the exact string an MCP client sees (with the
 `mcp__endmemex__` prefix Claude Code adds). Write tools mutate the database
@@ -109,7 +109,9 @@ file.
 | `endeavor_memory_record_search` | read | no | `record-search` |
 | `endeavor_presence_list` | read | no | `presence` |
 | `endeavor_sync_status` | read | no | `sync-status` |
-| `endeavor_memory_bootstrap` | write | no | `bootstrap` |
+| `endeavor_memory_bootstrap` | read | no | `bootstrap` |
+| `endeavor_memory_initialize` | write | no | `init` |
+| `endeavor_memory_embed_backfill` | write | no | `embed-backfill` |
 | `endeavor_memory_checkpoint` | write | no | `checkpoint` |
 | `endeavor_memory_pin_checkpoint` | write | no | `pin-checkpoint`/`unpin-checkpoint` |
 | `endeavor_memory_record_add` | write | no | `record-add` |
@@ -123,13 +125,16 @@ file.
 | `endeavor_presence_heartbeat` | write | **opt-in** | `presence-heartbeat` |
 | `endeavor_presence_stop` | write | **opt-in** | `presence-stop` |
 
-No MCP tool exists for `session-start`, `seed`, `ingest`, `activity`, the `embed-*` family,
-`maintenance`, `stats`, `doctor`, or `install-hooks` — use the CLI for those.
+No MCP tool exists for `session-start`, `seed`, `ingest`, `activity`, `embed-status`,
+`embed-diagnose`, `embed-warm`, `embed-cool`, `ann-*`, `maintenance`, `stats`, `doctor`,
+or `install-hooks` — use the CLI for those. `init` and `embed-backfill` have explicit
+write MCP tools because bootstrap can report them as required follow-up actions.
 
 ## Readiness preflight (readiness)
 
-Use this before starting or resuming a project when one answer needs to tell
-you whether ENDMEMEX is usable and exactly what to do next:
+Use this after bootstrap when one read-only health answer needs to tell you
+whether ENDMEMEX is usable and exactly what to do next. It does not replace the
+mandatory first bootstrap for non-trivial work:
 
 ```bash
 python3 endeavor_db.py readiness --project <PROJECT>
@@ -231,7 +236,9 @@ directory holding several independent repos as immediate subfolders).
 Unlike the discovery above, an external root is walked by plain filesystem
 glob rather than `git ls-files` -- there is no requirement that the root
 itself be a single Git repository -- so it also picks up files a fresh
-clone or an in-progress, not-yet-committed checkout would have. Each
+clone or an in-progress, not-yet-committed checkout would have. External
+walks deliberately exclude `logs/` and `workspace/` runtime-output trees so
+transient Markdown does not create tracked-document health noise. Each
 discovered file's `--project` label is its path's first component under
 that external root (`<root>/sample-project/x.md` -> project
 `sample-project`); a file directly at the external root's top level, with no
@@ -324,8 +331,9 @@ python3 endeavor_db.py query "prompt cache" --check-stale --json
 
 ## Session Briefing (pack)
 
-`bootstrap` now gives both orientation and the latest handoff. Its
-`orientation.database` section reports whole-database counts;
+`bootstrap` is the read-only first ENDMEMEX context action for non-trivial work. It gives orientation and the latest handoff without initializing/migrating SQLite, starting MiniLM, or writing embeddings. Its top-level `database` section reports `schema_current`, `init_required`, and the explicit `next_tool` when initialization/migration is needed. Its top-level `embedding` section reports current coverage, `backfill_required`, and `next_tool=endeavor_memory_embed_backfill` when missing/stale vectors require an explicit write. The top-level `next_actions` array turns those diagnostics plus tracked-document/hook drift into ordered follow-up instructions: initialize first when required, then embedding backfill, tracked-document sync and separate orphan review, and hook repair as applicable. An empty array means no ENDMEMEX maintenance action is required. Perform reported writes only through the local writable owner (or authenticated write gateway for remote mutation), then rerun bootstrap and confirm the requirement cleared.
+
+Its `orientation.database` section reports whole-database counts;
 `orientation.project_map` lists every project currently represented in
 documents, knowledge, native records, sessions, or checkpoints using only
 compact knowledge/record/checkpoint counts plus latest-checkpoint time; and
@@ -337,7 +345,7 @@ high-signal summary/current-state/next-step/work-done/blocker fields. This
 orientation is derived live from SQLite and is never written back as a second
 summary layer.
 
-`pack` widens that into a fuller session-start briefing in one call — handoff,
+`pack` is optional after bootstrap. It widens the bootstrap context into a fuller briefing in one call — handoff,
 open SQLite-native records (`status = 'open'`, a raw filter, not
 lifecycle-resolved — use `record-show`/`record-search --current-only` for a
 precise current-truth read), the most recently updated `knowledge` chunks for

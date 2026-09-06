@@ -2549,6 +2549,64 @@ def doctor_report(conn: sqlite3.Connection, path: Path) -> dict[str, Any]:
     }
 
 
+def _tracked_document_next_actions(
+    docs: dict[str, Any], *, priority: str,
+) -> list[dict[str, Any]]:
+    """Return the shared tracked-document maintenance policy for all preflights.
+
+    Stale, missing, and metadata-mismatched tracked sources are sync candidates.
+    Orphaned indexed documents are a separate review/prune workflow and are
+    never folded into sync or pruned automatically.
+    """
+    actions: list[dict[str, Any]] = []
+    docs_error = docs.get("error")
+    if docs_error:
+        actions.append({
+            "priority": priority,
+            "code": "document_freshness_unavailable",
+            "reason": str(docs_error),
+            "tool": None,
+            "command": "python3 sync_tracked.py --check --json",
+            "guidance": "Restore the tracked-document check before trusting freshness counts.",
+        })
+        return actions
+
+    drift_counts = {
+        key: int(docs.get(key, 0) or 0)
+        for key in ("stale", "missing", "metadata_mismatch")
+    }
+    if sum(drift_counts.values()):
+        reason = ", ".join(
+            f"{key}={count}" for key, count in drift_counts.items() if count
+        )
+        actions.append({
+            "priority": priority,
+            "code": "sync_tracked_documents",
+            "reason": reason,
+            "tool": None,
+            "command": "python3 sync_tracked.py --check --json",
+            "guidance": (
+                "Review the listed tracked sources, then sync only approved stale, missing, "
+                "or metadata-mismatched documents."
+            ),
+        })
+
+    orphaned = int(docs.get("orphaned", 0) or 0)
+    if orphaned:
+        actions.append({
+            "priority": priority,
+            "code": "review_orphaned_documents",
+            "reason": f"orphaned={orphaned}",
+            "tool": None,
+            "command": "python3 sync_tracked.py --propose-prune /private/tmp/endmemex-prune-proposal.json",
+            "guidance": (
+                "Review the hash-pinned proposal and confirm the source is recoverable or "
+                "durably archived before applying it; never prune automatically."
+            ),
+        })
+    return actions
+
+
 def readiness_report(conn: sqlite3.Connection, project: str, path: Path) -> dict[str, Any]:
     """Build an actionable, non-mutating preflight for one project.
 
@@ -2607,29 +2665,7 @@ def readiness_report(conn: sqlite3.Connection, project: str, path: Path) -> dict
             "guidance": "Install the hook in this clone, then rerun readiness.",
         })
 
-    docs_error = docs.get("error")
-    docs_drift = sum(int(docs.get(key, 0)) for key in ("stale", "missing", "metadata_mismatch"))
-    if docs_error:
-        actions.append({
-            "priority": "P1", "code": "document_freshness_unavailable",
-            "reason": str(docs_error),
-            "command": "python3 sync_tracked.py --check --json",
-            "guidance": "Restore the tracked-document check before trusting freshness counts.",
-        })
-    elif docs_drift:
-        actions.append({
-            "priority": "P1", "code": "sync_tracked_documents",
-            "reason": f"{docs_drift} tracked document(s) are stale, missing, or have metadata drift.",
-            "command": "python3 sync_tracked.py --check --json",
-            "guidance": "Review the listed paths, then sync each approved tracked document.",
-        })
-    if int(docs.get("orphaned", 0)):
-        actions.append({
-            "priority": "P1", "code": "review_orphaned_documents",
-            "reason": f"{docs['orphaned']} indexed document(s) are outside the tracked manifest.",
-            "command": "python3 sync_tracked.py --propose-prune /private/tmp/endmemex-prune-proposal.json",
-            "guidance": "Review the hash-pinned proposal; never prune automatically from readiness.",
-        })
+    actions.extend(_tracked_document_next_actions(docs, priority="P1"))
 
     embedding_pending = int(embedding.get("pending", 0)) + int(embedding.get("memory_record_pending", 0))
     stale_embeddings = int(embedding.get("stale_hashes", 0))
@@ -2940,29 +2976,124 @@ def build_orientation(
     }
 
 
+def _bootstrap_embedding_status(conn: sqlite3.Connection) -> dict[str, Any]:
+    """Read-only embedding coverage for bootstrap orientation."""
+    stats = embedding_stats(conn)
+    pending = int(stats["pending"]) + int(stats["memory_record_pending"])
+    return {
+        "status": "needs_backfill" if pending else "ok",
+        "backfill_required": bool(pending),
+        "pending": pending,
+        "knowledge_pending": int(stats["pending"]),
+        "memory_record_pending": int(stats["memory_record_pending"]),
+        "invalid_blobs": int(stats["invalid_blobs"]),
+        "stale_hashes": int(stats["stale_hashes"]),
+        "companion_warm": bool(stats["companion_warm"]),
+        "next_tool": "endeavor_memory_embed_backfill" if pending else None,
+    }
+
+
+def _bootstrap_next_actions(
+    database: dict[str, Any], embedding: dict[str, Any],
+    docs: dict[str, Any], hooks: dict[str, str],
+) -> list[dict[str, Any]]:
+    """Build ordered, read-only follow-up guidance from bootstrap diagnostics."""
+    actions: list[dict[str, Any]] = []
+    if database.get("init_required"):
+        actions.append({
+            "priority": "P0",
+            "code": "initialize_database",
+            "reason": "ENDMEMEX database schema is missing or not current.",
+            "tool": "endeavor_memory_initialize",
+            "command": "python3 endeavor_db.py init",
+            "after": "Rerun bootstrap and confirm database.init_required=false.",
+        })
+        return actions
+
+    if embedding.get("backfill_required"):
+        actions.append({
+            "priority": "P1",
+            "code": "backfill_embeddings",
+            "reason": f"{int(embedding.get('pending') or 0)} embedding row(s) are missing, stale, or invalid.",
+            "tool": "endeavor_memory_embed_backfill",
+            "command": "python3 endeavor_db.py embed-backfill",
+            "after": "Rerun bootstrap and confirm embedding.backfill_required=false.",
+        })
+
+    actions.extend(_tracked_document_next_actions(docs, priority="P2"))
+
+    drifted_hooks = sorted(
+        name for name, status in hooks.items()
+        if status not in ("installed", "not_a_git_repo")
+    )
+    if drifted_hooks:
+        actions.append({
+            "priority": "P3",
+            "code": "install_hooks",
+            "reason": "Git hook state needs attention: " + ", ".join(drifted_hooks),
+            "tool": None,
+            "command": "python3 endeavor_db.py install-hooks",
+            "after": "Rerun bootstrap and confirm hook state is installed.",
+        })
+    return actions
+
+
 def bootstrap(
-    conn: sqlite3.Connection, project: str, batch_size: int = EMBED_BATCH_SIZE,
+    conn: sqlite3.Connection, project: str,
     include_pending: bool = False, session_id: str | None = None,
 ) -> dict[str, Any]:
-    """One-call session start replacing the multi-step §7.5 ritual: project
-    orientation, latest handoff (nulls when the project has nothing resumable
-    — the normal state of a new task), best-effort embedding backfill,
-    tracked-doc freshness counts, and hook installation state. Every part
-    degrades independently; a cold companion or a missing git binary never
-    hides the handoff."""
+    """Read-only task orientation with explicit follow-up requirements."""
+    schema_version = database_schema_version(conn)
+    schema_current = schema_version == SCHEMA_VERSION
+    if not schema_current:
+        database = {
+            "schema_version": schema_version,
+            "schema_current": False,
+            "init_required": True,
+            "next_tool": "endeavor_memory_initialize",
+        }
+        embedding = {
+            "status": "unavailable_until_initialized",
+            "backfill_required": None,
+            "next_tool": None,
+        }
+        docs = {"ok": None, "reason": "database schema is not current"}
+        hooks = hook_status()
+        return {
+            "project": project,
+            "database": database,
+            "orientation": None,
+            "session": None,
+            "checkpoint": None,
+            "embedding": embedding,
+            "docs": docs,
+            "hooks": hooks,
+            "next_actions": _bootstrap_next_actions(database, embedding, docs, hooks),
+        }
     try:
         data = handoff(conn, session_id, project)
     except SessionNotFoundError:
         if session_id:
             raise
         data = {"session": None, "checkpoint": None}
+    database = {
+        "schema_version": schema_version,
+        "schema_current": True,
+        "init_required": False,
+        "next_tool": None,
+    }
+    embedding = _bootstrap_embedding_status(conn)
+    docs = _tracked_docs_summary(conn)
+    hooks = hook_status()
     result = {
         "project": project,
+        "database": database,
         "orientation": build_orientation(conn, project),
         **data,
-        "embedding": backfill_embeddings(conn, batch_size),
-        "docs": _tracked_docs_summary(conn),
-        "hooks": hook_status(),
+        "embedding": embedding,
+        "docs": docs,
+        "hooks": hooks,
+        "next_actions": _bootstrap_next_actions(database, embedding, docs, hooks),
     }
     if include_pending:
         result["pending"] = build_pending_worklist(conn, project)
@@ -3332,9 +3463,12 @@ def refresh_activity_export(
 AGENT_HELP_TEXT = """\
 ENDMEMEX — agent cheat sheet (README.md = overview; ENDMEMEX_USER_MANUAL.md = full reference)
 
-Start of session (one call — database/project orientation + recency-weighted
-recent 10 checkpoints + handoff + embed backfill + doc freshness + hooks):
+Start of non-trivial work (read-only first step — database/project orientation +
+recency-weighted recent 10 checkpoints + handoff + schema/backfill requirements +
+doc freshness + hooks + ordered next actions):
   python3 endeavor_db.py bootstrap --project <PROJECT> --json
+  Follow next_actions. If database.init_required=true, initialize explicitly;
+  if embedding.backfill_required=true, backfill explicitly; then rerun bootstrap.
 
 Broader session briefing (handoff + open records + recent knowledge/activity,
 capped to a char budget — use when bootstrap's orientation/handoff isn't enough
@@ -3392,7 +3526,7 @@ Keep tracked Markdown current after editing a PROJECT_MEMORY.md/plan/audit:
 Health check (never spawns anything, safe anytime):
   python3 endeavor_db.py doctor
 
-One-command read-only project preflight (machine role, DB, embeddings, ANN,
+Optional post-bootstrap read-only health preflight (machine role, DB, embeddings, ANN,
 tracked-document freshness, and ordered next actions):
   python3 endeavor_db.py readiness --project <PROJECT>
 
@@ -3483,7 +3617,7 @@ def main(argv: list[str] | None = None) -> int:
     path = database_path(args.db)
     read_only_commands = {
         "query", "stats", "doctor", "evaluate", "embed-status", "embed-warm", "embed-cool",
-        "readiness", "ann-status", "ann-build",
+        "readiness", "ann-status", "ann-build", "bootstrap",
         "record-show", "record-search", "handoff", "activity", "pack", "pending", "presence", "sync-status",
         "timeline", "event-poll",
     }
@@ -3491,6 +3625,33 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "readiness" and not path.is_file():
         report = unavailable_readiness_report(args.project, path, "database file does not exist")
         print(json_text(report) if args.json else render_readiness(report))
+        return 0
+    if args.command == "bootstrap" and not path.is_file():
+        database = {
+            "schema_version": None,
+            "schema_current": False,
+            "init_required": True,
+            "next_tool": "endeavor_memory_initialize",
+        }
+        embedding = {
+            "status": "unavailable_until_initialized",
+            "backfill_required": None,
+            "next_tool": None,
+        }
+        docs = {"ok": None, "reason": "database file does not exist"}
+        hooks = hook_status()
+        report = {
+            "project": args.project,
+            "database": database,
+            "orientation": None,
+            "session": None,
+            "checkpoint": None,
+            "embedding": embedding,
+            "docs": docs,
+            "hooks": hooks,
+            "next_actions": _bootstrap_next_actions(database, embedding, docs, hooks),
+        }
+        print(json_text(report) if args.json else json.dumps(report, ensure_ascii=False, indent=2))
         return 0
     conn: sqlite3.Connection | None = None
     changes_before = 0
@@ -3570,7 +3731,7 @@ def main(argv: list[str] | None = None) -> int:
             print(json_text(backfill_embeddings(conn, args.batch_size)))
         elif args.command == "bootstrap":
             data = bootstrap(
-                conn, args.project, args.batch_size, args.include_pending, session_id=args.session,
+                conn, args.project, args.include_pending, session_id=args.session,
             )
             print(json_text(data) if args.json else json.dumps(data, ensure_ascii=False, indent=2))
         elif args.command == "pack":

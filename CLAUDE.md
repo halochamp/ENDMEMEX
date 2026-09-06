@@ -2,7 +2,8 @@
 
 - This public repository is self-contained; do not require a private parent repository for normal development.
 - Read [`AGENT.md`](AGENT.md) and [`AGENT_PROCEDURE.md`](AGENT_PROCEDURE.md) before substantial work; use [`ENDMEMEX_USER_MANUAL.md`](ENDMEMEX_USER_MANUAL.md) for authoritative detailed commands/semantics.
-- Before any ENDMEMEX write, read the README urgent rules and use the documented project/session lifecycle.
+- Before non-trivial work, run the read-only `bootstrap --project <PROJECT> --json` once before planning or implementation, follow its ordered `next_actions`, then query existing knowledge before rediscovering prior decisions.
+- Before any ENDMEMEX write, read the README urgent rules and use the documented project/session lifecycle. If bootstrap reports `database.init_required=true` or `embedding.backfill_required=true`, perform only that explicit write through the local writable owner (or authenticated write gateway for remote mutation), then rerun bootstrap.
 - Never store secrets, credentials, personal data, or large raw logs in ENDMEMEX records/checkpoints.
 - Do not treat stale retrieval results as current truth without opening/validating the cited source.
 - Checkpoint material phases, verification, handoffs, and commits; never mark unverified work `completed`.

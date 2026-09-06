@@ -49,6 +49,11 @@ _EXCLUDED_PARTS = {
     ".git", ".kiro", "__pycache__", "graphify-out", "node_modules", "venv", ".venv",
     ".pytest_cache", ".mypy_cache", ".ruff_cache", ".tox",
 }
+# External roots are filesystem-walked rather than Git-tracked, so ignore
+# runtime-output trees that may legitimately contain Markdown but are not
+# reviewed project knowledge. Keep this external-only: primary-repo discovery
+# remains governed by git ls-files and its existing explicit policies.
+_EXTERNAL_RUNTIME_EXCLUDED_PARTS = {"logs", "workspace"}
 _EXCLUDED_PREFIXES: tuple[tuple[str, ...], ...] = ()
 _EXCLUDED_NAMES = {"THIRD_PARTY_NOTICES.md"}
 _ACTIVE_PROJECT_DOCS: tuple[str, ...] = ()
@@ -130,7 +135,11 @@ def _external_markdown(root: Path) -> dict[str, tuple[str, str]]:
     for path in sorted(root.rglob("*.md")):
         rel = path.relative_to(root)
         parts = rel.parts
-        if set(parts) & _EXCLUDED_PARTS or path.name in _EXCLUDED_NAMES:
+        if (
+            set(parts) & _EXCLUDED_PARTS
+            or set(parts) & _EXTERNAL_RUNTIME_EXCLUDED_PARTS
+            or path.name in _EXCLUDED_NAMES
+        ):
             continue
         if path.name.startswith("prompt_baseline_") and path.name.endswith("_full.md"):
             continue

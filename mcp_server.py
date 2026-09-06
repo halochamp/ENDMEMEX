@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Stdio MCP bridge for shared Endeavor project memory operations.
 
-Read-only tools (query/readiness/handoff/pending/record_show/record_search/pack/presence_list/
-sync_status/timeline) always run. Write tools (checkpoint/pin_checkpoint/bootstrap/
-record_add/record_update/record_link/session_close/feedback/presence_start/
-presence_heartbeat/presence_stop) shell out to endeavor_db.py, which
+Read-only tools (query/readiness/bootstrap/handoff/pending/record_show/record_search/pack/
+presence_list/sync_status/timeline) always run. Write tools (initialize/embed_backfill/
+checkpoint/pin_checkpoint/record_add/record_update/record_link/session_close/feedback/
+presence_start/presence_heartbeat/presence_stop) shell out to endeavor_db.py, which
 serializes concurrent local writers with SQLite WAL and a busy timeout. For a
 remote-writer deployment, use write_gateway.py rather than sharing a writable
 SQLite database through a filesystem sync service.
@@ -24,25 +24,29 @@ DB = HERE / "endeavor_db.py"
 DB_COMMAND_TIMEOUT_S = 60
 
 WRITE_TOOLS = {
-    "endeavor_memory_checkpoint", "endeavor_memory_pin_checkpoint", "endeavor_memory_bootstrap",
+    "endeavor_memory_initialize", "endeavor_memory_embed_backfill",
+    "endeavor_memory_checkpoint", "endeavor_memory_pin_checkpoint",
     "endeavor_memory_record_add", "endeavor_memory_record_update",
     "endeavor_memory_record_link", "endeavor_memory_session_close",
     "endeavor_memory_feedback", "endeavor_memory_event_ack", "endeavor_presence_start",
     "endeavor_presence_heartbeat", "endeavor_presence_stop",
 }
 SERVER_INSTRUCTIONS = (
-    "ENDMEMEX is shared project memory. At the start of non-trivial work call bootstrap once, "
-    "then query before rediscovering prior work or making high-impact decisions. Checkpoint after "
-    "meaningful implementation, verified tests, decisions, handoffs, and Git commits. Use durable "
-    "records for audit -> resolves:fix -> verifies:verification lifecycles. Never store secrets. "
+    "ENDMEMEX is shared project memory. At the start of non-trivial work call the read-only bootstrap "
+    "once before planning or implementation, follow its ordered next_actions, then query before "
+    "rediscovering prior work or making high-impact decisions. Bootstrap never writes, initializes, "
+    "starts MiniLM, or backfills embeddings. If database.init_required=true, call endeavor_memory_initialize; "
+    "if embedding.backfill_required=true, call endeavor_memory_embed_backfill; then rerun bootstrap. "
+    "Checkpoint after meaningful implementation, verified tests, decisions, handoffs, and Git commits. "
+    "Use durable records for audit -> resolves:fix -> verifies:verification lifecycles. Never store secrets. "
     "Successful tools return JSON encoded in text content; errors start [error]. "
     "Keep writable SQLite local to one host; use authenticated write_gateway.py for remote mutations. "
     "Open cited sources before relying on material search results. "
     "Agent presence is opt-in: call presence_start/presence_heartbeat/presence_stop only when the "
     "user asks agents to announce work or is coordinating multiple concurrent sessions; otherwise "
     "do not create those shared-database writes. sync_status shows the last-known write time per machine. "
-    "Readiness is the single read-only preflight for local-host identity, DB health, embedding coverage, ANN, "
-    "tracked-document freshness, and ordered next actions."
+    "Readiness is an optional post-bootstrap read-only health preflight for local-host identity, DB health, "
+    "embedding coverage, ANN, tracked-document freshness, and ordered next actions; it never replaces bootstrap."
 )
 
 READ_ONLY_ANNOTATIONS = {
@@ -97,10 +101,10 @@ TOOLS = [
         "compact": {"type": "boolean", "description": "Trim results to the ~8 fields read when browsing (default true)"},
         "check_stale": {"type": "boolean", "description": "Flag results whose source file has drifted from the indexed hash (default true; set false only for a measured latency-sensitive call)."},
     }, "required": ["query"]}},
-    {"name": "endeavor_memory_readiness", "title": "Check ENDMEMEX project readiness", "description": "READ ONLY. Use this one-call preflight before a project session when you need machine role, database/FTS health, embedding coverage, ANN sidecar state, tracked-document freshness, and ordered actionable next_actions in one JSON result. It never bootstraps, backfills, warms a companion, builds ANN, or writes the database. Returns a JSON object as text; overall is ready, attention, or blocked. Follow next_actions in priority order and do not auto-prune orphaned documents.", "annotations": READ_ONLY_ANNOTATIONS, "inputSchema": {"type": "object", "additionalProperties": False, "properties": {
+    {"name": "endeavor_memory_readiness", "title": "Check ENDMEMEX project readiness", "description": "READ ONLY. Use after bootstrap when machine role, database/FTS health, embedding coverage, ANN sidecar state, tracked-document freshness, and ordered actionable next_actions are needed in one JSON result. It does not replace the mandatory first bootstrap for non-trivial work and never bootstraps, backfills, warms a companion, builds ANN, or writes the database. Returns a JSON object as text; overall is ready, attention, or blocked. Follow next_actions in priority order and do not auto-prune orphaned documents.", "annotations": READ_ONLY_ANNOTATIONS, "inputSchema": {"type": "object", "additionalProperties": False, "properties": {
         "project": PROJECT_PROPERTY,
     }, "required": ["project"]}},
-    {"name": "endeavor_memory_pack", "title": "Build ENDMEMEX briefing", "description": "READ ONLY. Use at the start of a non-trivial task when a handoff alone is insufficient. Returns JSON text containing the selected handoff, lifecycle-aware actionable_records, raw open_records, recent knowledge, and activity within the total serialized budget. budget_omitted_counts reports every eligible item omitted for space. open_records means only stored status=open and can include historical evidence resolved or superseded by lifecycle edges; use actionable_records for current follow-up work and record_show before relying on a material record. If pending_complete=false, inspect pending_warnings before acting. Pass session after the user selects a resumable session. Prefer handoff for a lightweight resume; do not call repeatedly during ordinary work.", "annotations": READ_ONLY_ANNOTATIONS, "inputSchema": {"type": "object", "additionalProperties": False, "properties": {
+    {"name": "endeavor_memory_pack", "title": "Build ENDMEMEX briefing", "description": "READ ONLY. Use after bootstrap when its orientation/handoff is insufficient and a wider bounded briefing is needed. It does not replace bootstrap. Returns JSON text containing the selected handoff, lifecycle-aware actionable_records, raw open_records, recent knowledge, and activity within the total serialized budget. budget_omitted_counts reports every eligible item omitted for space. open_records means only stored status=open and can include historical evidence resolved or superseded by lifecycle edges; use actionable_records for current follow-up work and record_show before relying on a material record. If pending_complete=false, inspect pending_warnings before acting. Pass session after the user selects a resumable session. Prefer handoff for a lightweight resume; do not call repeatedly during ordinary work.", "annotations": READ_ONLY_ANNOTATIONS, "inputSchema": {"type": "object", "additionalProperties": False, "properties": {
         "project": PROJECT_PROPERTY,
         "session": SESSION_PROPERTY,
         "budget": {"type": "integer", "minimum": 500, "maximum": 50000, "description": "Approximate character budget (default 6000; max 50000)."},
@@ -130,11 +134,17 @@ TOOLS = [
         "limit": {"type": "integer", "minimum": 1, "maximum": 50, "description": "Maximum results (default 10)."},
         "current_only": {"type": "boolean", "description": "Resolve lifecycle heads and omit records that are no longer current."},
     }, "required": ["query"]}},
-    {"name": "endeavor_memory_bootstrap", "title": "Bootstrap ENDMEMEX task context", "description": "WRITE. Use once at the start of a non-trivial task. Returns JSON text with deterministic database/project orientation, the 10 most recent retained checkpoints for the selected project (newest full, then progressively compressed to checkpoint 10), latest handoff, embedding backfill diagnostics, document freshness, and hook state. It may initialize/update local database state. Do not call for a simple one-off question.", "annotations": WRITE_ANNOTATIONS, "inputSchema": {"type": "object", "additionalProperties": False, "properties": {
+    {"name": "endeavor_memory_initialize", "title": "Initialize or migrate ENDMEMEX database", "description": "WRITE. Use when bootstrap reports database.init_required=true or during explicit first-time setup. Creates or migrates the ENDMEMEX schema. Returns JSON text with the database path and schema version. After success, rerun bootstrap. For remote mutation, use the configured authenticated write gateway rather than shared SQLite.", "annotations": WRITE_ANNOTATIONS, "inputSchema": {"type": "object", "additionalProperties": False, "properties": {
+        "confirm": CONFIRM_PROPERTY,
+    }, "required": []}},
+    {"name": "endeavor_memory_embed_backfill", "title": "Backfill ENDMEMEX embeddings", "description": "WRITE. Use when bootstrap reports embedding.backfill_required=true, or when explicitly repairing embedding coverage. Starts/waits for MiniLM if needed and writes missing/stale knowledge and durable-record embeddings. Returns JSON text with status, candidates, embedded count, and attempts. After success, rerun bootstrap to confirm backfill_required=false. For remote mutation, use the configured authenticated write gateway rather than shared SQLite.", "annotations": WRITE_ANNOTATIONS, "inputSchema": {"type": "object", "additionalProperties": False, "properties": {
+        "batch_size": {"type": "integer", "minimum": 1, "maximum": 1024, "description": "Embedding batch size; omit to use the configured default."},
+        "confirm": CONFIRM_PROPERTY,
+    }, "required": []}},
+    {"name": "endeavor_memory_bootstrap", "title": "Bootstrap ENDMEMEX task context", "description": "READ ONLY. This is the first ENDMEMEX context action for non-trivial work: call it once before planning or implementation. Returns deterministic database/project orientation, the 10 most recent retained checkpoints for the selected project (newest full, then progressively compressed to checkpoint 10), latest handoff, read-only embedding coverage with embedding.backfill_required and next_tool, database schema state with database.init_required and next_tool, document freshness, hook state, and ordered next_actions telling the agent exactly what to do next. next_actions may recommend initialize, embedding backfill, tracked-document sync, orphan review, or hook installation; an empty list means no ENDMEMEX maintenance action is currently required. It never initializes/migrates the database, starts MiniLM, backfills embeddings, or writes ENDMEMEX state. Follow reported write actions separately and rerun bootstrap afterward. Do not call for a simple one-off question.", "annotations": READ_ONLY_ANNOTATIONS, "inputSchema": {"type": "object", "additionalProperties": False, "properties": {
         "project": PROJECT_PROPERTY,
         "session": SESSION_PROPERTY,
         "include_pending": {"type": "boolean", "description": "Also return this project's lifecycle-aware pending-work view. Default false for response compatibility."},
-        "confirm": CONFIRM_PROPERTY,
     }, "required": ["project"]}},
     {"name": "endeavor_memory_checkpoint", "title": "Write ENDMEMEX checkpoint", "description": "WRITE, NON-IDEMPOTENT. Use after every meaningful implementation, verified test, scope decision, handoff, and immediately after a Git commit. Returns the stored checkpoint as JSON text. State truth and exact next steps; paused means another agent can continue, completed requires real verification and no required work remaining. Never include secrets/raw logs.", "annotations": WRITE_ANNOTATIONS, "inputSchema": {"type": "object", "additionalProperties": False, "properties": {
         "project": PROJECT_PROPERTY,
@@ -399,6 +409,12 @@ def call(name: str, args: object) -> str:
         if args.get("type"): cmd += ["--type", args["type"]]
         if args.get("limit"): cmd += ["--limit", str(args["limit"])]
         if args.get("current_only"): cmd += ["--current-only"]
+        return run(cmd)
+    if name == "endeavor_memory_initialize":
+        return run(["init"])
+    if name == "endeavor_memory_embed_backfill":
+        cmd = ["embed-backfill"]
+        if args.get("batch_size"): cmd += ["--batch-size", str(args["batch_size"])]
         return run(cmd)
     if name == "endeavor_memory_bootstrap":
         cmd = ["bootstrap", "--project", args["project"], "--json"]

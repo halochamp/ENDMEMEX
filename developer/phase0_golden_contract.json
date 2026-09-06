@@ -45,35 +45,6 @@
     "timeline",
     "unpin-checkpoint"
   ],
-  "parser_error_choice_by_python_minor": {
-    "3.11": {
-      "argv": [
-        "needle",
-        "--semantic",
-        "maybe"
-      ],
-      "exit": 2,
-      "stderr": "usage: endeavor_db.py query [-h] [--project PROJECT] [--category CATEGORY]\n                            [--status {open,resolved,accepted}]\n                            [--module MODULE] [--bug-id BUG_ID]\n                            [--session-label SESSION_LABEL] [--limit LIMIT]\n                            [--json] [--semantic {auto,on,off}] [--compact]\n                            [--check-stale]\n                            text\nendeavor_db.py query: error: argument --semantic: invalid choice: 'maybe' (choose from 'auto', 'on', 'off')\n"
-    },
-    "3.13": {
-      "argv": [
-        "needle",
-        "--semantic",
-        "maybe"
-      ],
-      "exit": 2,
-      "stderr": "usage: endeavor_db.py query [-h] [--project PROJECT] [--category CATEGORY]\n                            [--status {open,resolved,accepted}]\n                            [--module MODULE] [--bug-id BUG_ID]\n                            [--session-label SESSION_LABEL] [--limit LIMIT]\n                            [--json] [--semantic {auto,on,off}] [--compact]\n                            [--check-stale]\n                            text\nendeavor_db.py query: error: argument --semantic: invalid choice: 'maybe' (choose from auto, on, off)\n"
-    },
-    "3.14": {
-      "argv": [
-        "needle",
-        "--semantic",
-        "maybe"
-      ],
-      "exit": 2,
-      "stderr": "usage: endeavor_db.py query [-h] [--project PROJECT] [--category CATEGORY]\n                            [--status {open,resolved,accepted}]\n                            [--module MODULE] [--bug-id BUG_ID]\n                            [--session-label SESSION_LABEL] [--limit LIMIT]\n                            [--json] [--semantic {auto,on,off}] [--compact]\n                            [--check-stale]\n                            text\nendeavor_db.py query: error: argument --semantic: invalid choice: 'maybe' (choose from 'auto', 'on', 'off')\n"
-    }
-  },
   "agent_delegate_runtime_cases": [
     {
       "name": "status_missing",
@@ -169,6 +140,8 @@
     "endeavor_memory_timeline",
     "endeavor_memory_record_show",
     "endeavor_memory_record_search",
+    "endeavor_memory_initialize",
+    "endeavor_memory_embed_backfill",
     "endeavor_memory_bootstrap",
     "endeavor_memory_checkpoint",
     "endeavor_memory_pin_checkpoint",
@@ -205,7 +178,8 @@
     "presence",
     "sync-status",
     "timeline",
-    "event-poll"
+    "event-poll",
+    "bootstrap"
   ],
   "command_connection_contract": [
     {
@@ -348,9 +322,9 @@
     },
     {
       "command": "bootstrap",
-      "connection": "write",
+      "connection": "read_only",
       "early_return": false,
-      "finalizes_when_changed": true
+      "finalizes_when_changed": false
     },
     {
       "command": "checkpoint",
@@ -1778,6 +1752,22 @@
       "timeout_result": "[error] timed out"
     },
     {
+      "tool": "endeavor_memory_initialize",
+      "args": {},
+      "command": [
+        "init"
+      ],
+      "timeout_result": "[error] timed out"
+    },
+    {
+      "tool": "endeavor_memory_embed_backfill",
+      "args": {},
+      "command": [
+        "embed-backfill"
+      ],
+      "timeout_result": "[error] timed out"
+    },
+    {
       "tool": "endeavor_memory_bootstrap",
       "args": {
         "project": "P"
@@ -1998,92 +1988,6 @@
       "timeout_result": "[error] timed out"
     }
   ],
-  "parser_error_probes": {
-    "positive_int_zero": {
-      "argv": [
-        "--batch-size",
-        "0"
-      ],
-      "exit": 2,
-      "stderr": "usage: endeavor_db.py embed-backfill [-h] [--batch-size BATCH_SIZE]\nendeavor_db.py embed-backfill: error: argument --batch-size: must be a positive integer\n"
-    },
-    "positive_int_text": {
-      "argv": [
-        "--batch-size",
-        "not-a-number"
-      ],
-      "exit": 2,
-      "stderr": "usage: endeavor_db.py embed-backfill [-h] [--batch-size BATCH_SIZE]\nendeavor_db.py embed-backfill: error: argument --batch-size: invalid positive_int value: 'not-a-number'\n"
-    },
-    "pack_budget_low": {
-      "argv": [
-        "--project",
-        "DEMO",
-        "--budget",
-        "499"
-      ],
-      "exit": 2,
-      "stderr": "usage: endeavor_db.py pack [-h] --project PROJECT [--session SESSION]\n                           [--budget BUDGET_CHARS] [--json]\nendeavor_db.py pack: error: argument --budget: must be between 500 and 50000\n"
-    },
-    "pack_budget_high": {
-      "argv": [
-        "--project",
-        "DEMO",
-        "--budget",
-        "50001"
-      ],
-      "exit": 2,
-      "stderr": "usage: endeavor_db.py pack [-h] --project PROJECT [--session SESSION]\n                           [--budget BUDGET_CHARS] [--json]\nendeavor_db.py pack: error: argument --budget: must be between 500 and 50000\n"
-    },
-    "pack_budget_text": {
-      "argv": [
-        "--project",
-        "DEMO",
-        "--budget",
-        "not-a-number"
-      ],
-      "exit": 2,
-      "stderr": "usage: endeavor_db.py pack [-h] --project PROJECT [--session SESSION]\n                           [--budget BUDGET_CHARS] [--json]\nendeavor_db.py pack: error: argument --budget: invalid pack_budget value: 'not-a-number'\n"
-    },
-    "nonempty_text": {
-      "argv": [
-        "--project",
-        "   "
-      ],
-      "exit": 2,
-      "stderr": "usage: endeavor_db.py pending [-h] (--project PROJECT | --all-projects)\n                              [--json]\nendeavor_db.py pending: error: argument --project: must not be empty\n"
-    },
-    "invalid_choice": {
-      "argv": [
-        "needle",
-        "--semantic",
-        "maybe"
-      ],
-      "exit": 2,
-      "stderr": "usage: endeavor_db.py query [-h] [--project PROJECT] [--category CATEGORY]\n                            [--status {open,resolved,accepted}]\n                            [--module MODULE] [--bug-id BUG_ID]\n                            [--session-label SESSION_LABEL] [--limit LIMIT]\n                            [--json] [--semantic {auto,on,off}] [--compact]\n                            [--check-stale]\n                            text\nendeavor_db.py query: error: argument --semantic: invalid choice: 'maybe' (choose from 'auto', 'on', 'off')\n"
-    },
-    "mutually_exclusive": {
-      "argv": [
-        "--project",
-        "DEMO",
-        "--all-projects"
-      ],
-      "exit": 2,
-      "stderr": "usage: endeavor_db.py pending [-h] (--project PROJECT | --all-projects)\n                              [--json]\nendeavor_db.py pending: error: argument --all-projects: not allowed with argument --project\n"
-    },
-    "feedback_result_bad": {
-      "argv": [
-        "--agent",
-        "claude",
-        "--query",
-        "x",
-        "--result",
-        "notanid"
-      ],
-      "exit": 2,
-      "stderr": "usage: endeavor_db.py feedback [-h]\n                               --agent {codex,claude,human,system,endeavor}\n                               --query QUERY [--result SELECTED_IDS]\n                               [--useful {yes,no}] [--note NOTE]\nendeavor_db.py feedback: error: argument --result: invalid parse_feedback_result_id value: 'notanid'\n"
-    }
-  },
   "endeavor_db_parser_contract_by_python_minor": {
     "3.11": {
       "parser": {
@@ -2393,20 +2297,6 @@
                 "const": true,
                 "default": false,
                 "type": null,
-                "required": false,
-                "choices": null,
-                "metavar": null,
-                "help": null
-              },
-              {
-                "option_strings": [
-                  "--batch-size"
-                ],
-                "dest": "batch_size",
-                "nargs": null,
-                "const": null,
-                "default": 128,
-                "type": "cli_validators.positive_int",
                 "required": false,
                 "choices": null,
                 "metavar": null,
@@ -5402,12 +5292,12 @@
         }
       },
       "help": {
-        "root": "usage: endeavor_db.py [-h] [--db DB]\n                      {init,seed,agent-help,ingest,query,stats,doctor,evaluate,embed-status,readiness,ann-status,ann-build,embed-diagnose,embed-warm,embed-cool,embed-backfill,install-hooks,bootstrap,pack,pending,maintenance,activity,feedback,event-add,event-poll,event-ack,record-add,record-update,record-link,record-show,record-search,session-start,checkpoint,pin-checkpoint,unpin-checkpoint,handoff,timeline,session-close,presence-start,presence-heartbeat,presence-stop,presence,sync-status}\n                      ...\n\nShared SQLite knowledge and handoff store for Codex and Claude Code. Standard-\nlibrary only. The database uses WAL mode and a busy timeout so two local agent\nprocesses can safely read/write the same workspace database. Semantic search\nis an optional, gracefully-degrading enhancement: this file never imports\nsentence-transformers/torch/numpy directly. Embedding vectors are computed by\na separate lazy-loaded companion process, embed_server.py (see embed_config.py\nfor the shared port/model constants), and this file only talks to it over\nstdlib urllib — if the companion can't be reached, every command still works\nwith lexical FTS only.\n\npositional arguments:\n  {init,seed,agent-help,ingest,query,stats,doctor,evaluate,embed-status,readiness,ann-status,ann-build,embed-diagnose,embed-warm,embed-cool,embed-backfill,install-hooks,bootstrap,pack,pending,maintenance,activity,feedback,event-add,event-poll,event-ack,record-add,record-update,record-link,record-show,record-search,session-start,checkpoint,pin-checkpoint,unpin-checkpoint,handoff,timeline,session-close,presence-start,presence-heartbeat,presence-stop,presence,sync-status}\n    init                Create or migrate the database\n    seed                Ingest the bundled ENDMEMEX guides\n    agent-help          Print a short agent-facing command cheat sheet (no\n                        database access)\n    ingest              Ingest or refresh a Markdown document\n    query               Search indexed knowledge\n    stats               Show database counts\n    doctor              Check SQLite integrity, FTS identity, embeddings, and\n                        internal relation lifecycles\n    evaluate            Run retrieval evaluation cases\n    embed-status        Check embedding coverage plus structured companion\n                        diagnostics (never spawns)\n    readiness           One read-only project preflight: machine role,\n                        database health, embeddings, ANN, docs, and next\n                        actions\n    ann-status          Check optional per-machine HNSW sidecar freshness\n    ann-build           Build/rebuild the optional per-machine HNSW sidecar\n    embed-diagnose      Diagnose CLI Python, companion dependencies, localhost\n                        policy, and model contract without spawning\n    embed-warm          Start MiniLM; --keep-alive holds it in RAM until\n                        embed-cool or process exit\n    embed-cool          Return a warm MiniLM companion to its normal idle\n                        timeout\n    embed-backfill      Spawn the MiniLM companion if needed and embed any\n                        missing/stale rows\n    install-hooks       Copy the git-tracked hook sources (hooks/) into\n                        .git/hooks — run once per fresh clone\n    bootstrap           One-call session start: latest handoff (null when\n                        none), embedding backfill, tracked-doc freshness\n                        counts, and hook state\n    pack                One-call session briefing: handoff + open records +\n                        recent project knowledge + recent activity, trimmed to\n                        a character budget\n    pending             Read lifecycle-aware pending work without changing\n                        sessions or records\n    maintenance         VACUUM + PRAGMA optimize to reclaim disk space and\n                        refresh planner statistics. Manual-only, exclusive\n                        operation — do not run while another agent process may\n                        be writing.\n    activity            Write ACTIVITY.md — human-readable digest of the\n                        latest write actions (also auto-refreshed after every\n                        write command, at the default limit)\n    feedback            Record whether query results were useful\n    event-add           Publish a durable host-consumable event\n    event-poll          Read durable events in monotonic ID order\n    event-ack           Acknowledge a durable event after host handling\n    record-add          Add a durable SQLite-native audit/fix/knowledge record\n    record-update       Update the content or explicit status of a record\n    record-link         Create a typed foreign-key relation between SQLite\n                        records\n    record-show         Show a record, current successor, conflicts, and\n                        relation graph\n    record-search       Full-text search SQLite-native records\n    session-start       Start a shared work session\n    checkpoint          Record resumable session state\n    pin-checkpoint      Retroactively pin an existing checkpoint so pruning\n                        never deletes it\n    unpin-checkpoint    Unpin a checkpoint, returning it to normal sliding-\n                        window pruning\n    handoff             Read the latest resumable checkpoint\n    timeline            Read-only checkpoint timeline (who did what, affected\n                        files, statuses) across sessions\n    session-close       Mark a session completed or blocked\n    presence-start      Announce (machine, agent, project[, instance]) as\n                        actively working (same-machine real-time; mirrored to\n                        a per-machine sidecar file for cross-machine\n                        visibility)\n    presence-heartbeat  Refresh the (machine, agent, project[, instance])\n                        presence row (call it wherever checkpoint is already\n                        called -- do not add a new polling loop just for this)\n    presence-stop       Mark the (machine, agent, project[, instance])\n                        presence row stopped\n    presence            List agents currently working: real-time local rows\n                        plus the last-known snapshot from every other\n                        machine's presence sidecar\n    sync-status         Show the last-known write time per machine\n                        (informational freshness signal only; never a\n                        synchronization guarantee or write authorization)\n\noptions:\n  -h, --help            show this help message and exit\n  --db DB               SQLite path (default: endeavor_memory.sqlite3)\n",
+        "root": "usage: endeavor_db.py [-h] [--db DB]\n                      {init,seed,agent-help,ingest,query,stats,doctor,evaluate,embed-status,readiness,ann-status,ann-build,embed-diagnose,embed-warm,embed-cool,embed-backfill,install-hooks,bootstrap,pack,pending,maintenance,activity,feedback,event-add,event-poll,event-ack,record-add,record-update,record-link,record-show,record-search,session-start,checkpoint,pin-checkpoint,unpin-checkpoint,handoff,timeline,session-close,presence-start,presence-heartbeat,presence-stop,presence,sync-status}\n                      ...\n\nShared SQLite knowledge and handoff store for Codex and Claude Code. Standard-\nlibrary only. The database uses WAL mode and a busy timeout so two local agent\nprocesses can safely read/write the same workspace database. Semantic search\nis an optional, gracefully-degrading enhancement: this file never imports\nsentence-transformers/torch/numpy directly. Embedding vectors are computed by\na separate lazy-loaded companion process, embed_server.py (see embed_config.py\nfor the shared port/model constants), and this file only talks to it over\nstdlib urllib — if the companion can't be reached, every command still works\nwith lexical FTS only.\n\npositional arguments:\n  {init,seed,agent-help,ingest,query,stats,doctor,evaluate,embed-status,readiness,ann-status,ann-build,embed-diagnose,embed-warm,embed-cool,embed-backfill,install-hooks,bootstrap,pack,pending,maintenance,activity,feedback,event-add,event-poll,event-ack,record-add,record-update,record-link,record-show,record-search,session-start,checkpoint,pin-checkpoint,unpin-checkpoint,handoff,timeline,session-close,presence-start,presence-heartbeat,presence-stop,presence,sync-status}\n    init                Create or migrate the database\n    seed                Ingest the bundled ENDMEMEX guides\n    agent-help          Print a short agent-facing command cheat sheet (no\n                        database access)\n    ingest              Ingest or refresh a Markdown document\n    query               Search indexed knowledge\n    stats               Show database counts\n    doctor              Check SQLite integrity, FTS identity, embeddings, and\n                        internal relation lifecycles\n    evaluate            Run retrieval evaluation cases\n    embed-status        Check embedding coverage plus structured companion\n                        diagnostics (never spawns)\n    readiness           One read-only project preflight: machine role,\n                        database health, embeddings, ANN, docs, and next\n                        actions\n    ann-status          Check optional per-machine HNSW sidecar freshness\n    ann-build           Build/rebuild the optional per-machine HNSW sidecar\n    embed-diagnose      Diagnose CLI Python, companion dependencies, localhost\n                        policy, and model contract without spawning\n    embed-warm          Start MiniLM; --keep-alive holds it in RAM until\n                        embed-cool or process exit\n    embed-cool          Return a warm MiniLM companion to its normal idle\n                        timeout\n    embed-backfill      Spawn the MiniLM companion if needed and embed any\n                        missing/stale rows\n    install-hooks       Copy the git-tracked hook sources (hooks/) into\n                        .git/hooks — run once per fresh clone\n    bootstrap           Read-only task orientation: project map, recent\n                        checkpoints, handoff, embedding backfill requirement,\n                        tracked-doc freshness counts, and hook state\n    pack                One-call session briefing: handoff + open records +\n                        recent project knowledge + recent activity, trimmed to\n                        a character budget\n    pending             Read lifecycle-aware pending work without changing\n                        sessions or records\n    maintenance         VACUUM + PRAGMA optimize to reclaim disk space and\n                        refresh planner statistics. Manual-only, exclusive\n                        operation — do not run while another agent process may\n                        be writing.\n    activity            Write ACTIVITY.md — human-readable digest of the\n                        latest write actions (also auto-refreshed after every\n                        write command, at the default limit)\n    feedback            Record whether query results were useful\n    event-add           Publish a durable host-consumable event\n    event-poll          Read durable events in monotonic ID order\n    event-ack           Acknowledge a durable event after host handling\n    record-add          Add a durable SQLite-native audit/fix/knowledge record\n    record-update       Update the content or explicit status of a record\n    record-link         Create a typed foreign-key relation between SQLite\n                        records\n    record-show         Show a record, current successor, conflicts, and\n                        relation graph\n    record-search       Full-text search SQLite-native records\n    session-start       Start a shared work session\n    checkpoint          Record resumable session state\n    pin-checkpoint      Retroactively pin an existing checkpoint so pruning\n                        never deletes it\n    unpin-checkpoint    Unpin a checkpoint, returning it to normal sliding-\n                        window pruning\n    handoff             Read the latest resumable checkpoint\n    timeline            Read-only checkpoint timeline (who did what, affected\n                        files, statuses) across sessions\n    session-close       Mark a session completed or blocked\n    presence-start      Announce (machine, agent, project[, instance]) as\n                        actively working (same-machine real-time; mirrored to\n                        a per-machine sidecar file for cross-machine\n                        visibility)\n    presence-heartbeat  Refresh the (machine, agent, project[, instance])\n                        presence row (call it wherever checkpoint is already\n                        called -- do not add a new polling loop just for this)\n    presence-stop       Mark the (machine, agent, project[, instance])\n                        presence row stopped\n    presence            List agents currently working: real-time local rows\n                        plus the last-known snapshot from every other\n                        machine's presence sidecar\n    sync-status         Show the last-known write time per machine\n                        (informational freshness signal only; never a\n                        synchronization guarantee or write authorization)\n\noptions:\n  -h, --help            show this help message and exit\n  --db DB               SQLite path (default: endeavor_memory.sqlite3)\n",
         "activity": "usage: endeavor_db.py activity [-h] [--limit LIMIT] [--stdout] [--follow]\n                               [--project PROJECT] [--interval INTERVAL]\n\noptions:\n  -h, --help           show this help message and exit\n  --limit LIMIT\n  --stdout             Print the digest instead of writing the file\n  --follow             Poll for new activity and print it as it lands (Ctrl-C\n                       to stop), instead of writing/printing the digest. Read-\n                       only; a human-watched near-real-time view of what the\n                       other agent is doing, not agent-to-agent messaging.\n  --project PROJECT    With --follow, only show activity for this project\n  --interval INTERVAL  With --follow, seconds between polls (default 3.0)\n",
         "agent-help": "usage: endeavor_db.py agent-help [-h]\n\noptions:\n  -h, --help  show this help message and exit\n",
         "ann-build": "usage: endeavor_db.py ann-build [-h]\n\noptions:\n  -h, --help  show this help message and exit\n",
         "ann-status": "usage: endeavor_db.py ann-status [-h]\n\noptions:\n  -h, --help  show this help message and exit\n",
-        "bootstrap": "usage: endeavor_db.py bootstrap [-h] --project PROJECT [--session SESSION]\n                                [--json] [--batch-size BATCH_SIZE]\n                                [--include-pending]\n\noptions:\n  -h, --help            show this help message and exit\n  --project PROJECT\n  --session SESSION     Explicit resumable session ID; must belong to\n                        --project\n  --json\n  --batch-size BATCH_SIZE\n  --include-pending     Also include lifecycle-aware pending work\n",
+        "bootstrap": "usage: endeavor_db.py bootstrap [-h] --project PROJECT [--session SESSION]\n                                [--json] [--include-pending]\n\noptions:\n  -h, --help         show this help message and exit\n  --project PROJECT\n  --session SESSION  Explicit resumable session ID; must belong to --project\n  --json\n  --include-pending  Also include lifecycle-aware pending work\n",
         "checkpoint": "usage: endeavor_db.py checkpoint [-h] [--session SESSION] [--project PROJECT]\n                                 --agent {codex,claude,human,system,endeavor}\n                                 [--goal GOAL] [--payload PAYLOAD]\n                                 [--summary SUMMARY] [--work-done WORK_DONE]\n                                 [--current-state CURRENT_STATE]\n                                 [--next-steps NEXT_STEPS]\n                                 [--blockers BLOCKERS]\n                                 [--status {active,paused,completed,blocked}]\n                                 [--file FILES_CHANGED] [--auto-files]\n                                 [--command COMMANDS_RUN]\n                                 [--verify VERIFICATION] [--pin]\n\noptions:\n  -h, --help            show this help message and exit\n  --session SESSION\n  --project PROJECT\n  --agent {codex,claude,human,system,endeavor}\n  --goal GOAL           If --project has no active/paused/blocked session,\n                        start one with this goal before checkpointing,\n                        collapsing handoff+session-start+checkpoint into one\n                        call for the common single-session task\n  --payload PAYLOAD     JSON payload file; CLI flags override it\n  --summary SUMMARY\n  --work-done WORK_DONE\n  --current-state CURRENT_STATE\n  --next-steps NEXT_STEPS\n  --blockers BLOCKERS\n  --status {active,paused,completed,blocked}\n  --file FILES_CHANGED\n  --auto-files          Append git-status-detected changed files under\n                        ROOT/<project>/ to --file. Requires --project; a\n                        project label that isn't also a real top-level\n                        directory yields no files rather than guessing across\n                        the whole repo.\n  --command COMMANDS_RUN\n  --verify VERIFICATION\n  --pin                 Mark this checkpoint important: exempt it from the\n                        sliding-window prune (add_checkpoint's per-session cap\n                        and prune_checkpoints_globally) so it survives\n                        indefinitely regardless of age or session status.\n",
         "doctor": "usage: endeavor_db.py doctor [-h]\n\noptions:\n  -h, --help  show this help message and exit\n",
         "embed-backfill": "usage: endeavor_db.py embed-backfill [-h] [--batch-size BATCH_SIZE]\n\noptions:\n  -h, --help            show this help message and exit\n  --batch-size BATCH_SIZE\n",
@@ -5416,10 +5306,10 @@
         "embed-status": "usage: endeavor_db.py embed-status [-h]\n\noptions:\n  -h, --help  show this help message and exit\n",
         "embed-warm": "usage: endeavor_db.py embed-warm [-h] [--keep-alive]\n\noptions:\n  -h, --help    show this help message and exit\n  --keep-alive\n",
         "evaluate": "usage: endeavor_db.py evaluate [-h] [--file FILE] [--limit LIMIT] [--json]\n                               [--semantic {auto,on,off}]\n                               [--pipeline {markdown,unified,both}]\n\noptions:\n  -h, --help            show this help message and exit\n  --file FILE\n  --limit LIMIT\n  --json\n  --semantic {auto,on,off}\n  --pipeline {markdown,unified,both}\n                        Benchmark the Markdown-only baseline, the production\n                        unified query path, or both\n",
-        "event-ack": "usage: endeavor_db.py event-ack [-h] --agent {codex,claude,human,system,endeavor}\n                                event_id\n\npositional arguments:\n  event_id\n\noptions:\n  -h, --help            show this help message and exit\n  --agent {codex,claude,human,system,endeavor}\n",
+        "event-ack": "usage: endeavor_db.py event-ack [-h] --agent\n                                {codex,claude,human,system,endeavor}\n                                event_id\n\npositional arguments:\n  event_id\n\noptions:\n  -h, --help            show this help message and exit\n  --agent {codex,claude,human,system,endeavor}\n",
         "event-add": "usage: endeavor_db.py event-add [-h] --type EVENT_TYPE --project PROJECT\n                                --subject SUBJECT_ID --dedupe-key DEDUPE_KEY\n                                [--payload PAYLOAD] --agent\n                                {codex,claude,human,system,endeavor}\n\noptions:\n  -h, --help            show this help message and exit\n  --type EVENT_TYPE\n  --project PROJECT\n  --subject SUBJECT_ID\n  --dedupe-key DEDUPE_KEY\n  --payload PAYLOAD     JSON object\n  --agent {codex,claude,human,system,endeavor}\n",
         "event-poll": "usage: endeavor_db.py event-poll [-h] [--after AFTER] [--project PROJECT]\n                                 [--limit LIMIT] [--include-acked] [--json]\n\noptions:\n  -h, --help         show this help message and exit\n  --after AFTER\n  --project PROJECT\n  --limit LIMIT\n  --include-acked\n  --json\n",
-        "feedback": "usage: endeavor_db.py feedback [-h] --agent {codex,claude,human,system,endeavor}\n                               --query QUERY [--result SELECTED_IDS]\n                               [--useful {yes,no}] [--note NOTE]\n\noptions:\n  -h, --help            show this help message and exit\n  --agent {codex,claude,human,system,endeavor}\n  --query QUERY\n  --result SELECTED_IDS\n                        Selected result ID (integer Markdown ID or stable\n                        SQLite record ID)\n  --useful {yes,no}\n  --note NOTE\n",
+        "feedback": "usage: endeavor_db.py feedback [-h] --agent\n                               {codex,claude,human,system,endeavor} --query\n                               QUERY [--result SELECTED_IDS]\n                               [--useful {yes,no}] [--note NOTE]\n\noptions:\n  -h, --help            show this help message and exit\n  --agent {codex,claude,human,system,endeavor}\n  --query QUERY\n  --result SELECTED_IDS\n                        Selected result ID (integer Markdown ID or stable\n                        SQLite record ID)\n  --useful {yes,no}\n  --note NOTE\n",
         "handoff": "usage: endeavor_db.py handoff [-h] [--session SESSION] [--project PROJECT]\n                              [--all-paused] [--json]\n\noptions:\n  -h, --help         show this help message and exit\n  --session SESSION\n  --project PROJECT\n  --all-paused       List the latest checkpoint for every paused session\n                     across all projects\n  --json\n",
         "ingest": "usage: endeavor_db.py ingest [-h] --project PROJECT [--kind KIND] [--no-embed]\n                             source\n\npositional arguments:\n  source\n\noptions:\n  -h, --help         show this help message and exit\n  --project PROJECT\n  --kind KIND\n  --no-embed         Skip the best-effort MiniLM embedding pass (lexical\n                     ingest always still runs)\n",
         "init": "usage: endeavor_db.py init [-h]\n\noptions:\n  -h, --help  show this help message and exit\n",
@@ -5427,11 +5317,11 @@
         "maintenance": "usage: endeavor_db.py maintenance [-h] [--yes]\n\noptions:\n  -h, --help  show this help message and exit\n  --yes       Required confirmation; rewrites the whole database file and\n              briefly blocks all writers\n",
         "pack": "usage: endeavor_db.py pack [-h] --project PROJECT [--session SESSION]\n                           [--budget BUDGET_CHARS] [--json]\n\noptions:\n  -h, --help            show this help message and exit\n  --project PROJECT\n  --session SESSION     Explicit resumable session ID; must belong to\n                        --project\n  --budget BUDGET_CHARS\n  --json\n",
         "pending": "usage: endeavor_db.py pending [-h] (--project PROJECT | --all-projects)\n                              [--json]\n\noptions:\n  -h, --help         show this help message and exit\n  --project PROJECT\n  --all-projects\n  --json\n",
-        "pin-checkpoint": "usage: endeavor_db.py pin-checkpoint [-h] --agent {codex,claude,human,system,endeavor}\n                                     checkpoint_id\n\npositional arguments:\n  checkpoint_id\n\noptions:\n  -h, --help            show this help message and exit\n  --agent {codex,claude,human,system,endeavor}\n",
+        "pin-checkpoint": "usage: endeavor_db.py pin-checkpoint [-h] --agent\n                                     {codex,claude,human,system,endeavor}\n                                     checkpoint_id\n\npositional arguments:\n  checkpoint_id\n\noptions:\n  -h, --help            show this help message and exit\n  --agent {codex,claude,human,system,endeavor}\n",
         "presence": "usage: endeavor_db.py presence [-h] [--project PROJECT] [--json]\n\noptions:\n  -h, --help         show this help message and exit\n  --project PROJECT\n  --json\n",
-        "presence-heartbeat": "usage: endeavor_db.py presence-heartbeat [-h] --agent\n                                         {codex,claude,human,system,endeavor} --project\n                                         PROJECT [--instance INSTANCE]\n                                         [--task TASK] [--pid PID]\n\noptions:\n  -h, --help            show this help message and exit\n  --agent {codex,claude,human,system,endeavor}\n  --project PROJECT\n  --instance INSTANCE\n  --task TASK           Update the task description; omit to just refresh the\n                        timestamp\n  --pid PID             Informational only; defaults to this process's own PID\n",
-        "presence-start": "usage: endeavor_db.py presence-start [-h] --agent {codex,claude,human,system,endeavor}\n                                     --project PROJECT [--task TASK]\n                                     [--session SESSION] [--instance INSTANCE]\n                                     [--pid PID]\n\noptions:\n  -h, --help            show this help message and exit\n  --agent {codex,claude,human,system,endeavor}\n  --project PROJECT\n  --task TASK           Short free-text of what this process is doing\n  --session SESSION\n  --instance INSTANCE   Only needed to distinguish two concurrent instances of\n                        the same agent on the same project/machine; identity\n                        is otherwise (machine, agent, project), not pid --\n                        each CLI call is its own short-lived subprocess\n  --pid PID             Informational only; defaults to this process's own PID\n",
-        "presence-stop": "usage: endeavor_db.py presence-stop [-h] --agent {codex,claude,human,system,endeavor}\n                                    --project PROJECT [--instance INSTANCE]\n\noptions:\n  -h, --help            show this help message and exit\n  --agent {codex,claude,human,system,endeavor}\n  --project PROJECT\n  --instance INSTANCE\n",
+        "presence-heartbeat": "usage: endeavor_db.py presence-heartbeat [-h] --agent\n                                         {codex,claude,human,system,endeavor}\n                                         --project PROJECT\n                                         [--instance INSTANCE] [--task TASK]\n                                         [--pid PID]\n\noptions:\n  -h, --help            show this help message and exit\n  --agent {codex,claude,human,system,endeavor}\n  --project PROJECT\n  --instance INSTANCE\n  --task TASK           Update the task description; omit to just refresh the\n                        timestamp\n  --pid PID             Informational only; defaults to this process's own PID\n",
+        "presence-start": "usage: endeavor_db.py presence-start [-h] --agent\n                                     {codex,claude,human,system,endeavor}\n                                     --project PROJECT [--task TASK]\n                                     [--session SESSION] [--instance INSTANCE]\n                                     [--pid PID]\n\noptions:\n  -h, --help            show this help message and exit\n  --agent {codex,claude,human,system,endeavor}\n  --project PROJECT\n  --task TASK           Short free-text of what this process is doing\n  --session SESSION\n  --instance INSTANCE   Only needed to distinguish two concurrent instances of\n                        the same agent on the same project/machine; identity\n                        is otherwise (machine, agent, project), not pid --\n                        each CLI call is its own short-lived subprocess\n  --pid PID             Informational only; defaults to this process's own PID\n",
+        "presence-stop": "usage: endeavor_db.py presence-stop [-h] --agent\n                                    {codex,claude,human,system,endeavor}\n                                    --project PROJECT [--instance INSTANCE]\n\noptions:\n  -h, --help            show this help message and exit\n  --agent {codex,claude,human,system,endeavor}\n  --project PROJECT\n  --instance INSTANCE\n",
         "query": "usage: endeavor_db.py query [-h] [--project PROJECT] [--category CATEGORY]\n                            [--status {open,resolved,accepted}]\n                            [--module MODULE] [--bug-id BUG_ID]\n                            [--session-label SESSION_LABEL] [--limit LIMIT]\n                            [--json] [--semantic {auto,on,off}] [--compact]\n                            [--check-stale]\n                            text\n\npositional arguments:\n  text\n\noptions:\n  -h, --help            show this help message and exit\n  --project PROJECT\n  --category CATEGORY\n  --status {open,resolved,accepted}\n  --module MODULE\n  --bug-id BUG_ID\n  --session-label SESSION_LABEL\n  --limit LIMIT\n  --json\n  --semantic {auto,on,off}\n                        auto: use MiniLM only if already warm (default, never\n                        stalls). on: spawn/wait for the companion if needed\n                        (~11s cold). off: lexical only.\n  --compact             Trim --json results to the ~8 fields an agent reads\n                        when browsing (id/title/project/category/excerpt/locat\n                        ion/match_reasons/rank) instead of the full ~29-field\n                        row\n  --check-stale         Flag markdown-sourced results whose source file has\n                        drifted from the indexed hash (reads each distinct\n                        source file once; on by default)\n",
         "readiness": "usage: endeavor_db.py readiness [-h] --project PROJECT [--json]\n\noptions:\n  -h, --help         show this help message and exit\n  --project PROJECT\n  --json             Emit the complete machine-readable report\n",
         "record-add": "usage: endeavor_db.py record-add [-h] [--id RECORD_ID] --project PROJECT\n                                 --type\n                                 {audit,fix,verification,decision,knowledge}\n                                 --title TITLE [--content CONTENT]\n                                 [--content-file PATH]\n                                 [--status {open,current,resolved,accepted}]\n                                 [--action-state {actionable,deferred,blocked,nonactionable,done}]\n                                 [--metadata METADATA] [--source PATH]\n                                 [--link RELATION:TARGET] [--note NOTE]\n                                 --agent {codex,claude,human,system,endeavor}\n\noptions:\n  -h, --help            show this help message and exit\n  --id RECORD_ID        Stable ID, for example AUDIT-MEM-001\n  --project PROJECT\n  --type {audit,fix,verification,decision,knowledge}\n  --title TITLE\n  --content CONTENT     Record body text; mutually exclusive with --content-\n                        file\n  --content-file PATH   Read record body text from PATH ('-' for stdin)\n                        instead of --content, so long/multi-line content never\n                        has to survive shell quoting\n  --status {open,current,resolved,accepted}\n  --action-state {actionable,deferred,blocked,nonactionable,done}\n                        Independent work-triage state; defaults by record\n                        type/status\n  --metadata METADATA   JSON object\n  --source PATH         Repo-relative path this record documents (e.g. a\n                        written report); stored as metadata.source so a later\n                        `record-show`/`query` result can be followed straight\n                        to the file, same convention as knowledge chunks'\n                        source_path\n  --link RELATION:TARGET\n                        Create an internal relation atomically; may be\n                        repeated\n  --note NOTE           Note applied to links created by this command\n  --agent {codex,claude,human,system,endeavor}\n",
@@ -5454,7 +5344,7 @@
         },
         "bootstrap": {
           "exit": 2,
-          "stderr": "usage: endeavor_db.py bootstrap [-h] --project PROJECT [--session SESSION]\n                                [--json] [--batch-size BATCH_SIZE]\n                                [--include-pending]\nendeavor_db.py bootstrap: error: the following arguments are required: --project\n"
+          "stderr": "usage: endeavor_db.py bootstrap [-h] --project PROJECT [--session SESSION]\n                                [--json] [--include-pending]\nendeavor_db.py bootstrap: error: the following arguments are required: --project\n"
         },
         "checkpoint": {
           "exit": 2,
@@ -5462,7 +5352,7 @@
         },
         "event-ack": {
           "exit": 2,
-          "stderr": "usage: endeavor_db.py event-ack [-h] --agent {codex,claude,human,system,endeavor}\n                                event_id\nendeavor_db.py event-ack: error: the following arguments are required: event_id, --agent\n"
+          "stderr": "usage: endeavor_db.py event-ack [-h] --agent\n                                {codex,claude,human,system,endeavor}\n                                event_id\nendeavor_db.py event-ack: error: the following arguments are required: event_id, --agent\n"
         },
         "event-add": {
           "exit": 2,
@@ -5470,7 +5360,7 @@
         },
         "feedback": {
           "exit": 2,
-          "stderr": "usage: endeavor_db.py feedback [-h] --agent {codex,claude,human,system,endeavor}\n                               --query QUERY [--result SELECTED_IDS]\n                               [--useful {yes,no}] [--note NOTE]\nendeavor_db.py feedback: error: the following arguments are required: --agent, --query\n"
+          "stderr": "usage: endeavor_db.py feedback [-h] --agent\n                               {codex,claude,human,system,endeavor} --query\n                               QUERY [--result SELECTED_IDS]\n                               [--useful {yes,no}] [--note NOTE]\nendeavor_db.py feedback: error: the following arguments are required: --agent, --query\n"
         },
         "ingest": {
           "exit": 2,
@@ -5486,19 +5376,19 @@
         },
         "pin-checkpoint": {
           "exit": 2,
-          "stderr": "usage: endeavor_db.py pin-checkpoint [-h] --agent {codex,claude,human,system,endeavor}\n                                     checkpoint_id\nendeavor_db.py pin-checkpoint: error: the following arguments are required: checkpoint_id, --agent\n"
+          "stderr": "usage: endeavor_db.py pin-checkpoint [-h] --agent\n                                     {codex,claude,human,system,endeavor}\n                                     checkpoint_id\nendeavor_db.py pin-checkpoint: error: the following arguments are required: checkpoint_id, --agent\n"
         },
         "presence-heartbeat": {
           "exit": 2,
-          "stderr": "usage: endeavor_db.py presence-heartbeat [-h] --agent\n                                         {codex,claude,human,system,endeavor} --project\n                                         PROJECT [--instance INSTANCE]\n                                         [--task TASK] [--pid PID]\nendeavor_db.py presence-heartbeat: error: the following arguments are required: --agent, --project\n"
+          "stderr": "usage: endeavor_db.py presence-heartbeat [-h] --agent\n                                         {codex,claude,human,system,endeavor}\n                                         --project PROJECT\n                                         [--instance INSTANCE] [--task TASK]\n                                         [--pid PID]\nendeavor_db.py presence-heartbeat: error: the following arguments are required: --agent, --project\n"
         },
         "presence-start": {
           "exit": 2,
-          "stderr": "usage: endeavor_db.py presence-start [-h] --agent {codex,claude,human,system,endeavor}\n                                     --project PROJECT [--task TASK]\n                                     [--session SESSION] [--instance INSTANCE]\n                                     [--pid PID]\nendeavor_db.py presence-start: error: the following arguments are required: --agent, --project\n"
+          "stderr": "usage: endeavor_db.py presence-start [-h] --agent\n                                     {codex,claude,human,system,endeavor}\n                                     --project PROJECT [--task TASK]\n                                     [--session SESSION] [--instance INSTANCE]\n                                     [--pid PID]\nendeavor_db.py presence-start: error: the following arguments are required: --agent, --project\n"
         },
         "presence-stop": {
           "exit": 2,
-          "stderr": "usage: endeavor_db.py presence-stop [-h] --agent {codex,claude,human,system,endeavor}\n                                    --project PROJECT [--instance INSTANCE]\nendeavor_db.py presence-stop: error: the following arguments are required: --agent, --project\n"
+          "stderr": "usage: endeavor_db.py presence-stop [-h] --agent\n                                    {codex,claude,human,system,endeavor}\n                                    --project PROJECT [--instance INSTANCE]\nendeavor_db.py presence-stop: error: the following arguments are required: --agent, --project\n"
         },
         "query": {
           "exit": 2,
@@ -5857,20 +5747,6 @@
               },
               {
                 "option_strings": [
-                  "--batch-size"
-                ],
-                "dest": "batch_size",
-                "nargs": null,
-                "const": null,
-                "default": 128,
-                "type": "cli_validators.positive_int",
-                "required": false,
-                "choices": null,
-                "metavar": null,
-                "help": null
-              },
-              {
-                "option_strings": [
                   "--include-pending"
                 ],
                 "dest": "include_pending",
@@ -8859,12 +8735,12 @@
         }
       },
       "help": {
-        "root": "usage: endeavor_db.py [-h] [--db DB]\n                      {init,seed,agent-help,ingest,query,stats,doctor,evaluate,embed-status,readiness,ann-status,ann-build,embed-diagnose,embed-warm,embed-cool,embed-backfill,install-hooks,bootstrap,pack,pending,maintenance,activity,feedback,event-add,event-poll,event-ack,record-add,record-update,record-link,record-show,record-search,session-start,checkpoint,pin-checkpoint,unpin-checkpoint,handoff,timeline,session-close,presence-start,presence-heartbeat,presence-stop,presence,sync-status} ...\n\nShared SQLite knowledge and handoff store for Codex and Claude Code. Standard-\nlibrary only. The database uses WAL mode and a busy timeout so two local agent\nprocesses can safely read/write the same workspace database. Semantic search\nis an optional, gracefully-degrading enhancement: this file never imports\nsentence-transformers/torch/numpy directly. Embedding vectors are computed by\na separate lazy-loaded companion process, embed_server.py (see embed_config.py\nfor the shared port/model constants), and this file only talks to it over\nstdlib urllib — if the companion can't be reached, every command still works\nwith lexical FTS only.\n\npositional arguments:\n  {init,seed,agent-help,ingest,query,stats,doctor,evaluate,embed-status,readiness,ann-status,ann-build,embed-diagnose,embed-warm,embed-cool,embed-backfill,install-hooks,bootstrap,pack,pending,maintenance,activity,feedback,event-add,event-poll,event-ack,record-add,record-update,record-link,record-show,record-search,session-start,checkpoint,pin-checkpoint,unpin-checkpoint,handoff,timeline,session-close,presence-start,presence-heartbeat,presence-stop,presence,sync-status}\n    init                Create or migrate the database\n    seed                Ingest the bundled ENDMEMEX guides\n    agent-help          Print a short agent-facing command cheat sheet (no\n                        database access)\n    ingest              Ingest or refresh a Markdown document\n    query               Search indexed knowledge\n    stats               Show database counts\n    doctor              Check SQLite integrity, FTS identity, embeddings, and\n                        internal relation lifecycles\n    evaluate            Run retrieval evaluation cases\n    embed-status        Check embedding coverage plus structured companion\n                        diagnostics (never spawns)\n    readiness           One read-only project preflight: machine role,\n                        database health, embeddings, ANN, docs, and next\n                        actions\n    ann-status          Check optional per-machine HNSW sidecar freshness\n    ann-build           Build/rebuild the optional per-machine HNSW sidecar\n    embed-diagnose      Diagnose CLI Python, companion dependencies, localhost\n                        policy, and model contract without spawning\n    embed-warm          Start MiniLM; --keep-alive holds it in RAM until\n                        embed-cool or process exit\n    embed-cool          Return a warm MiniLM companion to its normal idle\n                        timeout\n    embed-backfill      Spawn the MiniLM companion if needed and embed any\n                        missing/stale rows\n    install-hooks       Copy the git-tracked hook sources (hooks/) into\n                        .git/hooks — run once per fresh clone\n    bootstrap           One-call session start: latest handoff (null when\n                        none), embedding backfill, tracked-doc freshness\n                        counts, and hook state\n    pack                One-call session briefing: handoff + open records +\n                        recent project knowledge + recent activity, trimmed to\n                        a character budget\n    pending             Read lifecycle-aware pending work without changing\n                        sessions or records\n    maintenance         VACUUM + PRAGMA optimize to reclaim disk space and\n                        refresh planner statistics. Manual-only, exclusive\n                        operation — do not run while another agent process may\n                        be writing.\n    activity            Write ACTIVITY.md — human-readable digest of the\n                        latest write actions (also auto-refreshed after every\n                        write command, at the default limit)\n    feedback            Record whether query results were useful\n    event-add           Publish a durable host-consumable event\n    event-poll          Read durable events in monotonic ID order\n    event-ack           Acknowledge a durable event after host handling\n    record-add          Add a durable SQLite-native audit/fix/knowledge record\n    record-update       Update the content or explicit status of a record\n    record-link         Create a typed foreign-key relation between SQLite\n                        records\n    record-show         Show a record, current successor, conflicts, and\n                        relation graph\n    record-search       Full-text search SQLite-native records\n    session-start       Start a shared work session\n    checkpoint          Record resumable session state\n    pin-checkpoint      Retroactively pin an existing checkpoint so pruning\n                        never deletes it\n    unpin-checkpoint    Unpin a checkpoint, returning it to normal sliding-\n                        window pruning\n    handoff             Read the latest resumable checkpoint\n    timeline            Read-only checkpoint timeline (who did what, affected\n                        files, statuses) across sessions\n    session-close       Mark a session completed or blocked\n    presence-start      Announce (machine, agent, project[, instance]) as\n                        actively working (same-machine real-time; mirrored to\n                        a per-machine sidecar file for cross-machine\n                        visibility)\n    presence-heartbeat  Refresh the (machine, agent, project[, instance])\n                        presence row (call it wherever checkpoint is already\n                        called -- do not add a new polling loop just for this)\n    presence-stop       Mark the (machine, agent, project[, instance])\n                        presence row stopped\n    presence            List agents currently working: real-time local rows\n                        plus the last-known snapshot from every other\n                        machine's presence sidecar\n    sync-status         Show the last-known write time per machine\n                        (informational freshness signal only; never a\n                        synchronization guarantee or write authorization)\n\noptions:\n  -h, --help            show this help message and exit\n  --db DB               SQLite path (default: endeavor_memory.sqlite3)\n",
+        "root": "usage: endeavor_db.py [-h] [--db DB]\n                      {init,seed,agent-help,ingest,query,stats,doctor,evaluate,embed-status,readiness,ann-status,ann-build,embed-diagnose,embed-warm,embed-cool,embed-backfill,install-hooks,bootstrap,pack,pending,maintenance,activity,feedback,event-add,event-poll,event-ack,record-add,record-update,record-link,record-show,record-search,session-start,checkpoint,pin-checkpoint,unpin-checkpoint,handoff,timeline,session-close,presence-start,presence-heartbeat,presence-stop,presence,sync-status} ...\n\nShared SQLite knowledge and handoff store for Codex and Claude Code. Standard-\nlibrary only. The database uses WAL mode and a busy timeout so two local agent\nprocesses can safely read/write the same workspace database. Semantic search\nis an optional, gracefully-degrading enhancement: this file never imports\nsentence-transformers/torch/numpy directly. Embedding vectors are computed by\na separate lazy-loaded companion process, embed_server.py (see embed_config.py\nfor the shared port/model constants), and this file only talks to it over\nstdlib urllib — if the companion can't be reached, every command still works\nwith lexical FTS only.\n\npositional arguments:\n  {init,seed,agent-help,ingest,query,stats,doctor,evaluate,embed-status,readiness,ann-status,ann-build,embed-diagnose,embed-warm,embed-cool,embed-backfill,install-hooks,bootstrap,pack,pending,maintenance,activity,feedback,event-add,event-poll,event-ack,record-add,record-update,record-link,record-show,record-search,session-start,checkpoint,pin-checkpoint,unpin-checkpoint,handoff,timeline,session-close,presence-start,presence-heartbeat,presence-stop,presence,sync-status}\n    init                Create or migrate the database\n    seed                Ingest the bundled ENDMEMEX guides\n    agent-help          Print a short agent-facing command cheat sheet (no\n                        database access)\n    ingest              Ingest or refresh a Markdown document\n    query               Search indexed knowledge\n    stats               Show database counts\n    doctor              Check SQLite integrity, FTS identity, embeddings, and\n                        internal relation lifecycles\n    evaluate            Run retrieval evaluation cases\n    embed-status        Check embedding coverage plus structured companion\n                        diagnostics (never spawns)\n    readiness           One read-only project preflight: machine role,\n                        database health, embeddings, ANN, docs, and next\n                        actions\n    ann-status          Check optional per-machine HNSW sidecar freshness\n    ann-build           Build/rebuild the optional per-machine HNSW sidecar\n    embed-diagnose      Diagnose CLI Python, companion dependencies, localhost\n                        policy, and model contract without spawning\n    embed-warm          Start MiniLM; --keep-alive holds it in RAM until\n                        embed-cool or process exit\n    embed-cool          Return a warm MiniLM companion to its normal idle\n                        timeout\n    embed-backfill      Spawn the MiniLM companion if needed and embed any\n                        missing/stale rows\n    install-hooks       Copy the git-tracked hook sources (hooks/) into\n                        .git/hooks — run once per fresh clone\n    bootstrap           Read-only task orientation: project map, recent\n                        checkpoints, handoff, embedding backfill requirement,\n                        tracked-doc freshness counts, and hook state\n    pack                One-call session briefing: handoff + open records +\n                        recent project knowledge + recent activity, trimmed to\n                        a character budget\n    pending             Read lifecycle-aware pending work without changing\n                        sessions or records\n    maintenance         VACUUM + PRAGMA optimize to reclaim disk space and\n                        refresh planner statistics. Manual-only, exclusive\n                        operation — do not run while another agent process may\n                        be writing.\n    activity            Write ACTIVITY.md — human-readable digest of the\n                        latest write actions (also auto-refreshed after every\n                        write command, at the default limit)\n    feedback            Record whether query results were useful\n    event-add           Publish a durable host-consumable event\n    event-poll          Read durable events in monotonic ID order\n    event-ack           Acknowledge a durable event after host handling\n    record-add          Add a durable SQLite-native audit/fix/knowledge record\n    record-update       Update the content or explicit status of a record\n    record-link         Create a typed foreign-key relation between SQLite\n                        records\n    record-show         Show a record, current successor, conflicts, and\n                        relation graph\n    record-search       Full-text search SQLite-native records\n    session-start       Start a shared work session\n    checkpoint          Record resumable session state\n    pin-checkpoint      Retroactively pin an existing checkpoint so pruning\n                        never deletes it\n    unpin-checkpoint    Unpin a checkpoint, returning it to normal sliding-\n                        window pruning\n    handoff             Read the latest resumable checkpoint\n    timeline            Read-only checkpoint timeline (who did what, affected\n                        files, statuses) across sessions\n    session-close       Mark a session completed or blocked\n    presence-start      Announce (machine, agent, project[, instance]) as\n                        actively working (same-machine real-time; mirrored to\n                        a per-machine sidecar file for cross-machine\n                        visibility)\n    presence-heartbeat  Refresh the (machine, agent, project[, instance])\n                        presence row (call it wherever checkpoint is already\n                        called -- do not add a new polling loop just for this)\n    presence-stop       Mark the (machine, agent, project[, instance])\n                        presence row stopped\n    presence            List agents currently working: real-time local rows\n                        plus the last-known snapshot from every other\n                        machine's presence sidecar\n    sync-status         Show the last-known write time per machine\n                        (informational freshness signal only; never a\n                        synchronization guarantee or write authorization)\n\noptions:\n  -h, --help            show this help message and exit\n  --db DB               SQLite path (default: endeavor_memory.sqlite3)\n",
         "activity": "usage: endeavor_db.py activity [-h] [--limit LIMIT] [--stdout] [--follow]\n                               [--project PROJECT] [--interval INTERVAL]\n\noptions:\n  -h, --help           show this help message and exit\n  --limit LIMIT\n  --stdout             Print the digest instead of writing the file\n  --follow             Poll for new activity and print it as it lands (Ctrl-C\n                       to stop), instead of writing/printing the digest. Read-\n                       only; a human-watched near-real-time view of what the\n                       other agent is doing, not agent-to-agent messaging.\n  --project PROJECT    With --follow, only show activity for this project\n  --interval INTERVAL  With --follow, seconds between polls (default 3.0)\n",
         "agent-help": "usage: endeavor_db.py agent-help [-h]\n\noptions:\n  -h, --help  show this help message and exit\n",
         "ann-build": "usage: endeavor_db.py ann-build [-h]\n\noptions:\n  -h, --help  show this help message and exit\n",
         "ann-status": "usage: endeavor_db.py ann-status [-h]\n\noptions:\n  -h, --help  show this help message and exit\n",
-        "bootstrap": "usage: endeavor_db.py bootstrap [-h] --project PROJECT [--session SESSION]\n                                [--json] [--batch-size BATCH_SIZE]\n                                [--include-pending]\n\noptions:\n  -h, --help            show this help message and exit\n  --project PROJECT\n  --session SESSION     Explicit resumable session ID; must belong to\n                        --project\n  --json\n  --batch-size BATCH_SIZE\n  --include-pending     Also include lifecycle-aware pending work\n",
+        "bootstrap": "usage: endeavor_db.py bootstrap [-h] --project PROJECT [--session SESSION]\n                                [--json] [--include-pending]\n\noptions:\n  -h, --help         show this help message and exit\n  --project PROJECT\n  --session SESSION  Explicit resumable session ID; must belong to --project\n  --json\n  --include-pending  Also include lifecycle-aware pending work\n",
         "checkpoint": "usage: endeavor_db.py checkpoint [-h] [--session SESSION] [--project PROJECT]\n                                 --agent {codex,claude,human,system,endeavor}\n                                 [--goal GOAL] [--payload PAYLOAD]\n                                 [--summary SUMMARY] [--work-done WORK_DONE]\n                                 [--current-state CURRENT_STATE]\n                                 [--next-steps NEXT_STEPS]\n                                 [--blockers BLOCKERS]\n                                 [--status {active,paused,completed,blocked}]\n                                 [--file FILES_CHANGED] [--auto-files]\n                                 [--command COMMANDS_RUN]\n                                 [--verify VERIFICATION] [--pin]\n\noptions:\n  -h, --help            show this help message and exit\n  --session SESSION\n  --project PROJECT\n  --agent {codex,claude,human,system,endeavor}\n  --goal GOAL           If --project has no active/paused/blocked session,\n                        start one with this goal before checkpointing,\n                        collapsing handoff+session-start+checkpoint into one\n                        call for the common single-session task\n  --payload PAYLOAD     JSON payload file; CLI flags override it\n  --summary SUMMARY\n  --work-done WORK_DONE\n  --current-state CURRENT_STATE\n  --next-steps NEXT_STEPS\n  --blockers BLOCKERS\n  --status {active,paused,completed,blocked}\n  --file FILES_CHANGED\n  --auto-files          Append git-status-detected changed files under\n                        ROOT/<project>/ to --file. Requires --project; a\n                        project label that isn't also a real top-level\n                        directory yields no files rather than guessing across\n                        the whole repo.\n  --command COMMANDS_RUN\n  --verify VERIFICATION\n  --pin                 Mark this checkpoint important: exempt it from the\n                        sliding-window prune (add_checkpoint's per-session cap\n                        and prune_checkpoints_globally) so it survives\n                        indefinitely regardless of age or session status.\n",
         "doctor": "usage: endeavor_db.py doctor [-h]\n\noptions:\n  -h, --help  show this help message and exit\n",
         "embed-backfill": "usage: endeavor_db.py embed-backfill [-h] [--batch-size BATCH_SIZE]\n\noptions:\n  -h, --help            show this help message and exit\n  --batch-size BATCH_SIZE\n",
@@ -8911,7 +8787,7 @@
         },
         "bootstrap": {
           "exit": 2,
-          "stderr": "usage: endeavor_db.py bootstrap [-h] --project PROJECT [--session SESSION]\n                                [--json] [--batch-size BATCH_SIZE]\n                                [--include-pending]\nendeavor_db.py bootstrap: error: the following arguments are required: --project\n"
+          "stderr": "usage: endeavor_db.py bootstrap [-h] --project PROJECT [--session SESSION]\n                                [--json] [--include-pending]\nendeavor_db.py bootstrap: error: the following arguments are required: --project\n"
         },
         "checkpoint": {
           "exit": 2,
@@ -9314,20 +9190,6 @@
               },
               {
                 "option_strings": [
-                  "--batch-size"
-                ],
-                "dest": "batch_size",
-                "nargs": null,
-                "const": null,
-                "default": 128,
-                "type": "cli_validators.positive_int",
-                "required": false,
-                "choices": null,
-                "metavar": null,
-                "help": null
-              },
-              {
-                "option_strings": [
                   "--include-pending"
                 ],
                 "dest": "include_pending",
@@ -12316,12 +12178,12 @@
         }
       },
       "help": {
-        "root": "usage: endeavor_db.py [-h] [--db DB]\n                      {init,seed,agent-help,ingest,query,stats,doctor,evaluate,embed-status,readiness,ann-status,ann-build,embed-diagnose,embed-warm,embed-cool,embed-backfill,install-hooks,bootstrap,pack,pending,maintenance,activity,feedback,event-add,event-poll,event-ack,record-add,record-update,record-link,record-show,record-search,session-start,checkpoint,pin-checkpoint,unpin-checkpoint,handoff,timeline,session-close,presence-start,presence-heartbeat,presence-stop,presence,sync-status} ...\n\nShared SQLite knowledge and handoff store for Codex and Claude Code. Standard-\nlibrary only. The database uses WAL mode and a busy timeout so two local agent\nprocesses can safely read/write the same workspace database. Semantic search\nis an optional, gracefully-degrading enhancement: this file never imports\nsentence-transformers/torch/numpy directly. Embedding vectors are computed by\na separate lazy-loaded companion process, embed_server.py (see embed_config.py\nfor the shared port/model constants), and this file only talks to it over\nstdlib urllib — if the companion can't be reached, every command still works\nwith lexical FTS only.\n\npositional arguments:\n  {init,seed,agent-help,ingest,query,stats,doctor,evaluate,embed-status,readiness,ann-status,ann-build,embed-diagnose,embed-warm,embed-cool,embed-backfill,install-hooks,bootstrap,pack,pending,maintenance,activity,feedback,event-add,event-poll,event-ack,record-add,record-update,record-link,record-show,record-search,session-start,checkpoint,pin-checkpoint,unpin-checkpoint,handoff,timeline,session-close,presence-start,presence-heartbeat,presence-stop,presence,sync-status}\n    init                Create or migrate the database\n    seed                Ingest the bundled ENDMEMEX guides\n    agent-help          Print a short agent-facing command cheat sheet (no\n                        database access)\n    ingest              Ingest or refresh a Markdown document\n    query               Search indexed knowledge\n    stats               Show database counts\n    doctor              Check SQLite integrity, FTS identity, embeddings, and\n                        internal relation lifecycles\n    evaluate            Run retrieval evaluation cases\n    embed-status        Check embedding coverage plus structured companion\n                        diagnostics (never spawns)\n    readiness           One read-only project preflight: machine role,\n                        database health, embeddings, ANN, docs, and next\n                        actions\n    ann-status          Check optional per-machine HNSW sidecar freshness\n    ann-build           Build/rebuild the optional per-machine HNSW sidecar\n    embed-diagnose      Diagnose CLI Python, companion dependencies, localhost\n                        policy, and model contract without spawning\n    embed-warm          Start MiniLM; --keep-alive holds it in RAM until\n                        embed-cool or process exit\n    embed-cool          Return a warm MiniLM companion to its normal idle\n                        timeout\n    embed-backfill      Spawn the MiniLM companion if needed and embed any\n                        missing/stale rows\n    install-hooks       Copy the git-tracked hook sources (hooks/) into\n                        .git/hooks — run once per fresh clone\n    bootstrap           One-call session start: latest handoff (null when\n                        none), embedding backfill, tracked-doc freshness\n                        counts, and hook state\n    pack                One-call session briefing: handoff + open records +\n                        recent project knowledge + recent activity, trimmed to\n                        a character budget\n    pending             Read lifecycle-aware pending work without changing\n                        sessions or records\n    maintenance         VACUUM + PRAGMA optimize to reclaim disk space and\n                        refresh planner statistics. Manual-only, exclusive\n                        operation — do not run while another agent process may\n                        be writing.\n    activity            Write ACTIVITY.md — human-readable digest of the\n                        latest write actions (also auto-refreshed after every\n                        write command, at the default limit)\n    feedback            Record whether query results were useful\n    event-add           Publish a durable host-consumable event\n    event-poll          Read durable events in monotonic ID order\n    event-ack           Acknowledge a durable event after host handling\n    record-add          Add a durable SQLite-native audit/fix/knowledge record\n    record-update       Update the content or explicit status of a record\n    record-link         Create a typed foreign-key relation between SQLite\n                        records\n    record-show         Show a record, current successor, conflicts, and\n                        relation graph\n    record-search       Full-text search SQLite-native records\n    session-start       Start a shared work session\n    checkpoint          Record resumable session state\n    pin-checkpoint      Retroactively pin an existing checkpoint so pruning\n                        never deletes it\n    unpin-checkpoint    Unpin a checkpoint, returning it to normal sliding-\n                        window pruning\n    handoff             Read the latest resumable checkpoint\n    timeline            Read-only checkpoint timeline (who did what, affected\n                        files, statuses) across sessions\n    session-close       Mark a session completed or blocked\n    presence-start      Announce (machine, agent, project[, instance]) as\n                        actively working (same-machine real-time; mirrored to\n                        a per-machine sidecar file for cross-machine\n                        visibility)\n    presence-heartbeat  Refresh the (machine, agent, project[, instance])\n                        presence row (call it wherever checkpoint is already\n                        called -- do not add a new polling loop just for this)\n    presence-stop       Mark the (machine, agent, project[, instance])\n                        presence row stopped\n    presence            List agents currently working: real-time local rows\n                        plus the last-known snapshot from every other\n                        machine's presence sidecar\n    sync-status         Show the last-known write time per machine\n                        (informational freshness signal only; never a\n                        synchronization guarantee or write authorization)\n\noptions:\n  -h, --help            show this help message and exit\n  --db DB               SQLite path (default: endeavor_memory.sqlite3)\n",
+        "root": "usage: endeavor_db.py [-h] [--db DB]\n                      {init,seed,agent-help,ingest,query,stats,doctor,evaluate,embed-status,readiness,ann-status,ann-build,embed-diagnose,embed-warm,embed-cool,embed-backfill,install-hooks,bootstrap,pack,pending,maintenance,activity,feedback,event-add,event-poll,event-ack,record-add,record-update,record-link,record-show,record-search,session-start,checkpoint,pin-checkpoint,unpin-checkpoint,handoff,timeline,session-close,presence-start,presence-heartbeat,presence-stop,presence,sync-status} ...\n\nShared SQLite knowledge and handoff store for Codex and Claude Code. Standard-\nlibrary only. The database uses WAL mode and a busy timeout so two local agent\nprocesses can safely read/write the same workspace database. Semantic search\nis an optional, gracefully-degrading enhancement: this file never imports\nsentence-transformers/torch/numpy directly. Embedding vectors are computed by\na separate lazy-loaded companion process, embed_server.py (see embed_config.py\nfor the shared port/model constants), and this file only talks to it over\nstdlib urllib — if the companion can't be reached, every command still works\nwith lexical FTS only.\n\npositional arguments:\n  {init,seed,agent-help,ingest,query,stats,doctor,evaluate,embed-status,readiness,ann-status,ann-build,embed-diagnose,embed-warm,embed-cool,embed-backfill,install-hooks,bootstrap,pack,pending,maintenance,activity,feedback,event-add,event-poll,event-ack,record-add,record-update,record-link,record-show,record-search,session-start,checkpoint,pin-checkpoint,unpin-checkpoint,handoff,timeline,session-close,presence-start,presence-heartbeat,presence-stop,presence,sync-status}\n    init                Create or migrate the database\n    seed                Ingest the bundled ENDMEMEX guides\n    agent-help          Print a short agent-facing command cheat sheet (no\n                        database access)\n    ingest              Ingest or refresh a Markdown document\n    query               Search indexed knowledge\n    stats               Show database counts\n    doctor              Check SQLite integrity, FTS identity, embeddings, and\n                        internal relation lifecycles\n    evaluate            Run retrieval evaluation cases\n    embed-status        Check embedding coverage plus structured companion\n                        diagnostics (never spawns)\n    readiness           One read-only project preflight: machine role,\n                        database health, embeddings, ANN, docs, and next\n                        actions\n    ann-status          Check optional per-machine HNSW sidecar freshness\n    ann-build           Build/rebuild the optional per-machine HNSW sidecar\n    embed-diagnose      Diagnose CLI Python, companion dependencies, localhost\n                        policy, and model contract without spawning\n    embed-warm          Start MiniLM; --keep-alive holds it in RAM until\n                        embed-cool or process exit\n    embed-cool          Return a warm MiniLM companion to its normal idle\n                        timeout\n    embed-backfill      Spawn the MiniLM companion if needed and embed any\n                        missing/stale rows\n    install-hooks       Copy the git-tracked hook sources (hooks/) into\n                        .git/hooks — run once per fresh clone\n    bootstrap           Read-only task orientation: project map, recent\n                        checkpoints, handoff, embedding backfill requirement,\n                        tracked-doc freshness counts, and hook state\n    pack                One-call session briefing: handoff + open records +\n                        recent project knowledge + recent activity, trimmed to\n                        a character budget\n    pending             Read lifecycle-aware pending work without changing\n                        sessions or records\n    maintenance         VACUUM + PRAGMA optimize to reclaim disk space and\n                        refresh planner statistics. Manual-only, exclusive\n                        operation — do not run while another agent process may\n                        be writing.\n    activity            Write ACTIVITY.md — human-readable digest of the\n                        latest write actions (also auto-refreshed after every\n                        write command, at the default limit)\n    feedback            Record whether query results were useful\n    event-add           Publish a durable host-consumable event\n    event-poll          Read durable events in monotonic ID order\n    event-ack           Acknowledge a durable event after host handling\n    record-add          Add a durable SQLite-native audit/fix/knowledge record\n    record-update       Update the content or explicit status of a record\n    record-link         Create a typed foreign-key relation between SQLite\n                        records\n    record-show         Show a record, current successor, conflicts, and\n                        relation graph\n    record-search       Full-text search SQLite-native records\n    session-start       Start a shared work session\n    checkpoint          Record resumable session state\n    pin-checkpoint      Retroactively pin an existing checkpoint so pruning\n                        never deletes it\n    unpin-checkpoint    Unpin a checkpoint, returning it to normal sliding-\n                        window pruning\n    handoff             Read the latest resumable checkpoint\n    timeline            Read-only checkpoint timeline (who did what, affected\n                        files, statuses) across sessions\n    session-close       Mark a session completed or blocked\n    presence-start      Announce (machine, agent, project[, instance]) as\n                        actively working (same-machine real-time; mirrored to\n                        a per-machine sidecar file for cross-machine\n                        visibility)\n    presence-heartbeat  Refresh the (machine, agent, project[, instance])\n                        presence row (call it wherever checkpoint is already\n                        called -- do not add a new polling loop just for this)\n    presence-stop       Mark the (machine, agent, project[, instance])\n                        presence row stopped\n    presence            List agents currently working: real-time local rows\n                        plus the last-known snapshot from every other\n                        machine's presence sidecar\n    sync-status         Show the last-known write time per machine\n                        (informational freshness signal only; never a\n                        synchronization guarantee or write authorization)\n\noptions:\n  -h, --help            show this help message and exit\n  --db DB               SQLite path (default: endeavor_memory.sqlite3)\n",
         "activity": "usage: endeavor_db.py activity [-h] [--limit LIMIT] [--stdout] [--follow]\n                               [--project PROJECT] [--interval INTERVAL]\n\noptions:\n  -h, --help           show this help message and exit\n  --limit LIMIT\n  --stdout             Print the digest instead of writing the file\n  --follow             Poll for new activity and print it as it lands (Ctrl-C\n                       to stop), instead of writing/printing the digest. Read-\n                       only; a human-watched near-real-time view of what the\n                       other agent is doing, not agent-to-agent messaging.\n  --project PROJECT    With --follow, only show activity for this project\n  --interval INTERVAL  With --follow, seconds between polls (default 3.0)\n",
         "agent-help": "usage: endeavor_db.py agent-help [-h]\n\noptions:\n  -h, --help  show this help message and exit\n",
         "ann-build": "usage: endeavor_db.py ann-build [-h]\n\noptions:\n  -h, --help  show this help message and exit\n",
         "ann-status": "usage: endeavor_db.py ann-status [-h]\n\noptions:\n  -h, --help  show this help message and exit\n",
-        "bootstrap": "usage: endeavor_db.py bootstrap [-h] --project PROJECT [--session SESSION]\n                                [--json] [--batch-size BATCH_SIZE]\n                                [--include-pending]\n\noptions:\n  -h, --help            show this help message and exit\n  --project PROJECT\n  --session SESSION     Explicit resumable session ID; must belong to\n                        --project\n  --json\n  --batch-size BATCH_SIZE\n  --include-pending     Also include lifecycle-aware pending work\n",
+        "bootstrap": "usage: endeavor_db.py bootstrap [-h] --project PROJECT [--session SESSION]\n                                [--json] [--include-pending]\n\noptions:\n  -h, --help         show this help message and exit\n  --project PROJECT\n  --session SESSION  Explicit resumable session ID; must belong to --project\n  --json\n  --include-pending  Also include lifecycle-aware pending work\n",
         "checkpoint": "usage: endeavor_db.py checkpoint [-h] [--session SESSION] [--project PROJECT]\n                                 --agent {codex,claude,human,system,endeavor}\n                                 [--goal GOAL] [--payload PAYLOAD]\n                                 [--summary SUMMARY] [--work-done WORK_DONE]\n                                 [--current-state CURRENT_STATE]\n                                 [--next-steps NEXT_STEPS]\n                                 [--blockers BLOCKERS]\n                                 [--status {active,paused,completed,blocked}]\n                                 [--file FILES_CHANGED] [--auto-files]\n                                 [--command COMMANDS_RUN]\n                                 [--verify VERIFICATION] [--pin]\n\noptions:\n  -h, --help            show this help message and exit\n  --session SESSION\n  --project PROJECT\n  --agent {codex,claude,human,system,endeavor}\n  --goal GOAL           If --project has no active/paused/blocked session,\n                        start one with this goal before checkpointing,\n                        collapsing handoff+session-start+checkpoint into one\n                        call for the common single-session task\n  --payload PAYLOAD     JSON payload file; CLI flags override it\n  --summary SUMMARY\n  --work-done WORK_DONE\n  --current-state CURRENT_STATE\n  --next-steps NEXT_STEPS\n  --blockers BLOCKERS\n  --status {active,paused,completed,blocked}\n  --file FILES_CHANGED\n  --auto-files          Append git-status-detected changed files under\n                        ROOT/<project>/ to --file. Requires --project; a\n                        project label that isn't also a real top-level\n                        directory yields no files rather than guessing across\n                        the whole repo.\n  --command COMMANDS_RUN\n  --verify VERIFICATION\n  --pin                 Mark this checkpoint important: exempt it from the\n                        sliding-window prune (add_checkpoint's per-session cap\n                        and prune_checkpoints_globally) so it survives\n                        indefinitely regardless of age or session status.\n",
         "doctor": "usage: endeavor_db.py doctor [-h]\n\noptions:\n  -h, --help  show this help message and exit\n",
         "embed-backfill": "usage: endeavor_db.py embed-backfill [-h] [--batch-size BATCH_SIZE]\n\noptions:\n  -h, --help            show this help message and exit\n  --batch-size BATCH_SIZE\n",
@@ -12368,7 +12230,7 @@
         },
         "bootstrap": {
           "exit": 2,
-          "stderr": "usage: endeavor_db.py bootstrap [-h] --project PROJECT [--session SESSION]\n                                [--json] [--batch-size BATCH_SIZE]\n                                [--include-pending]\nendeavor_db.py bootstrap: error: the following arguments are required: --project\n"
+          "stderr": "usage: endeavor_db.py bootstrap [-h] --project PROJECT [--session SESSION]\n                                [--json] [--include-pending]\nendeavor_db.py bootstrap: error: the following arguments are required: --project\n"
         },
         "checkpoint": {
           "exit": 2,
@@ -12544,7 +12406,7 @@
       {
         "name": "endeavor_memory_readiness",
         "title": "Check ENDMEMEX project readiness",
-        "description": "READ ONLY. Use this one-call preflight before a project session when you need machine role, database/FTS health, embedding coverage, ANN sidecar state, tracked-document freshness, and ordered actionable next_actions in one JSON result. It never bootstraps, backfills, warms a companion, builds ANN, or writes the database. Returns a JSON object as text; overall is ready, attention, or blocked. Follow next_actions in priority order and do not auto-prune orphaned documents.",
+        "description": "READ ONLY. Use after bootstrap when machine role, database/FTS health, embedding coverage, ANN sidecar state, tracked-document freshness, and ordered actionable next_actions are needed in one JSON result. It does not replace the mandatory first bootstrap for non-trivial work and never bootstraps, backfills, warms a companion, builds ANN, or writes the database. Returns a JSON object as text; overall is ready, attention, or blocked. Follow next_actions in priority order and do not auto-prune orphaned documents.",
         "annotations": {
           "readOnlyHint": true,
           "destructiveHint": false,
@@ -12569,7 +12431,7 @@
       {
         "name": "endeavor_memory_pack",
         "title": "Build ENDMEMEX briefing",
-        "description": "READ ONLY. Use at the start of a non-trivial task when a handoff alone is insufficient. Returns JSON text containing the selected handoff, lifecycle-aware actionable_records, raw open_records, recent knowledge, and activity within the total serialized budget. budget_omitted_counts reports every eligible item omitted for space. open_records means only stored status=open and can include historical evidence resolved or superseded by lifecycle edges; use actionable_records for current follow-up work and record_show before relying on a material record. If pending_complete=false, inspect pending_warnings before acting. Pass session after the user selects a resumable session. Prefer handoff for a lightweight resume; do not call repeatedly during ordinary work.",
+        "description": "READ ONLY. Use after bootstrap when its orientation/handoff is insufficient and a wider bounded briefing is needed. It does not replace bootstrap. Returns JSON text containing the selected handoff, lifecycle-aware actionable_records, raw open_records, recent knowledge, and activity within the total serialized budget. budget_omitted_counts reports every eligible item omitted for space. open_records means only stored status=open and can include historical evidence resolved or superseded by lifecycle edges; use actionable_records for current follow-up work and record_show before relying on a material record. If pending_complete=false, inspect pending_warnings before acting. Pass session after the user selects a resumable session. Prefer handoff for a lightweight resume; do not call repeatedly during ordinary work.",
         "annotations": {
           "readOnlyHint": true,
           "destructiveHint": false,
@@ -12827,13 +12689,63 @@
         }
       },
       {
-        "name": "endeavor_memory_bootstrap",
-        "title": "Bootstrap ENDMEMEX task context",
-        "description": "WRITE. Use once at the start of a non-trivial task. Returns JSON text with deterministic database/project orientation, the 10 most recent retained checkpoints for the selected project (newest full, then progressively compressed to checkpoint 10), latest handoff, embedding backfill diagnostics, document freshness, and hook state. It may initialize/update local database state. Do not call for a simple one-off question.",
+        "name": "endeavor_memory_initialize",
+        "title": "Initialize or migrate ENDMEMEX database",
+        "description": "WRITE. Use when bootstrap reports database.init_required=true or during explicit first-time setup. Creates or migrates the ENDMEMEX schema. Returns JSON text with the database path and schema version. After success, rerun bootstrap. For remote mutation, use the configured authenticated write gateway rather than shared SQLite.",
         "annotations": {
           "readOnlyHint": false,
           "destructiveHint": false,
           "idempotentHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "confirm": {
+              "type": "boolean",
+              "description": "Accepted for backward compatibility."
+            }
+          },
+          "required": []
+        }
+      },
+      {
+        "name": "endeavor_memory_embed_backfill",
+        "title": "Backfill ENDMEMEX embeddings",
+        "description": "WRITE. Use when bootstrap reports embedding.backfill_required=true, or when explicitly repairing embedding coverage. Starts/waits for MiniLM if needed and writes missing/stale knowledge and durable-record embeddings. Returns JSON text with status, candidates, embedded count, and attempts. After success, rerun bootstrap to confirm backfill_required=false. For remote mutation, use the configured authenticated write gateway rather than shared SQLite.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "batch_size": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1024,
+              "description": "Embedding batch size; omit to use the configured default."
+            },
+            "confirm": {
+              "type": "boolean",
+              "description": "Accepted for backward compatibility."
+            }
+          },
+          "required": []
+        }
+      },
+      {
+        "name": "endeavor_memory_bootstrap",
+        "title": "Bootstrap ENDMEMEX task context",
+        "description": "READ ONLY. This is the first ENDMEMEX context action for non-trivial work: call it once before planning or implementation. Returns deterministic database/project orientation, the 10 most recent retained checkpoints for the selected project (newest full, then progressively compressed to checkpoint 10), latest handoff, read-only embedding coverage with embedding.backfill_required and next_tool, database schema state with database.init_required and next_tool, document freshness, hook state, and ordered next_actions telling the agent exactly what to do next. next_actions may recommend initialize, embedding backfill, tracked-document sync, orphan review, or hook installation; an empty list means no ENDMEMEX maintenance action is currently required. It never initializes/migrates the database, starts MiniLM, backfills embeddings, or writes ENDMEMEX state. Follow reported write actions separately and rerun bootstrap afterward. Do not call for a simple one-off question.",
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true,
           "openWorldHint": false
         },
         "inputSchema": {
@@ -12853,10 +12765,6 @@
             "include_pending": {
               "type": "boolean",
               "description": "Also return this project's lifecycle-aware pending-work view. Default false for response compatibility."
-            },
-            "confirm": {
-              "type": "boolean",
-              "description": "Accepted for backward compatibility."
             }
           },
           "required": [
@@ -13671,7 +13579,7 @@
         }
       }
     ],
-    "server_instructions": "ENDMEMEX is shared project memory. At the start of non-trivial work call bootstrap once, then query before rediscovering prior work or making high-impact decisions. Checkpoint after meaningful implementation, verified tests, decisions, handoffs, and Git commits. Use durable records for audit -> resolves:fix -> verifies:verification lifecycles. Never store secrets. Successful tools return JSON encoded in text content; errors start [error]. Keep writable SQLite local to one host; use authenticated write_gateway.py for remote mutations. Open cited sources before relying on material search results. Agent presence is opt-in: call presence_start/presence_heartbeat/presence_stop only when the user asks agents to announce work or is coordinating multiple concurrent sessions; otherwise do not create those shared-database writes. sync_status shows the last-known write time per machine. Readiness is the single read-only preflight for local-host identity, DB health, embedding coverage, ANN, tracked-document freshness, and ordered next actions."
+    "server_instructions": "ENDMEMEX is shared project memory. At the start of non-trivial work call the read-only bootstrap once before planning or implementation, follow its ordered next_actions, then query before rediscovering prior work or making high-impact decisions. Bootstrap never writes, initializes, starts MiniLM, or backfills embeddings. If database.init_required=true, call endeavor_memory_initialize; if embedding.backfill_required=true, call endeavor_memory_embed_backfill; then rerun bootstrap. Checkpoint after meaningful implementation, verified tests, decisions, handoffs, and Git commits. Use durable records for audit -> resolves:fix -> verifies:verification lifecycles. Never store secrets. Successful tools return JSON encoded in text content; errors start [error]. Keep writable SQLite local to one host; use authenticated write_gateway.py for remote mutations. Open cited sources before relying on material search results. Agent presence is opt-in: call presence_start/presence_heartbeat/presence_stop only when the user asks agents to announce work or is coordinating multiple concurrent sessions; otherwise do not create those shared-database writes. sync_status shows the last-known write time per machine. Readiness is an optional post-bootstrap read-only health preflight for local-host identity, DB health, embedding coverage, ANN, tracked-document freshness, and ordered next actions; it never replaces bootstrap."
   },
   "agent_mcp_contract": {
     "tools": [
@@ -15342,6 +15250,266 @@
           "stdout": "",
           "stderr": "usage: agent_delegate.py advise [-h] [--worker-model WORKER_MODEL]\n                                [--advisor-model ADVISOR_MODEL]\n                                [--allowed-tools [ALLOWED_TOOLS ...]]\n                                [--timeout TIMEOUT] [--binary BINARY]\n                                [--caller {claude,codex}]\n                                [--result-format {raw,json}]\n                                [--project PROJECT]\n                                [--parent-record PARENT_RECORD]\n                                prompt\nagent_delegate.py advise: error: the following arguments are required: prompt\n"
         }
+      }
+    }
+  },
+  "parser_error_probes_by_python_minor": {
+    "3.11": {
+      "positive_int_zero": {
+        "argv": [
+          "--batch-size",
+          "0"
+        ],
+        "exit": 2,
+        "stderr": "usage: endeavor_db.py embed-backfill [-h] [--batch-size BATCH_SIZE]\nendeavor_db.py embed-backfill: error: argument --batch-size: must be a positive integer\n"
+      },
+      "positive_int_text": {
+        "argv": [
+          "--batch-size",
+          "not-a-number"
+        ],
+        "exit": 2,
+        "stderr": "usage: endeavor_db.py embed-backfill [-h] [--batch-size BATCH_SIZE]\nendeavor_db.py embed-backfill: error: argument --batch-size: invalid positive_int value: 'not-a-number'\n"
+      },
+      "pack_budget_low": {
+        "argv": [
+          "--project",
+          "DEMO",
+          "--budget",
+          "499"
+        ],
+        "exit": 2,
+        "stderr": "usage: endeavor_db.py pack [-h] --project PROJECT [--session SESSION]\n                           [--budget BUDGET_CHARS] [--json]\nendeavor_db.py pack: error: argument --budget: must be between 500 and 50000\n"
+      },
+      "pack_budget_high": {
+        "argv": [
+          "--project",
+          "DEMO",
+          "--budget",
+          "50001"
+        ],
+        "exit": 2,
+        "stderr": "usage: endeavor_db.py pack [-h] --project PROJECT [--session SESSION]\n                           [--budget BUDGET_CHARS] [--json]\nendeavor_db.py pack: error: argument --budget: must be between 500 and 50000\n"
+      },
+      "pack_budget_text": {
+        "argv": [
+          "--project",
+          "DEMO",
+          "--budget",
+          "not-a-number"
+        ],
+        "exit": 2,
+        "stderr": "usage: endeavor_db.py pack [-h] --project PROJECT [--session SESSION]\n                           [--budget BUDGET_CHARS] [--json]\nendeavor_db.py pack: error: argument --budget: invalid pack_budget value: 'not-a-number'\n"
+      },
+      "nonempty_text": {
+        "argv": [
+          "--project",
+          "   "
+        ],
+        "exit": 2,
+        "stderr": "usage: endeavor_db.py pending [-h] (--project PROJECT | --all-projects)\n                              [--json]\nendeavor_db.py pending: error: argument --project: must not be empty\n"
+      },
+      "invalid_choice": {
+        "argv": [
+          "needle",
+          "--semantic",
+          "maybe"
+        ],
+        "exit": 2,
+        "stderr": "usage: endeavor_db.py query [-h] [--project PROJECT] [--category CATEGORY]\n                            [--status {open,resolved,accepted}]\n                            [--module MODULE] [--bug-id BUG_ID]\n                            [--session-label SESSION_LABEL] [--limit LIMIT]\n                            [--json] [--semantic {auto,on,off}] [--compact]\n                            [--check-stale]\n                            text\nendeavor_db.py query: error: argument --semantic: invalid choice: 'maybe' (choose from 'auto', 'on', 'off')\n"
+      },
+      "mutually_exclusive": {
+        "argv": [
+          "--project",
+          "DEMO",
+          "--all-projects"
+        ],
+        "exit": 2,
+        "stderr": "usage: endeavor_db.py pending [-h] (--project PROJECT | --all-projects)\n                              [--json]\nendeavor_db.py pending: error: argument --all-projects: not allowed with argument --project\n"
+      },
+      "feedback_result_bad": {
+        "argv": [
+          "--agent",
+          "claude",
+          "--query",
+          "x",
+          "--result",
+          "notanid"
+        ],
+        "exit": 2,
+        "stderr": "usage: endeavor_db.py feedback [-h] --agent\n                               {codex,claude,human,system,endeavor} --query\n                               QUERY [--result SELECTED_IDS]\n                               [--useful {yes,no}] [--note NOTE]\nendeavor_db.py feedback: error: argument --result: invalid parse_feedback_result_id value: 'notanid'\n"
+      }
+    },
+    "3.13": {
+      "positive_int_zero": {
+        "argv": [
+          "--batch-size",
+          "0"
+        ],
+        "exit": 2,
+        "stderr": "usage: endeavor_db.py embed-backfill [-h] [--batch-size BATCH_SIZE]\nendeavor_db.py embed-backfill: error: argument --batch-size: must be a positive integer\n"
+      },
+      "positive_int_text": {
+        "argv": [
+          "--batch-size",
+          "not-a-number"
+        ],
+        "exit": 2,
+        "stderr": "usage: endeavor_db.py embed-backfill [-h] [--batch-size BATCH_SIZE]\nendeavor_db.py embed-backfill: error: argument --batch-size: invalid positive_int value: 'not-a-number'\n"
+      },
+      "pack_budget_low": {
+        "argv": [
+          "--project",
+          "DEMO",
+          "--budget",
+          "499"
+        ],
+        "exit": 2,
+        "stderr": "usage: endeavor_db.py pack [-h] --project PROJECT [--session SESSION]\n                           [--budget BUDGET_CHARS] [--json]\nendeavor_db.py pack: error: argument --budget: must be between 500 and 50000\n"
+      },
+      "pack_budget_high": {
+        "argv": [
+          "--project",
+          "DEMO",
+          "--budget",
+          "50001"
+        ],
+        "exit": 2,
+        "stderr": "usage: endeavor_db.py pack [-h] --project PROJECT [--session SESSION]\n                           [--budget BUDGET_CHARS] [--json]\nendeavor_db.py pack: error: argument --budget: must be between 500 and 50000\n"
+      },
+      "pack_budget_text": {
+        "argv": [
+          "--project",
+          "DEMO",
+          "--budget",
+          "not-a-number"
+        ],
+        "exit": 2,
+        "stderr": "usage: endeavor_db.py pack [-h] --project PROJECT [--session SESSION]\n                           [--budget BUDGET_CHARS] [--json]\nendeavor_db.py pack: error: argument --budget: invalid pack_budget value: 'not-a-number'\n"
+      },
+      "nonempty_text": {
+        "argv": [
+          "--project",
+          "   "
+        ],
+        "exit": 2,
+        "stderr": "usage: endeavor_db.py pending [-h] (--project PROJECT | --all-projects)\n                              [--json]\nendeavor_db.py pending: error: argument --project: must not be empty\n"
+      },
+      "invalid_choice": {
+        "argv": [
+          "needle",
+          "--semantic",
+          "maybe"
+        ],
+        "exit": 2,
+        "stderr": "usage: endeavor_db.py query [-h] [--project PROJECT] [--category CATEGORY]\n                            [--status {open,resolved,accepted}]\n                            [--module MODULE] [--bug-id BUG_ID]\n                            [--session-label SESSION_LABEL] [--limit LIMIT]\n                            [--json] [--semantic {auto,on,off}] [--compact]\n                            [--check-stale]\n                            text\nendeavor_db.py query: error: argument --semantic: invalid choice: 'maybe' (choose from auto, on, off)\n"
+      },
+      "mutually_exclusive": {
+        "argv": [
+          "--project",
+          "DEMO",
+          "--all-projects"
+        ],
+        "exit": 2,
+        "stderr": "usage: endeavor_db.py pending [-h] (--project PROJECT | --all-projects)\n                              [--json]\nendeavor_db.py pending: error: argument --all-projects: not allowed with argument --project\n"
+      },
+      "feedback_result_bad": {
+        "argv": [
+          "--agent",
+          "claude",
+          "--query",
+          "x",
+          "--result",
+          "notanid"
+        ],
+        "exit": 2,
+        "stderr": "usage: endeavor_db.py feedback [-h]\n                               --agent {codex,claude,human,system,endeavor}\n                               --query QUERY [--result SELECTED_IDS]\n                               [--useful {yes,no}] [--note NOTE]\nendeavor_db.py feedback: error: argument --result: invalid parse_feedback_result_id value: 'notanid'\n"
+      }
+    },
+    "3.14": {
+      "positive_int_zero": {
+        "argv": [
+          "--batch-size",
+          "0"
+        ],
+        "exit": 2,
+        "stderr": "usage: endeavor_db.py embed-backfill [-h] [--batch-size BATCH_SIZE]\nendeavor_db.py embed-backfill: error: argument --batch-size: must be a positive integer\n"
+      },
+      "positive_int_text": {
+        "argv": [
+          "--batch-size",
+          "not-a-number"
+        ],
+        "exit": 2,
+        "stderr": "usage: endeavor_db.py embed-backfill [-h] [--batch-size BATCH_SIZE]\nendeavor_db.py embed-backfill: error: argument --batch-size: invalid positive_int value: 'not-a-number'\n"
+      },
+      "pack_budget_low": {
+        "argv": [
+          "--project",
+          "DEMO",
+          "--budget",
+          "499"
+        ],
+        "exit": 2,
+        "stderr": "usage: endeavor_db.py pack [-h] --project PROJECT [--session SESSION]\n                           [--budget BUDGET_CHARS] [--json]\nendeavor_db.py pack: error: argument --budget: must be between 500 and 50000\n"
+      },
+      "pack_budget_high": {
+        "argv": [
+          "--project",
+          "DEMO",
+          "--budget",
+          "50001"
+        ],
+        "exit": 2,
+        "stderr": "usage: endeavor_db.py pack [-h] --project PROJECT [--session SESSION]\n                           [--budget BUDGET_CHARS] [--json]\nendeavor_db.py pack: error: argument --budget: must be between 500 and 50000\n"
+      },
+      "pack_budget_text": {
+        "argv": [
+          "--project",
+          "DEMO",
+          "--budget",
+          "not-a-number"
+        ],
+        "exit": 2,
+        "stderr": "usage: endeavor_db.py pack [-h] --project PROJECT [--session SESSION]\n                           [--budget BUDGET_CHARS] [--json]\nendeavor_db.py pack: error: argument --budget: invalid pack_budget value: 'not-a-number'\n"
+      },
+      "nonempty_text": {
+        "argv": [
+          "--project",
+          "   "
+        ],
+        "exit": 2,
+        "stderr": "usage: endeavor_db.py pending [-h] (--project PROJECT | --all-projects)\n                              [--json]\nendeavor_db.py pending: error: argument --project: must not be empty\n"
+      },
+      "invalid_choice": {
+        "argv": [
+          "needle",
+          "--semantic",
+          "maybe"
+        ],
+        "exit": 2,
+        "stderr": "usage: endeavor_db.py query [-h] [--project PROJECT] [--category CATEGORY]\n                            [--status {open,resolved,accepted}]\n                            [--module MODULE] [--bug-id BUG_ID]\n                            [--session-label SESSION_LABEL] [--limit LIMIT]\n                            [--json] [--semantic {auto,on,off}] [--compact]\n                            [--check-stale]\n                            text\nendeavor_db.py query: error: argument --semantic: invalid choice: 'maybe' (choose from 'auto', 'on', 'off')\n"
+      },
+      "mutually_exclusive": {
+        "argv": [
+          "--project",
+          "DEMO",
+          "--all-projects"
+        ],
+        "exit": 2,
+        "stderr": "usage: endeavor_db.py pending [-h] (--project PROJECT | --all-projects)\n                              [--json]\nendeavor_db.py pending: error: argument --all-projects: not allowed with argument --project\n"
+      },
+      "feedback_result_bad": {
+        "argv": [
+          "--agent",
+          "claude",
+          "--query",
+          "x",
+          "--result",
+          "notanid"
+        ],
+        "exit": 2,
+        "stderr": "usage: endeavor_db.py feedback [-h]\n                               --agent {codex,claude,human,system,endeavor}\n                               --query QUERY [--result SELECTED_IDS]\n                               [--useful {yes,no}] [--note NOTE]\nendeavor_db.py feedback: error: argument --result: invalid parse_feedback_result_id value: 'notanid'\n"
       }
     }
   }

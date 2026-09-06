@@ -121,13 +121,12 @@ def build_parser(module_doc: str) -> argparse.ArgumentParser:
     )
     boot = sub.add_parser(
         "bootstrap",
-        help="One-call session start: latest handoff (null when none), embedding backfill, "
-             "tracked-doc freshness counts, and hook state",
+        help="Read-only task orientation: project map, recent checkpoints, handoff, embedding "
+             "backfill requirement, tracked-doc freshness counts, and hook state",
     )
     boot.add_argument("--project", required=True)
     boot.add_argument("--session", help="Explicit resumable session ID; must belong to --project")
     boot.add_argument("--json", action="store_true")
-    boot.add_argument("--batch-size", type=positive_int, default=EMBED_BATCH_SIZE)
     boot.add_argument("--include-pending", action="store_true", help="Also include lifecycle-aware pending work")
     pack = sub.add_parser(
         "pack",

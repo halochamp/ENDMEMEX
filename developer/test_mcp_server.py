@@ -46,7 +46,10 @@ class McpServerContractTest(unittest.TestCase):
 
     def test_server_instructions_cover_cross_tool_workflow(self):
         instructions = mcp.SERVER_INSTRUCTIONS
-        self.assertIn("bootstrap", instructions)
+        self.assertIn("read-only bootstrap", instructions)
+        self.assertIn("before planning or implementation", instructions)
+        self.assertIn("endeavor_memory_initialize", instructions)
+        self.assertIn("endeavor_memory_embed_backfill", instructions)
         self.assertIn("query", instructions)
         self.assertIn("Checkpoint", instructions)
         self.assertIn("authenticated write_gateway.py", instructions)
@@ -66,7 +69,7 @@ class McpServerContractTest(unittest.TestCase):
         self.assertIn("opt-in workflow", descriptions["endeavor_presence_stop"])
 
     def test_every_tool_has_strict_schema_and_annotations(self):
-        self.assertEqual(len(mcp.TOOLS), 23)
+        self.assertEqual(len(mcp.TOOLS), 25)
         for tool in mcp.TOOLS:
             with self.subTest(tool=tool["name"]):
                 self.assertFalse(tool["inputSchema"]["additionalProperties"])
@@ -244,7 +247,10 @@ class McpServerContractTest(unittest.TestCase):
         self.assertEqual(result, "{}")
         run.assert_called_once()
 
-    def test_bootstrap_can_opt_into_pending_context(self):
+    def test_bootstrap_is_read_only_and_can_opt_into_pending_context(self):
+        tool = mcp.TOOL_BY_NAME["endeavor_memory_bootstrap"]
+        self.assertTrue(tool["annotations"]["readOnlyHint"])
+        self.assertNotIn("endeavor_memory_bootstrap", mcp.WRITE_TOOLS)
         with mock.patch.object(mcp, "run", return_value="{}") as run:
             result = mcp.call("endeavor_memory_bootstrap", {
                 "project": "DEMO", "session": "sess-1", "include_pending": True,
@@ -253,6 +259,19 @@ class McpServerContractTest(unittest.TestCase):
         self.assertEqual(run.call_args.args[0], [
             "bootstrap", "--project", "DEMO", "--json", "--session", "sess-1", "--include-pending",
         ])
+
+    def test_initialize_and_embed_backfill_are_explicit_write_tools(self):
+        initialize = mcp.TOOL_BY_NAME["endeavor_memory_initialize"]
+        backfill = mcp.TOOL_BY_NAME["endeavor_memory_embed_backfill"]
+        self.assertFalse(initialize["annotations"]["readOnlyHint"])
+        self.assertFalse(backfill["annotations"]["readOnlyHint"])
+        self.assertIn("endeavor_memory_initialize", mcp.WRITE_TOOLS)
+        self.assertIn("endeavor_memory_embed_backfill", mcp.WRITE_TOOLS)
+        with mock.patch.object(mcp, "run", return_value="{}") as run:
+            self.assertEqual(mcp.call("endeavor_memory_initialize", {}), "{}")
+            self.assertEqual(mcp.call("endeavor_memory_embed_backfill", {"batch_size": 64}), "{}")
+        self.assertEqual(run.call_args_list[0].args[0], ["init"])
+        self.assertEqual(run.call_args_list[1].args[0], ["embed-backfill", "--batch-size", "64"])
 
     def test_pack_and_checkpoint_forward_explicit_session_identity(self):
         with mock.patch.object(mcp, "run", return_value="{}") as run:
