@@ -460,8 +460,16 @@ def _read_start_history(now: float) -> list[float]:
 
 def _write_start_history(values: list[float]) -> None:
     temporary = START_HISTORY.with_suffix(f".json.{os.getpid()}.{uuid.uuid4().hex}.tmp")
-    temporary.write_text(json.dumps(values) + "\n", encoding="utf-8")
-    os.replace(temporary, START_HISTORY)
+    try:
+        temporary.write_text(json.dumps(values) + "\n", encoding="utf-8")
+        os.replace(temporary, START_HISTORY)
+    finally:
+        try:
+            temporary.unlink()
+        except OSError:
+            # Preserve the original admission-control failure if cleanup itself is
+            # blocked; the trusted Hands path relocates this state under /private/tmp.
+            pass
 
 
 def admitted_start(command: list[str], run_id: str) -> str:

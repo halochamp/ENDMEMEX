@@ -340,6 +340,16 @@ class AgentMcpServerContractTest(unittest.TestCase):
                 limited = mcp.admitted_start(["claude"], "limited1234")
                 self.assertIn("rate limit", limited)
 
+    def test_start_history_temp_is_cleaned_when_atomic_replace_fails(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            history = root / "history.json"
+            with mock.patch.object(mcp, "START_HISTORY", history), \
+                 mock.patch.object(mcp.os, "replace", side_effect=OSError("replace failed")):
+                with self.assertRaisesRegex(OSError, "replace failed"):
+                    mcp._write_start_history([1.0])
+            self.assertEqual(list(root.glob("history.json.*.tmp")), [])
+
     def test_active_run_count_ignores_reused_pid_after_owner_death(self):
         # Regression: a dead manager whose persisted child pid has since been
         # reused by an unrelated process must not count as an active run.
