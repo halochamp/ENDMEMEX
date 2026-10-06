@@ -132,31 +132,13 @@
     }
   ],
   "mcp_tool_names": [
-    "endeavor_memory_query",
-    "endeavor_memory_readiness",
-    "endeavor_memory_pack",
-    "endeavor_memory_pending",
-    "endeavor_memory_handoff",
-    "endeavor_memory_timeline",
-    "endeavor_memory_record_show",
-    "endeavor_memory_record_search",
-    "endeavor_memory_initialize",
-    "endeavor_memory_embed_backfill",
-    "endeavor_memory_bootstrap",
-    "endeavor_memory_checkpoint",
-    "endeavor_memory_pin_checkpoint",
-    "endeavor_memory_record_add",
-    "endeavor_memory_record_update",
-    "endeavor_memory_record_link",
-    "endeavor_memory_session_close",
-    "endeavor_memory_feedback",
-    "endeavor_memory_event_poll",
-    "endeavor_memory_event_ack",
-    "endeavor_presence_start",
-    "endeavor_presence_heartbeat",
-    "endeavor_presence_stop",
-    "endeavor_presence_list",
-    "endeavor_sync_status"
+    "endmemex_context",
+    "endmemex_search",
+    "endmemex_records",
+    "endmemex_session",
+    "endmemex_events",
+    "endmemex_presence",
+    "endmemex_admin"
   ],
   "read_only_commands": [
     "query",
@@ -12322,9 +12304,9 @@
   "mcp_contract": {
     "tools": [
       {
-        "name": "endeavor_memory_query",
-        "title": "Search ENDMEMEX",
-        "description": "READ ONLY. Use before rediscovering prior work or making a high-impact project decision. Searches indexed Markdown and current durable records. Inspect cited sources before trusting material results. Returns a JSON array as text; stale=true means open the source because its indexed copy drifted. Do not use it to write a checkpoint.",
+        "name": "endmemex_context",
+        "title": "Read ENDMEMEX context and continuity",
+        "description": "READ ONLY. Returns project orientation, readiness, briefings, pending work, handoffs, timeline, or sync status. Actions: bootstrap, readiness, pack, pending, handoff, timeline, sync_status.",
         "annotations": {
           "readOnlyHint": true,
           "destructiveHint": false,
@@ -12333,992 +12315,285 @@
         },
         "inputSchema": {
           "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "query": {
-              "type": "string",
-              "minLength": 1,
-              "description": "Natural-language or keyword search. Use the terms an existing note or record is likely to contain."
-            },
-            "project": {
-              "type": "string",
-              "minLength": 1,
-              "description": "Stable project label used in ENDMEMEX, not a filesystem path (for example ENDMEMEX or MY_APP)."
-            },
-            "category": {
-              "type": "string",
-              "minLength": 1,
-              "description": "Optional knowledge category or durable record type used to narrow results."
-            },
-            "status": {
-              "type": "string",
-              "enum": [
-                "open",
-                "resolved",
-                "accepted"
-              ],
-              "description": "Optional Markdown-derived knowledge status filter."
-            },
-            "module": {
-              "type": "string",
-              "minLength": 1,
-              "description": "Optional exact/literal module metadata filter, for example react.py."
-            },
-            "bug_id": {
-              "type": "string",
-              "minLength": 1,
-              "description": "Optional exact bug-ID metadata filter."
-            },
-            "session_label": {
-              "type": "string",
-              "minLength": 1,
-              "description": "Optional session-label metadata filter."
-            },
-            "semantic": {
-              "type": "string",
-              "enum": [
-                "auto",
-                "on",
-                "off"
-              ],
-              "description": "auto uses MiniLM only if warm; on starts/waits for vector search; off forces lexical FTS only. Default auto."
-            },
-            "limit": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 20,
-              "description": "Maximum results to return (default 5)."
-            },
-            "compact": {
-              "type": "boolean",
-              "description": "Trim results to the ~8 fields read when browsing (default true)"
-            },
-            "check_stale": {
-              "type": "boolean",
-              "description": "Flag results whose source file has drifted from the indexed hash (default true; set false only for a measured latency-sensitive call)."
-            }
-          },
-          "required": [
-            "query"
-          ]
-        }
-      },
-      {
-        "name": "endeavor_memory_readiness",
-        "title": "Check ENDMEMEX project readiness",
-        "description": "READ ONLY. Use after bootstrap when machine role, database/FTS health, embedding coverage, ANN sidecar state, tracked-document freshness, and ordered actionable next_actions are needed in one JSON result. It does not replace the mandatory first bootstrap for non-trivial work and never bootstraps, backfills, warms a companion, builds ANN, or writes the database. Returns a JSON object as text; overall is ready, attention, or blocked. Follow next_actions in priority order and do not auto-prune orphaned documents.",
-        "annotations": {
-          "readOnlyHint": true,
-          "destructiveHint": false,
-          "idempotentHint": true,
-          "openWorldHint": false
-        },
-        "inputSchema": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "project": {
-              "type": "string",
-              "minLength": 1,
-              "description": "Stable project label used in ENDMEMEX, not a filesystem path (for example ENDMEMEX or MY_APP)."
-            }
-          },
-          "required": [
-            "project"
-          ]
-        }
-      },
-      {
-        "name": "endeavor_memory_pack",
-        "title": "Build ENDMEMEX briefing",
-        "description": "READ ONLY. Use after bootstrap when its orientation/handoff is insufficient and a wider bounded briefing is needed. It does not replace bootstrap. Returns JSON text containing the selected handoff, lifecycle-aware actionable_records, raw open_records, recent knowledge, and activity within the total serialized budget. budget_omitted_counts reports every eligible item omitted for space. open_records means only stored status=open and can include historical evidence resolved or superseded by lifecycle edges; use actionable_records for current follow-up work and record_show before relying on a material record. If pending_complete=false, inspect pending_warnings before acting. Pass session after the user selects a resumable session. Prefer handoff for a lightweight resume; do not call repeatedly during ordinary work.",
-        "annotations": {
-          "readOnlyHint": true,
-          "destructiveHint": false,
-          "idempotentHint": true,
-          "openWorldHint": false
-        },
-        "inputSchema": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "project": {
-              "type": "string",
-              "minLength": 1,
-              "description": "Stable project label used in ENDMEMEX, not a filesystem path (for example ENDMEMEX or MY_APP)."
-            },
-            "session": {
-              "type": "string",
-              "minLength": 1,
-              "description": "Explicit ENDMEMEX session ID selected from pending or an all-paused handoff."
-            },
-            "budget": {
-              "type": "integer",
-              "minimum": 500,
-              "maximum": 50000,
-              "description": "Approximate character budget (default 6000; max 50000)."
-            }
-          },
-          "required": [
-            "project"
-          ]
-        }
-      },
-      {
-        "name": "endeavor_memory_pending",
-        "title": "List lifecycle-aware pending ENDMEMEX work",
-        "description": "READ ONLY. Use to discover all pending work without confusing paused handoffs with audits. Returns active/last-known presence, resumable/blocked sessions, and only current unresolved durable records. Historical open records resolved by lifecycle edges are suppressed. Do not silently resume a listed session; ask the user to choose when one or more sessions are resumable.",
-        "annotations": {
-          "readOnlyHint": true,
-          "destructiveHint": false,
-          "idempotentHint": true,
-          "openWorldHint": false
-        },
-        "inputSchema": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "project": {
-              "type": "string",
-              "minLength": 1,
-              "description": "Stable project label used in ENDMEMEX, not a filesystem path (for example ENDMEMEX or MY_APP)."
-            },
-            "all_projects": {
-              "type": "boolean",
-              "description": "Set true to inspect every project. Exactly one of project or all_projects=true is required."
-            }
-          },
-          "required": [],
           "oneOf": [
             {
-              "required": [
-                "project"
-              ]
-            },
-            {
-              "required": [
-                "all_projects"
-              ]
-            }
-          ]
-        }
-      },
-      {
-        "name": "endeavor_memory_handoff",
-        "title": "Read ENDMEMEX handoff",
-        "description": "READ ONLY. Use project for an unambiguous project handoff, session after the user selects a specific resumable session, or all_paused=true for the authoritative cross-project resume queue. Returns JSON text with session and checkpoint; both are null when a project has no resumable session, which is normal. Ambiguous projects are rejected instead of silently choosing. Use pack when wider context is needed.",
-        "annotations": {
-          "readOnlyHint": true,
-          "destructiveHint": false,
-          "idempotentHint": true,
-          "openWorldHint": false
-        },
-        "inputSchema": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "project": {
-              "type": "string",
-              "minLength": 1,
-              "description": "Stable project label used in ENDMEMEX, not a filesystem path (for example ENDMEMEX or MY_APP)."
-            },
-            "session": {
-              "type": "string",
-              "minLength": 1,
-              "description": "Explicit ENDMEMEX session ID selected from pending or an all-paused handoff."
-            },
-            "all_paused": {
-              "type": "boolean",
-              "description": "Set true to list every paused session across all projects."
-            }
-          },
-          "required": [],
-          "oneOf": [
-            {
-              "required": [
-                "project"
-              ]
-            },
-            {
-              "required": [
-                "session"
-              ]
-            },
-            {
-              "required": [
-                "all_paused"
-              ]
-            }
-          ]
-        }
-      },
-      {
-        "name": "endeavor_memory_timeline",
-        "title": "Read ENDMEMEX checkpoint timeline",
-        "description": "READ ONLY. Use to see who did what across sessions: filterable by project, agent, session status, and session ID. Returns JSON text with records (checkpoint+session fields, files/commands/verification evidence), count, total_matching, truncated, order, filters, and a retention_notice -- results cover only currently-retained checkpoints, never activity_log. checkpoint_status per record is derived (\"current\" = latest checkpoint of its session, \"historical\" = superseded); session_status is the session's active/paused/completed/blocked lifecycle state. Newest-first by default.",
-        "annotations": {
-          "readOnlyHint": true,
-          "destructiveHint": false,
-          "idempotentHint": true,
-          "openWorldHint": false
-        },
-        "inputSchema": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "project": {
-              "type": "string",
-              "minLength": 1,
-              "description": "Stable project label used in ENDMEMEX, not a filesystem path (for example ENDMEMEX or MY_APP)."
-            },
-            "agent": {
-              "type": "string",
-              "enum": [
-                "codex",
-                "claude",
-                "human",
-                "system",
-                "endeavor"
-              ],
-              "description": "Actor that performed the recorded work; use endeavor when the Endeavor runtime itself writes; do not claim another actor's work as your own."
-            },
-            "status": {
-              "type": "string",
-              "enum": [
-                "active",
-                "paused",
-                "completed",
-                "blocked"
-              ],
-              "description": "Optional session-lifecycle status filter (sessions.status; checkpoints have no status of their own)."
-            },
-            "session": {
-              "type": "string",
-              "minLength": 1,
-              "description": "Explicit ENDMEMEX session ID selected from pending or an all-paused handoff."
-            },
-            "limit": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 500,
-              "description": "Maximum checkpoints to return (default 100, max 500)."
-            },
-            "oldest_first": {
-              "type": "boolean",
-              "description": "Sort ascending instead of the newest-first default."
-            }
-          },
-          "required": []
-        }
-      },
-      {
-        "name": "endeavor_memory_record_show",
-        "title": "Inspect ENDMEMEX record lifecycle",
-        "description": "READ ONLY. Use before relying on a known durable record. Returns JSON text with the record and lifecycle relations so superseded or contradicted claims are not mistaken for current truth.",
-        "annotations": {
-          "readOnlyHint": true,
-          "destructiveHint": false,
-          "idempotentHint": true,
-          "openWorldHint": false
-        },
-        "inputSchema": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "id": {
-              "type": "string",
-              "minLength": 1,
-              "pattern": "^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+$",
-              "description": "Stable record ID, for example AUDIT-MEM-001."
-            }
-          },
-          "required": [
-            "id"
-          ]
-        }
-      },
-      {
-        "name": "endeavor_memory_record_search",
-        "title": "Search ENDMEMEX durable records",
-        "description": "READ ONLY. Use when a durable record ID is unknown. Returns a JSON array as text. Prefer current_only=true when seeking current truth; call record_show before relying on a material result to inspect its lifecycle graph.",
-        "annotations": {
-          "readOnlyHint": true,
-          "destructiveHint": false,
-          "idempotentHint": true,
-          "openWorldHint": false
-        },
-        "inputSchema": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "query": {
-              "type": "string",
-              "minLength": 1,
-              "description": "Full-text query for record titles/content."
-            },
-            "project": {
-              "type": "string",
-              "minLength": 1,
-              "description": "Stable project label used in ENDMEMEX, not a filesystem path (for example ENDMEMEX or MY_APP)."
-            },
-            "type": {
-              "type": "string",
-              "enum": [
-                "audit",
-                "fix",
-                "verification",
-                "decision",
-                "knowledge"
-              ],
-              "description": "Optional durable record type filter."
-            },
-            "limit": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 50,
-              "description": "Maximum results (default 10)."
-            },
-            "current_only": {
-              "type": "boolean",
-              "description": "Resolve lifecycle heads and omit records that are no longer current."
-            }
-          },
-          "required": [
-            "query"
-          ]
-        }
-      },
-      {
-        "name": "endeavor_memory_initialize",
-        "title": "Initialize or migrate ENDMEMEX database",
-        "description": "WRITE. Use when bootstrap reports database.init_required=true or during explicit first-time setup. Creates or migrates the ENDMEMEX schema. Returns JSON text with the database path and schema version. After success, rerun bootstrap. For remote mutation, use the configured authenticated write gateway rather than shared SQLite.",
-        "annotations": {
-          "readOnlyHint": false,
-          "destructiveHint": false,
-          "idempotentHint": false,
-          "openWorldHint": false
-        },
-        "inputSchema": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "confirm": {
-              "type": "boolean",
-              "description": "Accepted for backward compatibility."
-            }
-          },
-          "required": []
-        }
-      },
-      {
-        "name": "endeavor_memory_embed_backfill",
-        "title": "Backfill ENDMEMEX embeddings",
-        "description": "WRITE. Use when bootstrap reports embedding.backfill_required=true, or when explicitly repairing embedding coverage. Starts/waits for MiniLM if needed and writes missing/stale knowledge and durable-record embeddings. Returns JSON text with status, candidates, embedded count, and attempts. After success, rerun bootstrap to confirm backfill_required=false. For remote mutation, use the configured authenticated write gateway rather than shared SQLite.",
-        "annotations": {
-          "readOnlyHint": false,
-          "destructiveHint": false,
-          "idempotentHint": false,
-          "openWorldHint": false
-        },
-        "inputSchema": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "batch_size": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 1024,
-              "description": "Embedding batch size; omit to use the configured default."
-            },
-            "confirm": {
-              "type": "boolean",
-              "description": "Accepted for backward compatibility."
-            }
-          },
-          "required": []
-        }
-      },
-      {
-        "name": "endeavor_memory_bootstrap",
-        "title": "Bootstrap ENDMEMEX task context",
-        "description": "READ ONLY. This is the first ENDMEMEX context action for non-trivial work: call it once before planning or implementation. Returns deterministic database/project orientation, the 10 most recent retained checkpoints for the selected project (newest full, then progressively compressed to checkpoint 10), latest handoff, read-only embedding coverage with embedding.backfill_required and next_tool, database schema state with database.init_required and next_tool, document freshness, hook state, and ordered next_actions telling the agent exactly what to do next. next_actions may recommend initialize, embedding backfill, tracked-document sync, orphan review, or hook installation; an empty list means no ENDMEMEX maintenance action is currently required. It never initializes/migrates the database, starts MiniLM, backfills embeddings, or writes ENDMEMEX state. Follow reported write actions separately and rerun bootstrap afterward. Do not call for a simple one-off question.",
-        "annotations": {
-          "readOnlyHint": true,
-          "destructiveHint": false,
-          "idempotentHint": true,
-          "openWorldHint": false
-        },
-        "inputSchema": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "project": {
-              "type": "string",
-              "minLength": 1,
-              "description": "Stable project label used in ENDMEMEX, not a filesystem path (for example ENDMEMEX or MY_APP)."
-            },
-            "session": {
-              "type": "string",
-              "minLength": 1,
-              "description": "Explicit ENDMEMEX session ID selected from pending or an all-paused handoff."
-            },
-            "include_pending": {
-              "type": "boolean",
-              "description": "Also return this project's lifecycle-aware pending-work view. Default false for response compatibility."
-            }
-          },
-          "required": [
-            "project"
-          ]
-        }
-      },
-      {
-        "name": "endeavor_memory_checkpoint",
-        "title": "Write ENDMEMEX checkpoint",
-        "description": "WRITE, NON-IDEMPOTENT. Use after every meaningful implementation, verified test, scope decision, handoff, and immediately after a Git commit. Returns the stored checkpoint as JSON text. State truth and exact next steps; paused means another agent can continue, completed requires real verification and no required work remaining. Never include secrets/raw logs.",
-        "annotations": {
-          "readOnlyHint": false,
-          "destructiveHint": false,
-          "idempotentHint": false,
-          "openWorldHint": false
-        },
-        "inputSchema": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "project": {
-              "type": "string",
-              "minLength": 1,
-              "description": "Stable project label used in ENDMEMEX, not a filesystem path (for example ENDMEMEX or MY_APP)."
-            },
-            "session": {
-              "type": "string",
-              "minLength": 1,
-              "description": "Explicit ENDMEMEX session ID selected from pending or an all-paused handoff."
-            },
-            "agent": {
-              "type": "string",
-              "enum": [
-                "codex",
-                "claude",
-                "human",
-                "system",
-                "endeavor"
-              ],
-              "description": "Actor that performed the recorded work; use endeavor when the Endeavor runtime itself writes; do not claim another actor's work as your own."
-            },
-            "summary": {
-              "type": "string",
-              "minLength": 1,
-              "description": "Short outcome-first summary of what changed or was verified."
-            },
-            "goal": {
-              "type": "string",
-              "description": "Auto-starts a session with this goal if none is active/paused/blocked yet"
-            },
-            "work_done": {
-              "type": "string",
-              "description": "Concrete completed work; do not include planned work."
-            },
-            "current_state": {
-              "type": "string",
-              "description": "Truthful state now, including partial or unverified behavior."
-            },
-            "next_steps": {
-              "type": "string",
-              "description": "Exact ordered continuation instructions; empty only when genuinely complete."
-            },
-            "blockers": {
-              "type": "string",
-              "description": "External blockers only; leave empty when unblocked."
-            },
-            "status": {
-              "type": "string",
-              "enum": [
-                "active",
-                "paused",
-                "completed",
-                "blocked"
-              ],
-              "description": "active=continuing; paused=another agent can resume; completed=verified and no required work remains; blocked=external impasse."
-            },
-            "files": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "minLength": 1
-              },
-              "description": "Changed file paths, preferably repository-relative."
-            },
-            "auto_files": {
-              "type": "boolean",
-              "description": "Append git-status-detected files under ROOT/<project>/ (opt-in, scoped)"
-            },
-            "commands": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "minLength": 1
-              },
-              "description": "Important commands actually run, not suggested commands."
-            },
-            "verify": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "minLength": 1
-              },
-              "description": "Observed verification results tied to commands/tests."
-            },
-            "pinned": {
-              "type": "boolean",
-              "description": "Mark this checkpoint important: exempt it from the sliding-window prune so it survives indefinitely regardless of age or session status. Use sparingly -- for the checkpoint you'd actually want to find months later, not every routine one."
-            },
-            "confirm": {
-              "type": "boolean",
-              "description": "Accepted for backward compatibility."
-            }
-          },
-          "required": [
-            "project",
-            "agent",
-            "summary"
-          ]
-        }
-      },
-      {
-        "name": "endeavor_memory_pin_checkpoint",
-        "title": "Pin/unpin an ENDMEMEX checkpoint",
-        "description": "WRITE. Retroactively mark an existing checkpoint (by id, from a prior checkpoint call's response) important so pruning never deletes it, or undo that. Returns the updated checkpoint as JSON text.",
-        "annotations": {
-          "readOnlyHint": false,
-          "destructiveHint": false,
-          "idempotentHint": false,
-          "openWorldHint": false
-        },
-        "inputSchema": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "checkpoint_id": {
-              "type": "integer",
-              "minimum": 1,
-              "description": "The checkpoint's numeric id, as returned by endeavor_memory_checkpoint."
-            },
-            "agent": {
-              "type": "string",
-              "enum": [
-                "codex",
-                "claude",
-                "human",
-                "system",
-                "endeavor"
-              ],
-              "description": "Actor that performed the recorded work; use endeavor when the Endeavor runtime itself writes; do not claim another actor's work as your own."
-            },
-            "pinned": {
-              "type": "boolean",
-              "description": "true to pin (default), false to unpin."
-            },
-            "confirm": {
-              "type": "boolean",
-              "description": "Accepted for backward compatibility."
-            }
-          },
-          "required": [
-            "checkpoint_id",
-            "agent"
-          ]
-        }
-      },
-      {
-        "name": "endeavor_memory_record_add",
-        "title": "Add ENDMEMEX durable record",
-        "description": "WRITE, NON-IDEMPOTENT. Use for durable lifecycle facts, not routine progress. Returns the stored record/context as JSON text. Link fixes with resolves:<AUDIT_ID> and verification with verifies:<FIX_ID>; inspect the current record before adding successors. Never store secrets.",
-        "annotations": {
-          "readOnlyHint": false,
-          "destructiveHint": false,
-          "idempotentHint": false,
-          "openWorldHint": false
-        },
-        "inputSchema": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "id": {
-              "type": "string",
-              "pattern": "^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+$",
-              "description": "Optional stable ID, for example AUDIT-MEM-001; auto-generated if omitted."
-            },
-            "project": {
-              "type": "string",
-              "minLength": 1,
-              "description": "Stable project label used in ENDMEMEX, not a filesystem path (for example ENDMEMEX or MY_APP)."
-            },
-            "type": {
-              "type": "string",
-              "enum": [
-                "audit",
-                "fix",
-                "verification",
-                "decision",
-                "knowledge"
-              ],
-              "description": "Durable record role in the lifecycle."
-            },
-            "title": {
-              "type": "string",
-              "minLength": 1,
-              "description": "Concise human-readable claim or finding title."
-            },
-            "content": {
-              "type": "string",
-              "minLength": 1,
-              "description": "Durable evidence/decision text; concise, source-backed, and free of secrets."
-            },
-            "status": {
-              "type": "string",
-              "enum": [
-                "open",
-                "current",
-                "resolved",
-                "accepted",
-                "superseded"
-              ],
-              "description": "Truth/lifecycle status; omit to use current."
-            },
-            "action_state": {
-              "type": "string",
-              "enum": [
-                "actionable",
-                "deferred",
-                "blocked",
-                "nonactionable",
-                "done"
-              ],
-              "description": "Independent work state. Open audit/verification defaults actionable; decisions and knowledge default nonactionable."
-            },
-            "source": {
-              "type": "string",
-              "description": "Repo-relative path this record documents"
-            },
-            "link": {
-              "type": "string",
-              "pattern": "^(references|resolves|verifies|supersedes|contradicts|duplicates):[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+$",
-              "description": "One typed edge RELATION:TARGET_ID, for example resolves:AUDIT-MEM-001."
-            },
-            "links": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "pattern": "^(references|resolves|verifies|supersedes|contradicts|duplicates):[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+$"
-              },
-              "description": "Additional typed edges; use when creating more than one relation atomically."
-            },
-            "agent": {
-              "type": "string",
-              "enum": [
-                "codex",
-                "claude",
-                "human",
-                "system",
-                "endeavor"
-              ],
-              "description": "Actor that performed the recorded work; use endeavor when the Endeavor runtime itself writes; do not claim another actor's work as your own."
-            },
-            "confirm": {
-              "type": "boolean",
-              "description": "Accepted for backward compatibility."
-            }
-          },
-          "required": [
-            "project",
-            "type",
-            "title",
-            "content",
-            "agent"
-          ]
-        }
-      },
-      {
-        "name": "endeavor_memory_record_update",
-        "title": "Update ENDMEMEX durable record",
-        "description": "WRITE. Update an existing durable record's truth fields or independent action_state. Returns the updated record as JSON text. Resolving/accepting a record defaults action_state to done.",
-        "annotations": {
-          "readOnlyHint": false,
-          "destructiveHint": false,
-          "idempotentHint": false,
-          "openWorldHint": false
-        },
-        "inputSchema": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "id": {
-              "type": "string",
-              "minLength": 1,
-              "pattern": "^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+$"
-            },
-            "project": {
-              "type": "string",
-              "minLength": 1,
-              "description": "Stable project label used in ENDMEMEX, not a filesystem path (for example ENDMEMEX or MY_APP)."
-            },
-            "type": {
-              "type": "string",
-              "enum": [
-                "audit",
-                "fix",
-                "verification",
-                "decision",
-                "knowledge"
-              ]
-            },
-            "title": {
-              "type": "string",
-              "minLength": 1
-            },
-            "content": {
-              "type": "string",
-              "minLength": 1
-            },
-            "status": {
-              "type": "string",
-              "enum": [
-                "open",
-                "current",
-                "resolved",
-                "accepted",
-                "superseded"
-              ]
-            },
-            "action_state": {
-              "type": "string",
-              "enum": [
-                "actionable",
-                "deferred",
-                "blocked",
-                "nonactionable",
-                "done"
-              ]
-            },
-            "metadata": {
               "type": "object",
-              "description": "Replacement metadata JSON object."
-            },
-            "agent": {
-              "type": "string",
-              "enum": [
-                "codex",
-                "claude",
-                "human",
-                "system",
-                "endeavor"
-              ],
-              "description": "Actor that performed the recorded work; use endeavor when the Endeavor runtime itself writes; do not claim another actor's work as your own."
-            },
-            "confirm": {
-              "type": "boolean",
-              "description": "Accepted for backward compatibility."
-            }
-          },
-          "required": [
-            "id",
-            "agent"
-          ]
-        }
-      },
-      {
-        "name": "endeavor_memory_record_link",
-        "title": "Link ENDMEMEX lifecycle records",
-        "description": "WRITE. Create one typed lifecycle relation between existing durable records. Returns the source record context as JSON text.",
-        "annotations": {
-          "readOnlyHint": false,
-          "destructiveHint": false,
-          "idempotentHint": false,
-          "openWorldHint": false
-        },
-        "inputSchema": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "source_id": {
-              "type": "string",
-              "pattern": "^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+$"
-            },
-            "relation": {
-              "type": "string",
-              "enum": [
-                "references",
-                "resolves",
-                "verifies",
-                "supersedes",
-                "contradicts",
-                "duplicates"
-              ]
-            },
-            "target_id": {
-              "type": "string",
-              "pattern": "^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+$"
-            },
-            "note": {
-              "type": "string"
-            },
-            "agent": {
-              "type": "string",
-              "enum": [
-                "codex",
-                "claude",
-                "human",
-                "system",
-                "endeavor"
-              ],
-              "description": "Actor that performed the recorded work; use endeavor when the Endeavor runtime itself writes; do not claim another actor's work as your own."
-            },
-            "confirm": {
-              "type": "boolean",
-              "description": "Accepted for backward compatibility."
-            }
-          },
-          "required": [
-            "source_id",
-            "relation",
-            "target_id",
-            "agent"
-          ]
-        }
-      },
-      {
-        "name": "endeavor_memory_session_close",
-        "title": "Close ENDMEMEX session",
-        "description": "WRITE. Mark exactly one session, selected by session ID or unambiguous project, completed or blocked. Returns the closed session identity/status as JSON text.",
-        "annotations": {
-          "readOnlyHint": false,
-          "destructiveHint": false,
-          "idempotentHint": false,
-          "openWorldHint": false
-        },
-        "inputSchema": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "session": {
-              "type": "string",
-              "minLength": 1,
-              "description": "Explicit ENDMEMEX session ID selected from pending or an all-paused handoff."
-            },
-            "project": {
-              "type": "string",
-              "minLength": 1,
-              "description": "Stable project label used in ENDMEMEX, not a filesystem path (for example ENDMEMEX or MY_APP)."
-            },
-            "status": {
-              "type": "string",
-              "enum": [
-                "completed",
-                "blocked"
-              ],
-              "description": "Defaults to completed."
-            },
-            "agent": {
-              "type": "string",
-              "enum": [
-                "codex",
-                "claude",
-                "human",
-                "system",
-                "endeavor"
-              ],
-              "description": "Actor that performed the recorded work; use endeavor when the Endeavor runtime itself writes; do not claim another actor's work as your own."
-            },
-            "confirm": {
-              "type": "boolean",
-              "description": "Accepted for backward compatibility."
-            }
-          },
-          "required": [
-            "agent"
-          ],
-          "oneOf": [
-            {
+              "title": "bootstrap",
+              "description": "READ ONLY. This is the first ENDMEMEX context action for non-trivial work: call it once before planning or implementation. Returns deterministic database/project orientation, the 10 most recent retained checkpoints for the selected project (newest full, then progressively compressed to checkpoint 10), latest handoff, read-only embedding coverage with embedding.backfill_required and next_tool, database schema state with database.init_required and next_tool, document freshness, hook state, and ordered next_actions telling the agent exactly what to do next. next_actions may recommend initialize, embedding backfill, tracked-document sync, orphan review, or hook installation; an empty list means no ENDMEMEX maintenance action is currently required. It never initializes/migrates the database, starts MiniLM, backfills embeddings, or writes ENDMEMEX state. Follow reported write actions separately and rerun bootstrap afterward. Do not call for a simple one-off question.",
+              "additionalProperties": false,
+              "properties": {
+                "action": {
+                  "type": "string",
+                  "enum": [
+                    "bootstrap"
+                  ],
+                  "description": "Select the bootstrap operation for this grouped ENDMEMEX tool."
+                },
+                "project": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Stable project label used in ENDMEMEX, not a filesystem path (for example ENDMEMEX or MY_APP)."
+                },
+                "session": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Explicit ENDMEMEX session ID selected from pending or an all-paused handoff."
+                },
+                "include_pending": {
+                  "type": "boolean",
+                  "description": "Also return this project's lifecycle-aware pending-work view. Default false for response compatibility."
+                }
+              },
               "required": [
-                "session"
-              ]
-            },
-            {
-              "required": [
+                "action",
                 "project"
               ]
-            }
-          ]
-        }
-      },
-      {
-        "name": "endeavor_memory_feedback",
-        "title": "Record ENDMEMEX retrieval feedback",
-        "description": "WRITE. Record whether returned Markdown IDs or durable record IDs were useful, so retrieval quality can be evaluated from production usage. Returns the feedback ID as JSON text.",
-        "annotations": {
-          "readOnlyHint": false,
-          "destructiveHint": false,
-          "idempotentHint": false,
-          "openWorldHint": false
-        },
-        "inputSchema": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "agent": {
-              "type": "string",
-              "enum": [
-                "codex",
-                "claude",
-                "human",
-                "system",
-                "endeavor"
-              ],
-              "description": "Actor that performed the recorded work; use endeavor when the Endeavor runtime itself writes; do not claim another actor's work as your own."
             },
-            "query": {
-              "type": "string",
-              "minLength": 1
-            },
-            "results": {
-              "type": "array",
-              "items": {
-                "oneOf": [
-                  {
-                    "type": "integer",
-                    "minimum": 1
-                  },
-                  {
-                    "type": "string",
-                    "pattern": "^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+$"
-                  }
-                ]
+            {
+              "type": "object",
+              "title": "readiness",
+              "description": "READ ONLY. Use after bootstrap when machine role, database/FTS health, embedding coverage, ANN sidecar state, tracked-document freshness, and ordered actionable next_actions are needed in one JSON result. It does not replace the mandatory first bootstrap for non-trivial work and never bootstraps, backfills, warms a companion, builds ANN, or writes the database. Returns a JSON object as text; overall is ready, attention, or blocked. Follow next_actions in priority order and do not auto-prune orphaned documents.",
+              "additionalProperties": false,
+              "properties": {
+                "action": {
+                  "type": "string",
+                  "enum": [
+                    "readiness"
+                  ],
+                  "description": "Select the readiness operation for this grouped ENDMEMEX tool."
+                },
+                "project": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Stable project label used in ENDMEMEX, not a filesystem path (for example ENDMEMEX or MY_APP)."
+                }
               },
-              "description": "Selected useful result IDs."
+              "required": [
+                "action",
+                "project"
+              ]
             },
-            "useful": {
-              "type": "boolean"
+            {
+              "type": "object",
+              "title": "pack",
+              "description": "READ ONLY. Use after bootstrap when its orientation/handoff is insufficient and a wider bounded briefing is needed. It does not replace bootstrap. Returns JSON text containing the selected handoff, lifecycle-aware actionable_records, raw open_records, recent knowledge, and activity within the total serialized budget. budget_omitted_counts reports every eligible item omitted for space. open_records means only stored status=open and can include historical evidence resolved or superseded by lifecycle edges; use actionable_records for current follow-up work and record_show before relying on a material record. If pending_complete=false, inspect pending_warnings before acting. Pass session after the user selects a resumable session. Prefer handoff for a lightweight resume; do not call repeatedly during ordinary work.",
+              "additionalProperties": false,
+              "properties": {
+                "action": {
+                  "type": "string",
+                  "enum": [
+                    "pack"
+                  ],
+                  "description": "Select the pack operation for this grouped ENDMEMEX tool."
+                },
+                "project": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Stable project label used in ENDMEMEX, not a filesystem path (for example ENDMEMEX or MY_APP)."
+                },
+                "session": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Explicit ENDMEMEX session ID selected from pending or an all-paused handoff."
+                },
+                "budget": {
+                  "type": "integer",
+                  "minimum": 500,
+                  "maximum": 50000,
+                  "description": "Approximate character budget (default 6000; max 50000)."
+                }
+              },
+              "required": [
+                "action",
+                "project"
+              ]
             },
-            "note": {
-              "type": "string"
+            {
+              "type": "object",
+              "title": "pending",
+              "description": "READ ONLY. Use to discover all pending work without confusing paused handoffs with audits. Returns active/last-known presence, resumable/blocked sessions, and only current unresolved durable records. Historical open records resolved by lifecycle edges are suppressed. Do not silently resume a listed session; ask the user to choose when one or more sessions are resumable.",
+              "additionalProperties": false,
+              "properties": {
+                "action": {
+                  "type": "string",
+                  "enum": [
+                    "pending"
+                  ],
+                  "description": "Select the pending operation for this grouped ENDMEMEX tool."
+                },
+                "project": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Stable project label used in ENDMEMEX, not a filesystem path (for example ENDMEMEX or MY_APP)."
+                },
+                "all_projects": {
+                  "type": "boolean",
+                  "description": "Set true to inspect every project. Exactly one of project or all_projects=true is required."
+                }
+              },
+              "required": [
+                "action"
+              ],
+              "oneOf": [
+                {
+                  "required": [
+                    "project"
+                  ]
+                },
+                {
+                  "required": [
+                    "all_projects"
+                  ],
+                  "properties": {
+                    "all_projects": {
+                      "enum": [
+                        true
+                      ]
+                    }
+                  }
+                }
+              ]
             },
-            "confirm": {
-              "type": "boolean",
-              "description": "Accepted for backward compatibility."
+            {
+              "type": "object",
+              "title": "handoff",
+              "description": "READ ONLY. Use project for an unambiguous project handoff, session after the user selects a specific resumable session, or all_paused=true for the authoritative cross-project resume queue. Returns JSON text with session and checkpoint; both are null when a project has no resumable session, which is normal. Ambiguous projects are rejected instead of silently choosing. Use pack when wider context is needed.",
+              "additionalProperties": false,
+              "properties": {
+                "action": {
+                  "type": "string",
+                  "enum": [
+                    "handoff"
+                  ],
+                  "description": "Select the handoff operation for this grouped ENDMEMEX tool."
+                },
+                "project": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Stable project label used in ENDMEMEX, not a filesystem path (for example ENDMEMEX or MY_APP)."
+                },
+                "session": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Explicit ENDMEMEX session ID selected from pending or an all-paused handoff."
+                },
+                "all_paused": {
+                  "type": "boolean",
+                  "description": "Set true to list every paused session across all projects."
+                }
+              },
+              "required": [
+                "action"
+              ],
+              "oneOf": [
+                {
+                  "required": [
+                    "project"
+                  ]
+                },
+                {
+                  "required": [
+                    "session"
+                  ]
+                },
+                {
+                  "required": [
+                    "all_paused"
+                  ],
+                  "properties": {
+                    "all_paused": {
+                      "enum": [
+                        true
+                      ]
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "object",
+              "title": "timeline",
+              "description": "READ ONLY. Use to see who did what across sessions: filterable by project, agent, session status, and session ID. Returns JSON text with records (checkpoint+session fields, files/commands/verification evidence), count, total_matching, truncated, order, filters, and a retention_notice -- results cover only currently-retained checkpoints, never activity_log. checkpoint_status per record is derived (\"current\" = latest checkpoint of its session, \"historical\" = superseded); session_status is the session's active/paused/completed/blocked lifecycle state. Newest-first by default.",
+              "additionalProperties": false,
+              "properties": {
+                "action": {
+                  "type": "string",
+                  "enum": [
+                    "timeline"
+                  ],
+                  "description": "Select the timeline operation for this grouped ENDMEMEX tool."
+                },
+                "project": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Stable project label used in ENDMEMEX, not a filesystem path (for example ENDMEMEX or MY_APP)."
+                },
+                "agent": {
+                  "type": "string",
+                  "enum": [
+                    "codex",
+                    "claude",
+                    "human",
+                    "system",
+                    "endeavor"
+                  ],
+                  "description": "Actor that performed the recorded work; use endeavor when the Endeavor runtime itself writes; do not claim another actor's work as your own."
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "active",
+                    "paused",
+                    "completed",
+                    "blocked"
+                  ],
+                  "description": "Optional session-lifecycle status filter (sessions.status; checkpoints have no status of their own)."
+                },
+                "session": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Explicit ENDMEMEX session ID selected from pending or an all-paused handoff."
+                },
+                "limit": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 500,
+                  "description": "Maximum checkpoints to return (default 100, max 500)."
+                },
+                "oldest_first": {
+                  "type": "boolean",
+                  "description": "Sort ascending instead of the newest-first default."
+                }
+              },
+              "required": [
+                "action"
+              ]
+            },
+            {
+              "type": "object",
+              "title": "sync_status",
+              "description": "READ ONLY. Returns JSON text with the last write time/command this host and other hosts have mirrored to their own sync-freshness sidecars. It is informational only: a lower bound on when another host wrote, never a synchronization guarantee or write authorization.",
+              "additionalProperties": false,
+              "properties": {
+                "action": {
+                  "type": "string",
+                  "enum": [
+                    "sync_status"
+                  ],
+                  "description": "Select the sync_status operation for this grouped ENDMEMEX tool."
+                }
+              },
+              "required": [
+                "action"
+              ]
             }
-          },
-          "required": [
-            "agent",
-            "query"
           ]
         }
       },
       {
-        "name": "endeavor_memory_event_poll",
-        "title": "Poll durable ENDMEMEX events",
-        "description": "READ ONLY. Returns unacknowledged completion/lifecycle events in monotonic ID order so a host can resume the owning conversation after background work. Persist the highest handled ID and acknowledge only after handling succeeds.",
+        "name": "endmemex_search",
+        "title": "Search ENDMEMEX memory",
+        "description": "READ ONLY. Returns indexed knowledge or durable-record search/show results. Actions: query, record_search, record_show.",
         "annotations": {
           "readOnlyHint": true,
           "destructiveHint": false,
@@ -13327,176 +12602,170 @@
         },
         "inputSchema": {
           "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "after": {
-              "type": "integer",
-              "minimum": 0
+          "oneOf": [
+            {
+              "type": "object",
+              "title": "query",
+              "description": "READ ONLY. Use before rediscovering prior work or making a high-impact project decision. Searches indexed Markdown and current durable records. Inspect cited sources before trusting material results. Returns a JSON array as text; stale=true means open the source because its indexed copy drifted. Do not use it to write a checkpoint.",
+              "additionalProperties": false,
+              "properties": {
+                "action": {
+                  "type": "string",
+                  "enum": [
+                    "query"
+                  ],
+                  "description": "Select the query operation for this grouped ENDMEMEX tool."
+                },
+                "query": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Natural-language or keyword search. Use the terms an existing note or record is likely to contain."
+                },
+                "project": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Stable project label used in ENDMEMEX, not a filesystem path (for example ENDMEMEX or MY_APP)."
+                },
+                "category": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Optional knowledge category or durable record type used to narrow results."
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "open",
+                    "resolved",
+                    "accepted"
+                  ],
+                  "description": "Optional Markdown-derived knowledge status filter."
+                },
+                "module": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Optional exact/literal module metadata filter, for example react.py."
+                },
+                "bug_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Optional exact bug-ID metadata filter."
+                },
+                "session_label": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Optional session-label metadata filter."
+                },
+                "semantic": {
+                  "type": "string",
+                  "enum": [
+                    "auto",
+                    "on",
+                    "off"
+                  ],
+                  "description": "auto uses MiniLM only if warm; on starts/waits for vector search; off forces lexical FTS only. Default auto."
+                },
+                "limit": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 20,
+                  "description": "Maximum results to return (default 5)."
+                },
+                "compact": {
+                  "type": "boolean",
+                  "description": "Trim results to the ~8 fields read when browsing (default true)"
+                },
+                "check_stale": {
+                  "type": "boolean",
+                  "description": "Flag results whose source file has drifted from the indexed hash (default true; set false only for a measured latency-sensitive call)."
+                }
+              },
+              "required": [
+                "action",
+                "query"
+              ]
             },
-            "project": {
-              "type": "string",
-              "minLength": 1,
-              "description": "Stable project label used in ENDMEMEX, not a filesystem path (for example ENDMEMEX or MY_APP)."
+            {
+              "type": "object",
+              "title": "record_search",
+              "description": "READ ONLY. Use when a durable record ID is unknown. Returns a JSON array as text. Prefer current_only=true when seeking current truth; call record_show before relying on a material result to inspect its lifecycle graph.",
+              "additionalProperties": false,
+              "properties": {
+                "action": {
+                  "type": "string",
+                  "enum": [
+                    "record_search"
+                  ],
+                  "description": "Select the record_search operation for this grouped ENDMEMEX tool."
+                },
+                "query": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Full-text query for record titles/content."
+                },
+                "project": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Stable project label used in ENDMEMEX, not a filesystem path (for example ENDMEMEX or MY_APP)."
+                },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "audit",
+                    "fix",
+                    "verification",
+                    "decision",
+                    "knowledge"
+                  ],
+                  "description": "Optional durable record type filter."
+                },
+                "limit": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 50,
+                  "description": "Maximum results (default 10)."
+                },
+                "current_only": {
+                  "type": "boolean",
+                  "description": "Resolve lifecycle heads and omit records that are no longer current."
+                }
+              },
+              "required": [
+                "action",
+                "query"
+              ]
             },
-            "limit": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 500
-            },
-            "include_acked": {
-              "type": "boolean"
+            {
+              "type": "object",
+              "title": "record_show",
+              "description": "READ ONLY. Use before relying on a known durable record. Returns JSON text with the record and lifecycle relations so superseded or contradicted claims are not mistaken for current truth.",
+              "additionalProperties": false,
+              "properties": {
+                "action": {
+                  "type": "string",
+                  "enum": [
+                    "record_show"
+                  ],
+                  "description": "Select the record_show operation for this grouped ENDMEMEX tool."
+                },
+                "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+$",
+                  "description": "Stable record ID, for example AUDIT-MEM-001."
+                }
+              },
+              "required": [
+                "action",
+                "id"
+              ]
             }
-          },
-          "required": []
-        }
-      },
-      {
-        "name": "endeavor_memory_event_ack",
-        "title": "Acknowledge durable ENDMEMEX event",
-        "description": "WRITE, IDEMPOTENT. Acknowledge an event only after the host has handled it successfully. Returns the event with its durable acknowledgement as JSON text.",
-        "annotations": {
-          "readOnlyHint": false,
-          "destructiveHint": false,
-          "idempotentHint": true,
-          "openWorldHint": false
-        },
-        "inputSchema": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "event_id": {
-              "type": "integer",
-              "minimum": 1
-            },
-            "agent": {
-              "type": "string",
-              "enum": [
-                "codex",
-                "claude",
-                "human",
-                "system",
-                "endeavor"
-              ],
-              "description": "Actor that performed the recorded work; use endeavor when the Endeavor runtime itself writes; do not claim another actor's work as your own."
-            },
-            "confirm": {
-              "type": "boolean",
-              "description": "Accepted for backward compatibility."
-            }
-          },
-          "required": [
-            "event_id",
-            "agent"
           ]
         }
       },
       {
-        "name": "endeavor_presence_start",
-        "title": "Announce active work (ENDMEMEX presence)",
-        "description": "WRITE. Use only when the user explicitly asks agents to announce work or is coordinating multiple concurrent sessions. Announce (machine, agent, project[, instance]) as actively working, so a parallel local agent can see it via endeavor_presence_list instead of duplicating work. Returns the stored presence row as JSON text. Cross-host visibility is separate and best-effort through per-host sidecar files, never live. Once opted in, call once per task/session, not per turn.",
-        "annotations": {
-          "readOnlyHint": false,
-          "destructiveHint": false,
-          "idempotentHint": false,
-          "openWorldHint": false
-        },
-        "inputSchema": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "agent": {
-              "type": "string",
-              "enum": [
-                "codex",
-                "claude",
-                "human",
-                "system",
-                "endeavor"
-              ],
-              "description": "Actor that performed the recorded work; use endeavor when the Endeavor runtime itself writes; do not claim another actor's work as your own."
-            },
-            "project": {
-              "type": "string",
-              "minLength": 1,
-              "description": "Stable project label used in ENDMEMEX, not a filesystem path (for example ENDMEMEX or MY_APP)."
-            },
-            "task": {
-              "type": "string",
-              "description": "Short free-text of what this process is doing."
-            },
-            "instance": {
-              "type": "string",
-              "description": "Only needed to distinguish two concurrent instances of the same agent working the same project on this machine at once. Identity is (machine, agent, project, instance), not pid -- omit unless you know you need it."
-            },
-            "session": {
-              "type": "string",
-              "minLength": 1,
-              "description": "Optional ENDMEMEX session ID to associate with this presence row."
-            },
-            "confirm": {
-              "type": "boolean",
-              "description": "Accepted for backward compatibility."
-            }
-          },
-          "required": [
-            "project",
-            "agent"
-          ]
-        }
-      },
-      {
-        "name": "endeavor_presence_heartbeat",
-        "title": "Refresh ENDMEMEX presence",
-        "description": "WRITE. Only use after an opted-in presence_start. Refresh the (machine, agent, project[, instance]) presence row so it is not shown stale. Returns {\"updated\": bool} as JSON text; false means that identity has no active presence row -- it either never called presence_start or already called presence_stop (a no-op, not an error; a heartbeat never resurrects a stopped row, call presence_start again to resume). Refresh at the checkpoint cadence; do not add a polling loop.",
-        "annotations": {
-          "readOnlyHint": false,
-          "destructiveHint": false,
-          "idempotentHint": false,
-          "openWorldHint": false
-        },
-        "inputSchema": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "agent": {
-              "type": "string",
-              "enum": [
-                "codex",
-                "claude",
-                "human",
-                "system",
-                "endeavor"
-              ],
-              "description": "Actor that performed the recorded work; use endeavor when the Endeavor runtime itself writes; do not claim another actor's work as your own."
-            },
-            "project": {
-              "type": "string",
-              "minLength": 1,
-              "description": "Stable project label used in ENDMEMEX, not a filesystem path (for example ENDMEMEX or MY_APP)."
-            },
-            "task": {
-              "type": "string",
-              "description": "Update the task description; omit to just refresh the timestamp."
-            },
-            "instance": {
-              "type": "string",
-              "description": "Only needed to distinguish two concurrent instances of the same agent working the same project on this machine at once. Identity is (machine, agent, project, instance), not pid -- omit unless you know you need it."
-            },
-            "confirm": {
-              "type": "boolean",
-              "description": "Accepted for backward compatibility."
-            }
-          },
-          "required": [
-            "project",
-            "agent"
-          ]
-        }
-      },
-      {
-        "name": "endeavor_presence_stop",
-        "title": "Clear ENDMEMEX presence",
-        "description": "WRITE. Stop a presence row created through the opt-in workflow, so it disappears from endeavor_presence_list. Returns {\"updated\": bool} as JSON text. Call at the natural end of that opted-in task/session; a crashed process without a stop call is still handled -- it just shows up flagged stale after 30 minutes rather than disappearing.",
+        "name": "endmemex_records",
+        "title": "Write ENDMEMEX durable records",
+        "description": "WRITE. Returns the result of one durable-record mutation or retrieval-feedback write. Actions: add, update, link, feedback.",
         "annotations": {
           "readOnlyHint": false,
           "destructiveHint": false,
@@ -13505,81 +12774,975 @@
         },
         "inputSchema": {
           "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "agent": {
-              "type": "string",
-              "enum": [
-                "codex",
-                "claude",
-                "human",
-                "system",
-                "endeavor"
+          "oneOf": [
+            {
+              "type": "object",
+              "title": "add",
+              "description": "WRITE, NON-IDEMPOTENT. Use for durable lifecycle facts, not routine progress. Returns the stored record/context as JSON text. Link fixes with resolves:<AUDIT_ID> and verification with verifies:<FIX_ID>; inspect the current record before adding successors. Never store secrets.",
+              "additionalProperties": false,
+              "properties": {
+                "action": {
+                  "type": "string",
+                  "enum": [
+                    "add"
+                  ],
+                  "description": "Select the add operation for this grouped ENDMEMEX tool."
+                },
+                "id": {
+                  "type": "string",
+                  "pattern": "^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+$",
+                  "description": "Optional stable ID, for example AUDIT-MEM-001; auto-generated if omitted."
+                },
+                "project": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Stable project label used in ENDMEMEX, not a filesystem path (for example ENDMEMEX or MY_APP)."
+                },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "audit",
+                    "fix",
+                    "verification",
+                    "decision",
+                    "knowledge"
+                  ],
+                  "description": "Durable record role in the lifecycle."
+                },
+                "title": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Concise human-readable claim or finding title."
+                },
+                "content": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Durable evidence/decision text; concise, source-backed, and free of secrets."
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "open",
+                    "current",
+                    "resolved",
+                    "accepted"
+                  ],
+                  "description": "Truth/lifecycle status; omit to use current."
+                },
+                "action_state": {
+                  "type": "string",
+                  "enum": [
+                    "actionable",
+                    "deferred",
+                    "blocked",
+                    "nonactionable",
+                    "done"
+                  ],
+                  "description": "Independent work state. Open audit/verification defaults actionable; decisions and knowledge default nonactionable."
+                },
+                "source": {
+                  "type": "string",
+                  "description": "Repo-relative path this record documents"
+                },
+                "link": {
+                  "type": "string",
+                  "pattern": "^(references|resolves|verifies|supersedes|contradicts|duplicates):[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+$",
+                  "description": "One typed edge RELATION:TARGET_ID, for example resolves:AUDIT-MEM-001."
+                },
+                "links": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "pattern": "^(references|resolves|verifies|supersedes|contradicts|duplicates):[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+$"
+                  },
+                  "description": "Additional typed edges; use when creating more than one relation atomically."
+                },
+                "agent": {
+                  "type": "string",
+                  "enum": [
+                    "codex",
+                    "claude",
+                    "human",
+                    "system",
+                    "endeavor"
+                  ],
+                  "description": "Actor that performed the recorded work; use endeavor when the Endeavor runtime itself writes; do not claim another actor's work as your own."
+                },
+                "confirm": {
+                  "type": "boolean",
+                  "description": "Accepted for backward compatibility."
+                }
+              },
+              "required": [
+                "action",
+                "project",
+                "type",
+                "title",
+                "content",
+                "agent"
+              ]
+            },
+            {
+              "type": "object",
+              "title": "update",
+              "description": "WRITE. Update an existing durable record's truth fields or independent action_state. Returns the updated record as JSON text. Resolving/accepting a record defaults action_state to done.",
+              "additionalProperties": false,
+              "properties": {
+                "action": {
+                  "type": "string",
+                  "enum": [
+                    "update"
+                  ],
+                  "description": "Select the update operation for this grouped ENDMEMEX tool."
+                },
+                "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+$"
+                },
+                "project": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Stable project label used in ENDMEMEX, not a filesystem path (for example ENDMEMEX or MY_APP)."
+                },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "audit",
+                    "fix",
+                    "verification",
+                    "decision",
+                    "knowledge"
+                  ]
+                },
+                "title": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "content": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "open",
+                    "current",
+                    "resolved",
+                    "accepted"
+                  ]
+                },
+                "action_state": {
+                  "type": "string",
+                  "enum": [
+                    "actionable",
+                    "deferred",
+                    "blocked",
+                    "nonactionable",
+                    "done"
+                  ]
+                },
+                "metadata": {
+                  "type": "object",
+                  "description": "Replacement metadata JSON object."
+                },
+                "agent": {
+                  "type": "string",
+                  "enum": [
+                    "codex",
+                    "claude",
+                    "human",
+                    "system",
+                    "endeavor"
+                  ],
+                  "description": "Actor that performed the recorded work; use endeavor when the Endeavor runtime itself writes; do not claim another actor's work as your own."
+                },
+                "confirm": {
+                  "type": "boolean",
+                  "description": "Accepted for backward compatibility."
+                }
+              },
+              "required": [
+                "action",
+                "id",
+                "agent"
               ],
-              "description": "Actor that performed the recorded work; use endeavor when the Endeavor runtime itself writes; do not claim another actor's work as your own."
+              "anyOf": [
+                {
+                  "required": [
+                    "project"
+                  ]
+                },
+                {
+                  "required": [
+                    "type"
+                  ]
+                },
+                {
+                  "required": [
+                    "title"
+                  ]
+                },
+                {
+                  "required": [
+                    "content"
+                  ]
+                },
+                {
+                  "required": [
+                    "status"
+                  ]
+                },
+                {
+                  "required": [
+                    "action_state"
+                  ]
+                },
+                {
+                  "required": [
+                    "metadata"
+                  ]
+                }
+              ]
             },
-            "project": {
-              "type": "string",
-              "minLength": 1,
-              "description": "Stable project label used in ENDMEMEX, not a filesystem path (for example ENDMEMEX or MY_APP)."
+            {
+              "type": "object",
+              "title": "link",
+              "description": "WRITE. Create one typed lifecycle relation between existing durable records. Returns the source record context as JSON text.",
+              "additionalProperties": false,
+              "properties": {
+                "action": {
+                  "type": "string",
+                  "enum": [
+                    "link"
+                  ],
+                  "description": "Select the link operation for this grouped ENDMEMEX tool."
+                },
+                "source_id": {
+                  "type": "string",
+                  "pattern": "^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+$"
+                },
+                "relation": {
+                  "type": "string",
+                  "enum": [
+                    "references",
+                    "resolves",
+                    "verifies",
+                    "supersedes",
+                    "contradicts",
+                    "duplicates"
+                  ]
+                },
+                "target_id": {
+                  "type": "string",
+                  "pattern": "^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+$"
+                },
+                "note": {
+                  "type": "string"
+                },
+                "agent": {
+                  "type": "string",
+                  "enum": [
+                    "codex",
+                    "claude",
+                    "human",
+                    "system",
+                    "endeavor"
+                  ],
+                  "description": "Actor that performed the recorded work; use endeavor when the Endeavor runtime itself writes; do not claim another actor's work as your own."
+                },
+                "confirm": {
+                  "type": "boolean",
+                  "description": "Accepted for backward compatibility."
+                }
+              },
+              "required": [
+                "action",
+                "source_id",
+                "relation",
+                "target_id",
+                "agent"
+              ]
             },
-            "instance": {
-              "type": "string",
-              "description": "Only needed to distinguish two concurrent instances of the same agent working the same project on this machine at once. Identity is (machine, agent, project, instance), not pid -- omit unless you know you need it."
-            },
-            "confirm": {
-              "type": "boolean",
-              "description": "Accepted for backward compatibility."
+            {
+              "type": "object",
+              "title": "feedback",
+              "description": "WRITE. Record whether returned Markdown IDs or durable record IDs were useful, so retrieval quality can be evaluated from production usage. Returns the feedback ID as JSON text.",
+              "additionalProperties": false,
+              "properties": {
+                "action": {
+                  "type": "string",
+                  "enum": [
+                    "feedback"
+                  ],
+                  "description": "Select the feedback operation for this grouped ENDMEMEX tool."
+                },
+                "agent": {
+                  "type": "string",
+                  "enum": [
+                    "codex",
+                    "claude",
+                    "human",
+                    "system",
+                    "endeavor"
+                  ],
+                  "description": "Actor that performed the recorded work; use endeavor when the Endeavor runtime itself writes; do not claim another actor's work as your own."
+                },
+                "query": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "results": {
+                  "type": "array",
+                  "items": {
+                    "oneOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+$"
+                      }
+                    ]
+                  },
+                  "description": "Selected useful result IDs."
+                },
+                "useful": {
+                  "type": "boolean"
+                },
+                "note": {
+                  "type": "string"
+                },
+                "confirm": {
+                  "type": "boolean",
+                  "description": "Accepted for backward compatibility."
+                }
+              },
+              "required": [
+                "action",
+                "agent",
+                "query"
+              ]
             }
-          },
-          "required": [
-            "project",
-            "agent"
           ]
         }
       },
       {
-        "name": "endeavor_presence_list",
-        "title": "List who is working (ENDMEMEX presence)",
-        "description": "READ ONLY. Returns JSON text with \"local\" (this machine's live, real-time rows) and \"remote\" (every other machine's last-mirrored sidecar snapshot, source:\"sidecar\", staleness-flagged). Treat \"remote\" as last-known, never as proof of current activity. Call before starting parallel work on a project to check whether another agent is already on it.",
+        "name": "endmemex_session",
+        "title": "Manage ENDMEMEX session progress",
+        "description": "WRITE. Returns checkpoint, pin/unpin, or session-close results. Actions: checkpoint, pin, unpin, close.",
         "annotations": {
-          "readOnlyHint": true,
+          "readOnlyHint": false,
           "destructiveHint": false,
-          "idempotentHint": true,
+          "idempotentHint": false,
           "openWorldHint": false
         },
         "inputSchema": {
           "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "project": {
-              "type": "string",
-              "minLength": 1,
-              "description": "Stable project label used in ENDMEMEX, not a filesystem path (for example ENDMEMEX or MY_APP)."
+          "oneOf": [
+            {
+              "type": "object",
+              "title": "checkpoint",
+              "description": "WRITE, NON-IDEMPOTENT. Use after every meaningful implementation, verified test, scope decision, handoff, and immediately after a Git commit. Returns the stored checkpoint as JSON text. State truth and exact next steps; paused means another agent can continue, completed requires real verification and no required work remaining. Never include secrets/raw logs.",
+              "additionalProperties": false,
+              "properties": {
+                "action": {
+                  "type": "string",
+                  "enum": [
+                    "checkpoint"
+                  ],
+                  "description": "Select the checkpoint operation for this grouped ENDMEMEX tool."
+                },
+                "project": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Stable project label used in ENDMEMEX, not a filesystem path (for example ENDMEMEX or MY_APP)."
+                },
+                "session": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Explicit ENDMEMEX session ID selected from pending or an all-paused handoff."
+                },
+                "agent": {
+                  "type": "string",
+                  "enum": [
+                    "codex",
+                    "claude",
+                    "human",
+                    "system",
+                    "endeavor"
+                  ],
+                  "description": "Actor that performed the recorded work; use endeavor when the Endeavor runtime itself writes; do not claim another actor's work as your own."
+                },
+                "summary": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Short outcome-first summary of what changed or was verified."
+                },
+                "goal": {
+                  "type": "string",
+                  "description": "Auto-starts a session with this goal if none is active/paused/blocked yet"
+                },
+                "work_done": {
+                  "type": "string",
+                  "description": "Concrete completed work; do not include planned work."
+                },
+                "current_state": {
+                  "type": "string",
+                  "description": "Truthful state now, including partial or unverified behavior."
+                },
+                "next_steps": {
+                  "type": "string",
+                  "description": "Exact ordered continuation instructions; empty only when genuinely complete."
+                },
+                "blockers": {
+                  "type": "string",
+                  "description": "External blockers only; leave empty when unblocked."
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "active",
+                    "paused",
+                    "completed",
+                    "blocked"
+                  ],
+                  "description": "active=continuing; paused=another agent can resume; completed=verified and no required work remains; blocked=external impasse."
+                },
+                "files": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "description": "Changed file paths, preferably repository-relative."
+                },
+                "auto_files": {
+                  "type": "boolean",
+                  "description": "Append git-status-detected files under ROOT/<project>/ (opt-in, scoped)"
+                },
+                "commands": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "description": "Important commands actually run, not suggested commands."
+                },
+                "verify": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "description": "Observed verification results tied to commands/tests."
+                },
+                "pinned": {
+                  "type": "boolean",
+                  "description": "Mark this checkpoint important: exempt it from the sliding-window prune so it survives indefinitely regardless of age or session status. Use sparingly -- for the checkpoint you'd actually want to find months later, not every routine one."
+                },
+                "confirm": {
+                  "type": "boolean",
+                  "description": "Accepted for backward compatibility."
+                }
+              },
+              "required": [
+                "action",
+                "project",
+                "agent",
+                "summary"
+              ]
+            },
+            {
+              "type": "object",
+              "title": "pin",
+              "description": "WRITE. Retroactively mark an existing checkpoint (by id, from a prior checkpoint call's response) important so pruning never deletes it, or undo that. Returns the updated checkpoint as JSON text.",
+              "additionalProperties": false,
+              "properties": {
+                "action": {
+                  "type": "string",
+                  "enum": [
+                    "pin"
+                  ],
+                  "description": "Select the pin operation for this grouped ENDMEMEX tool."
+                },
+                "checkpoint_id": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "The checkpoint's numeric id, as returned by endeavor_memory_checkpoint."
+                },
+                "agent": {
+                  "type": "string",
+                  "enum": [
+                    "codex",
+                    "claude",
+                    "human",
+                    "system",
+                    "endeavor"
+                  ],
+                  "description": "Actor that performed the recorded work; use endeavor when the Endeavor runtime itself writes; do not claim another actor's work as your own."
+                },
+                "confirm": {
+                  "type": "boolean",
+                  "description": "Accepted for backward compatibility."
+                }
+              },
+              "required": [
+                "action",
+                "checkpoint_id",
+                "agent"
+              ]
+            },
+            {
+              "type": "object",
+              "title": "unpin",
+              "description": "WRITE. Retroactively mark an existing checkpoint (by id, from a prior checkpoint call's response) important so pruning never deletes it, or undo that. Returns the updated checkpoint as JSON text.",
+              "additionalProperties": false,
+              "properties": {
+                "action": {
+                  "type": "string",
+                  "enum": [
+                    "unpin"
+                  ],
+                  "description": "Select the unpin operation for this grouped ENDMEMEX tool."
+                },
+                "checkpoint_id": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "The checkpoint's numeric id, as returned by endeavor_memory_checkpoint."
+                },
+                "agent": {
+                  "type": "string",
+                  "enum": [
+                    "codex",
+                    "claude",
+                    "human",
+                    "system",
+                    "endeavor"
+                  ],
+                  "description": "Actor that performed the recorded work; use endeavor when the Endeavor runtime itself writes; do not claim another actor's work as your own."
+                },
+                "confirm": {
+                  "type": "boolean",
+                  "description": "Accepted for backward compatibility."
+                }
+              },
+              "required": [
+                "action",
+                "checkpoint_id",
+                "agent"
+              ]
+            },
+            {
+              "type": "object",
+              "title": "close",
+              "description": "WRITE. Mark exactly one session, selected by session ID or unambiguous project, completed or blocked. Returns the closed session identity/status as JSON text.",
+              "additionalProperties": false,
+              "properties": {
+                "action": {
+                  "type": "string",
+                  "enum": [
+                    "close"
+                  ],
+                  "description": "Select the close operation for this grouped ENDMEMEX tool."
+                },
+                "session": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Explicit ENDMEMEX session ID selected from pending or an all-paused handoff."
+                },
+                "project": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Stable project label used in ENDMEMEX, not a filesystem path (for example ENDMEMEX or MY_APP)."
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "completed",
+                    "blocked"
+                  ],
+                  "description": "Defaults to completed."
+                },
+                "agent": {
+                  "type": "string",
+                  "enum": [
+                    "codex",
+                    "claude",
+                    "human",
+                    "system",
+                    "endeavor"
+                  ],
+                  "description": "Actor that performed the recorded work; use endeavor when the Endeavor runtime itself writes; do not claim another actor's work as your own."
+                },
+                "confirm": {
+                  "type": "boolean",
+                  "description": "Accepted for backward compatibility."
+                }
+              },
+              "required": [
+                "action",
+                "agent"
+              ],
+              "oneOf": [
+                {
+                  "required": [
+                    "session"
+                  ]
+                },
+                {
+                  "required": [
+                    "project"
+                  ]
+                }
+              ]
             }
-          },
-          "required": []
+          ]
         }
       },
       {
-        "name": "endeavor_sync_status",
-        "title": "Check last-known write time per machine",
-        "description": "READ ONLY. Returns JSON text with the last write time/command this host and other hosts have mirrored to their own sync-freshness sidecars. It is informational only: a lower bound on when another host wrote, never a synchronization guarantee or write authorization.",
+        "name": "endmemex_events",
+        "title": "Consume ENDMEMEX durable events",
+        "description": "MIXED. Returns durable event data. Actions: poll (read only) and ack (write, idempotent).",
         "annotations": {
-          "readOnlyHint": true,
+          "readOnlyHint": false,
           "destructiveHint": false,
-          "idempotentHint": true,
+          "idempotentHint": false,
           "openWorldHint": false
         },
         "inputSchema": {
           "type": "object",
-          "additionalProperties": false,
-          "properties": {},
-          "required": []
+          "oneOf": [
+            {
+              "type": "object",
+              "title": "poll",
+              "description": "READ ONLY. Returns unacknowledged completion/lifecycle events in monotonic ID order so a host can resume the owning conversation after background work. Persist the highest handled ID and acknowledge only after handling succeeds.",
+              "additionalProperties": false,
+              "properties": {
+                "action": {
+                  "type": "string",
+                  "enum": [
+                    "poll"
+                  ],
+                  "description": "Select the poll operation for this grouped ENDMEMEX tool."
+                },
+                "after": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "project": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Stable project label used in ENDMEMEX, not a filesystem path (for example ENDMEMEX or MY_APP)."
+                },
+                "limit": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 500
+                },
+                "include_acked": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "action"
+              ]
+            },
+            {
+              "type": "object",
+              "title": "ack",
+              "description": "WRITE, IDEMPOTENT. Acknowledge an event only after the host has handled it successfully. Returns the event with its durable acknowledgement as JSON text.",
+              "additionalProperties": false,
+              "properties": {
+                "action": {
+                  "type": "string",
+                  "enum": [
+                    "ack"
+                  ],
+                  "description": "Select the ack operation for this grouped ENDMEMEX tool."
+                },
+                "event_id": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "agent": {
+                  "type": "string",
+                  "enum": [
+                    "codex",
+                    "claude",
+                    "human",
+                    "system",
+                    "endeavor"
+                  ],
+                  "description": "Actor that performed the recorded work; use endeavor when the Endeavor runtime itself writes; do not claim another actor's work as your own."
+                },
+                "confirm": {
+                  "type": "boolean",
+                  "description": "Accepted for backward compatibility."
+                }
+              },
+              "required": [
+                "action",
+                "event_id",
+                "agent"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "name": "endmemex_presence",
+        "title": "Coordinate ENDMEMEX agent presence",
+        "description": "MIXED, OPT-IN FOR WRITES. Returns presence state. Actions: list (read only), start, heartbeat, stop. Use write actions only when the user explicitly asks agents to announce work or coordinates multiple concurrent sessions.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "oneOf": [
+            {
+              "type": "object",
+              "title": "list",
+              "description": "READ ONLY. Returns JSON text with \"local\" (this machine's live, real-time rows) and \"remote\" (every other machine's last-mirrored sidecar snapshot, source:\"sidecar\", staleness-flagged). Treat \"remote\" as last-known, never as proof of current activity. Call before starting parallel work on a project to check whether another agent is already on it.",
+              "additionalProperties": false,
+              "properties": {
+                "action": {
+                  "type": "string",
+                  "enum": [
+                    "list"
+                  ],
+                  "description": "Select the list operation for this grouped ENDMEMEX tool."
+                },
+                "project": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Stable project label used in ENDMEMEX, not a filesystem path (for example ENDMEMEX or MY_APP)."
+                }
+              },
+              "required": [
+                "action"
+              ]
+            },
+            {
+              "type": "object",
+              "title": "start",
+              "description": "WRITE. Use only when the user explicitly asks agents to announce work or is coordinating multiple concurrent sessions. Announce (machine, agent, project[, instance]) as actively working, so a parallel local agent can see it via endmemex_presence(action=list) instead of duplicating work. Returns the stored presence row as JSON text. Cross-host visibility is separate and best-effort through per-host sidecar files, never live. Once opted in, call once per task/session, not per turn.",
+              "additionalProperties": false,
+              "properties": {
+                "action": {
+                  "type": "string",
+                  "enum": [
+                    "start"
+                  ],
+                  "description": "Select the start operation for this grouped ENDMEMEX tool."
+                },
+                "agent": {
+                  "type": "string",
+                  "enum": [
+                    "codex",
+                    "claude",
+                    "human",
+                    "system",
+                    "endeavor"
+                  ],
+                  "description": "Actor that performed the recorded work; use endeavor when the Endeavor runtime itself writes; do not claim another actor's work as your own."
+                },
+                "project": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Stable project label used in ENDMEMEX, not a filesystem path (for example ENDMEMEX or MY_APP)."
+                },
+                "task": {
+                  "type": "string",
+                  "description": "Short free-text of what this process is doing."
+                },
+                "instance": {
+                  "type": "string",
+                  "description": "Only needed to distinguish two concurrent instances of the same agent working the same project on this machine at once. Identity is (machine, agent, project, instance), not pid -- omit unless you know you need it."
+                },
+                "session": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Optional ENDMEMEX session ID to associate with this presence row."
+                },
+                "confirm": {
+                  "type": "boolean",
+                  "description": "Accepted for backward compatibility."
+                }
+              },
+              "required": [
+                "action",
+                "project",
+                "agent"
+              ]
+            },
+            {
+              "type": "object",
+              "title": "heartbeat",
+              "description": "WRITE. Only use after an opted-in endmemex_presence(action=start). Refresh the (machine, agent, project[, instance]) presence row so it is not shown stale. Returns {\"updated\": bool} as JSON text; false means that identity has no active presence row -- it either never called the start action or already called the stop action (a no-op, not an error; a heartbeat never resurrects a stopped row, call the start action again to resume). Refresh at the checkpoint cadence; do not add a polling loop.",
+              "additionalProperties": false,
+              "properties": {
+                "action": {
+                  "type": "string",
+                  "enum": [
+                    "heartbeat"
+                  ],
+                  "description": "Select the heartbeat operation for this grouped ENDMEMEX tool."
+                },
+                "agent": {
+                  "type": "string",
+                  "enum": [
+                    "codex",
+                    "claude",
+                    "human",
+                    "system",
+                    "endeavor"
+                  ],
+                  "description": "Actor that performed the recorded work; use endeavor when the Endeavor runtime itself writes; do not claim another actor's work as your own."
+                },
+                "project": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Stable project label used in ENDMEMEX, not a filesystem path (for example ENDMEMEX or MY_APP)."
+                },
+                "task": {
+                  "type": "string",
+                  "description": "Update the task description; omit to just refresh the timestamp."
+                },
+                "instance": {
+                  "type": "string",
+                  "description": "Only needed to distinguish two concurrent instances of the same agent working the same project on this machine at once. Identity is (machine, agent, project, instance), not pid -- omit unless you know you need it."
+                },
+                "confirm": {
+                  "type": "boolean",
+                  "description": "Accepted for backward compatibility."
+                }
+              },
+              "required": [
+                "action",
+                "project",
+                "agent"
+              ]
+            },
+            {
+              "type": "object",
+              "title": "stop",
+              "description": "WRITE. Stop a presence row created through the opt-in workflow, so it disappears from endmemex_presence(action=list). Returns {\"updated\": bool} as JSON text. Call at the natural end of that opted-in task/session; a crashed process without a stop call is still handled -- it just shows up flagged stale after 30 minutes rather than disappearing.",
+              "additionalProperties": false,
+              "properties": {
+                "action": {
+                  "type": "string",
+                  "enum": [
+                    "stop"
+                  ],
+                  "description": "Select the stop operation for this grouped ENDMEMEX tool."
+                },
+                "agent": {
+                  "type": "string",
+                  "enum": [
+                    "codex",
+                    "claude",
+                    "human",
+                    "system",
+                    "endeavor"
+                  ],
+                  "description": "Actor that performed the recorded work; use endeavor when the Endeavor runtime itself writes; do not claim another actor's work as your own."
+                },
+                "project": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Stable project label used in ENDMEMEX, not a filesystem path (for example ENDMEMEX or MY_APP)."
+                },
+                "instance": {
+                  "type": "string",
+                  "description": "Only needed to distinguish two concurrent instances of the same agent working the same project on this machine at once. Identity is (machine, agent, project, instance), not pid -- omit unless you know you need it."
+                },
+                "confirm": {
+                  "type": "boolean",
+                  "description": "Accepted for backward compatibility."
+                }
+              },
+              "required": [
+                "action",
+                "project",
+                "agent"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "name": "endmemex_admin",
+        "title": "Initialize or repair ENDMEMEX storage",
+        "description": "WRITE. Returns database initialization/migration or embedding-backfill results. Actions: initialize, embed_backfill. Use only for explicit setup/repair or when bootstrap requests the action.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "oneOf": [
+            {
+              "type": "object",
+              "title": "initialize",
+              "description": "WRITE. Use when bootstrap reports database.init_required=true or during explicit first-time setup. Creates or migrates the ENDMEMEX schema. Returns JSON text with the database path and schema version. After success, rerun bootstrap. For remote mutation, use the configured authenticated write gateway rather than shared SQLite.",
+              "additionalProperties": false,
+              "properties": {
+                "action": {
+                  "type": "string",
+                  "enum": [
+                    "initialize"
+                  ],
+                  "description": "Select the initialize operation for this grouped ENDMEMEX tool."
+                },
+                "confirm": {
+                  "type": "boolean",
+                  "description": "Accepted for backward compatibility."
+                }
+              },
+              "required": [
+                "action"
+              ]
+            },
+            {
+              "type": "object",
+              "title": "embed_backfill",
+              "description": "WRITE. Use when bootstrap reports embedding.backfill_required=true, or when explicitly repairing embedding coverage. Starts/waits for MiniLM if needed and writes missing/stale knowledge and durable-record embeddings. Returns JSON text with status, candidates, embedded count, and attempts. After success, rerun bootstrap to confirm backfill_required=false. For remote mutation, use the configured authenticated write gateway rather than shared SQLite.",
+              "additionalProperties": false,
+              "properties": {
+                "action": {
+                  "type": "string",
+                  "enum": [
+                    "embed_backfill"
+                  ],
+                  "description": "Select the embed_backfill operation for this grouped ENDMEMEX tool."
+                },
+                "batch_size": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1024,
+                  "description": "Embedding batch size; omit to use the configured default."
+                },
+                "confirm": {
+                  "type": "boolean",
+                  "description": "Accepted for backward compatibility."
+                }
+              },
+              "required": [
+                "action"
+              ]
+            }
+          ]
         }
       }
     ],
-    "server_instructions": "ENDMEMEX is shared project memory. At the start of non-trivial work call the read-only bootstrap once before planning or implementation, follow its ordered next_actions, then query before rediscovering prior work or making high-impact decisions. Bootstrap never writes, initializes, starts MiniLM, or backfills embeddings. If database.init_required=true, call endeavor_memory_initialize; if embedding.backfill_required=true, call endeavor_memory_embed_backfill; then rerun bootstrap. Checkpoint after meaningful implementation, verified tests, decisions, handoffs, and Git commits. Use durable records for audit -> resolves:fix -> verifies:verification lifecycles. Never store secrets. Successful tools return JSON encoded in text content; errors start [error]. Keep writable SQLite local to one host; use authenticated write_gateway.py for remote mutations. Open cited sources before relying on material search results. Agent presence is opt-in: call presence_start/presence_heartbeat/presence_stop only when the user asks agents to announce work or is coordinating multiple concurrent sessions; otherwise do not create those shared-database writes. sync_status shows the last-known write time per machine. Readiness is an optional post-bootstrap read-only health preflight for local-host identity, DB health, embedding coverage, ANN, tracked-document freshness, and ordered next actions; it never replaces bootstrap."
+    "server_instructions": "ENDMEMEX is shared project memory exposed through seven domain-grouped tools. At the start of non-trivial work call endmemex_context(action='bootstrap') once before planning or implementation, follow its ordered next_actions, then use endmemex_search(action='query') before rediscovering prior work or making high-impact decisions. Bootstrap never writes, initializes, starts MiniLM, or backfills embeddings. If database.init_required=true, call endmemex_admin(action='initialize'); if embedding.backfill_required=true, call endmemex_admin(action='embed_backfill'); then rerun bootstrap. Use endmemex_session(action='checkpoint') after meaningful implementation, verified tests, decisions, handoffs, and Git commits. Use endmemex_records for durable audit/fix/verification lifecycles. Never store secrets. Successful tools return JSON encoded in text content; errors start [error]. Keep writable SQLite local to one host; use authenticated write_gateway.py for remote mutations. Open cited sources before relying on material search results. Presence writes remain opt-in: use endmemex_presence actions start, heartbeat, or stop only when the user asks agents to announce work or is coordinating multiple concurrent sessions. endmemex_context(action='sync_status') reports last-known write time per machine. endmemex_context(action='readiness') is an optional post-bootstrap read-only health preflight and never replaces bootstrap."
   },
   "agent_mcp_contract": {
     "tools": [

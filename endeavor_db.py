@@ -2989,7 +2989,8 @@ def _bootstrap_embedding_status(conn: sqlite3.Connection) -> dict[str, Any]:
         "invalid_blobs": int(stats["invalid_blobs"]),
         "stale_hashes": int(stats["stale_hashes"]),
         "companion_warm": bool(stats["companion_warm"]),
-        "next_tool": "endeavor_memory_embed_backfill" if pending else None,
+        "next_tool": "endmemex_admin" if pending else None,
+        "next_action": "embed_backfill" if pending else None,
     }
 
 
@@ -3004,7 +3005,8 @@ def _bootstrap_next_actions(
             "priority": "P0",
             "code": "initialize_database",
             "reason": "ENDMEMEX database schema is missing or not current.",
-            "tool": "endeavor_memory_initialize",
+            "tool": "endmemex_admin",
+            "action": "initialize",
             "command": "python3 endeavor_db.py init",
             "after": "Rerun bootstrap and confirm database.init_required=false.",
         })
@@ -3015,7 +3017,8 @@ def _bootstrap_next_actions(
             "priority": "P1",
             "code": "backfill_embeddings",
             "reason": f"{int(embedding.get('pending') or 0)} embedding row(s) are missing, stale, or invalid.",
-            "tool": "endeavor_memory_embed_backfill",
+            "tool": "endmemex_admin",
+            "action": "embed_backfill",
             "command": "python3 endeavor_db.py embed-backfill",
             "after": "Rerun bootstrap and confirm embedding.backfill_required=false.",
         })
@@ -3050,12 +3053,14 @@ def bootstrap(
             "schema_version": schema_version,
             "schema_current": False,
             "init_required": True,
-            "next_tool": "endeavor_memory_initialize",
+            "next_tool": "endmemex_admin",
+            "next_action": "initialize",
         }
         embedding = {
             "status": "unavailable_until_initialized",
             "backfill_required": None,
             "next_tool": None,
+            "next_action": None,
         }
         docs = {"ok": None, "reason": "database schema is not current"}
         hooks = hook_status()
@@ -3081,6 +3086,7 @@ def bootstrap(
         "schema_current": True,
         "init_required": False,
         "next_tool": None,
+        "next_action": None,
     }
     embedding = _bootstrap_embedding_status(conn)
     docs = _tracked_docs_summary(conn)
@@ -3631,12 +3637,14 @@ def main(argv: list[str] | None = None) -> int:
             "schema_version": None,
             "schema_current": False,
             "init_required": True,
-            "next_tool": "endeavor_memory_initialize",
+            "next_tool": "endmemex_admin",
+            "next_action": "initialize",
         }
         embedding = {
             "status": "unavailable_until_initialized",
             "backfill_required": None,
             "next_tool": None,
+            "next_action": None,
         }
         docs = {"ok": None, "reason": "database file does not exist"}
         hooks = hook_status()

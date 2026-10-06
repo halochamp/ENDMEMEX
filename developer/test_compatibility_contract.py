@@ -802,7 +802,7 @@ class CompatibilityContractTest(unittest.TestCase):
             ("endeavor_presence_list", {"project": "DEMO"}, ["presence", "--json", "--project", "DEMO"]),
             ("endeavor_sync_status", {}, ["sync-status", "--json"]),
         ]
-        self.assertEqual(len(cases), len(mcp_server.TOOLS) + 1)
+        self.assertEqual(len(cases), len(mcp_server._LEGACY_TOOLS) + 1)
         with mock.patch.object(mcp_server, "run", return_value="ok") as run:
             for name, args, expected in cases:
                 with self.subTest(name=name, args=args):
@@ -998,12 +998,69 @@ class CompatibilityContractTest(unittest.TestCase):
                     blocked.assert_not_called()
                 with mock.patch.object(mcp_server, "run", return_value=case["timeout_result"]):
                     self.assertEqual(mcp_server.call(case["tool"], case["args"]), case["timeout_result"])
-        self.assertEqual({case["tool"] for case in _GOLDEN["mcp_translation_cases"]}, set(mcp_server.TOOL_BY_NAME))
+        self.assertEqual({case["tool"] for case in _GOLDEN["mcp_translation_cases"]}, set(mcp_server._LEGACY_TOOL_BY_NAME))
         for tool in mcp_server.TOOLS:
-            required = tool["inputSchema"].get("required", [])
-            with self.subTest(missing_required=tool["name"]):
-                if required:
-                    self.assertTrue(mcp_server.call(tool["name"], {}).startswith("[error]"))
+            with self.subTest(missing_action=tool["name"]), mock.patch.object(mcp_server, "run") as backend:
+                self.assertTrue(mcp_server.call(tool["name"], {}).startswith("[error]"))
+                backend.assert_not_called()
+
+
+    def test_every_grouped_action_translates_to_public_cli(self):
+        # Independent public mapping to the already captured CLI oracle. Avoid
+        # constructing expected behavior from _GROUP_ACTIONS under test.
+        names = {
+            "endmemex_context": "bootstrap readiness pack pending handoff timeline sync_status",
+            "endmemex_search": "query record_search record_show",
+            "endmemex_records": "record_add record_update record_link feedback",
+            "endmemex_session": "checkpoint pin_checkpoint session_close",
+            "endmemex_events": "event_poll event_ack",
+            "endmemex_presence": "presence_list presence_start presence_heartbeat presence_stop",
+            "endmemex_admin": "initialize embed_backfill",
+        }
+        cases = {case["tool"]: case for case in _GOLDEN["mcp_translation_cases"]}
+        observed = set()
+        parser = endeavor_db.build_parser()
+        for group, suffixes in names.items():
+            for suffix in suffixes.split():
+                legacy = ("endeavor_" + suffix if suffix.startswith("presence_") or suffix == "sync_status"
+                          else "endeavor_memory_" + suffix)
+                case = cases[legacy]
+                action = {"record_add": "add", "record_update": "update", "record_link": "link",
+                          "pin_checkpoint": "pin", "session_close": "close"}.get(suffix, suffix)
+                action = action.removeprefix("event_").removeprefix("presence_")
+                actions = [action, "unpin"] if action == "pin" else [action]
+                for action in actions:
+                    args = {"action": action, **case["args"]}
+                    expected = list(case["command"])
+                    if action == "unpin": expected[0] = "unpin-checkpoint"
+                    observed.add((group, action))
+                    with self.subTest(group=group, action=action):
+                        with mock.patch.object(mcp_server, "run", return_value="{}") as backend:
+                            self.assertEqual(mcp_server.call(group, args), "{}")
+                            self.assertEqual(backend.call_args.args[0], expected)
+                        branch = next(b for b in mcp_server.TOOL_BY_NAME[group]["inputSchema"]["oneOf"]
+                                      if b["properties"]["action"]["enum"] == [action])
+                        for field in branch["required"]:
+                            with self.subTest(missing=field), mock.patch.object(mcp_server, "run") as backend:
+                                missing_args = {key: value for key, value in args.items() if key != field}
+                                self.assertTrue(mcp_server.call(group, missing_args).startswith("[error]"))
+                                backend.assert_not_called()
+                        for field, prop in branch["properties"].items():
+                            if field == "action": continue
+                            for value in prop.get("enum", []):
+                                with self.subTest(field=field, value=value), mock.patch.object(mcp_server, "run", return_value="{}") as backend:
+                                    self.assertEqual(mcp_server.call(group, {**args, field: value}), "{}")
+                                    with contextlib.redirect_stderr(io.StringIO()):
+                                        parser.parse_args(backend.call_args.args[0])
+                        with mock.patch.object(mcp_server, "run") as backend:
+                            self.assertTrue(mcp_server.call(group, {**args, "unexpected": True}).startswith("[error]"))
+                            backend.assert_not_called()
+                        with mock.patch.object(mcp_server, "run", return_value=case["timeout_result"]):
+                            self.assertEqual(mcp_server.call(group, args), case["timeout_result"])
+        self.assertEqual(observed, {
+            (tool["name"], branch["properties"]["action"]["enum"][0])
+            for tool in mcp_server.TOOLS for branch in tool["inputSchema"]["oneOf"]
+        })
 
 
 if __name__ == "__main__":

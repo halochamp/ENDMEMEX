@@ -399,7 +399,7 @@ latest checkpoint without writing.
 
 ### 11.1 Checkpoint Timeline Read Path
 
-`timeline` (CLI subcommand and the read-only `endeavor_memory_timeline` MCP
+`timeline` (CLI subcommand and the read-only `endmemex_context(action="timeline")` MCP
 tool) is a single parameterized join of `checkpoints` to `sessions`, filtered
 by any combination of project, agent, session status, and session ID, with
 every selected column explicitly aliased to avoid the two tables' overlapping

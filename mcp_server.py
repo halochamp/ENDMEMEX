@@ -1,23 +1,19 @@
 #!/usr/bin/env python3
-"""Stdio MCP bridge for shared Endeavor project memory operations.
-
-Read-only tools (query/readiness/bootstrap/handoff/pending/record_show/record_search/pack/
-presence_list/sync_status/timeline) always run. Write tools (initialize/embed_backfill/
-checkpoint/pin_checkpoint/record_add/record_update/record_link/session_close/feedback/
-presence_start/presence_heartbeat/presence_stop) shell out to endeavor_db.py, which
-serializes concurrent local writers with SQLite WAL and a busy timeout. For a
-remote-writer deployment, use write_gateway.py rather than sharing a writable
-SQLite database through a filesystem sync service.
+"""The public MCP surface groups memory operations into seven domain tools.
+Each action reuses CLI validation and translation. SQLite WAL serializes
+concurrent local writers; use write_gateway.py for remote-writer deployments
+instead of sharing writable SQLite through filesystem synchronization.
 """
 from __future__ import annotations
 
+import copy
 import json
 import re
 import subprocess
 import sys
 from pathlib import Path
 
-from config import MEMORY_AGENT_CHOICES, ROOT
+from config import MEMORY_AGENT_CHOICES, MEMORY_RECORD_STATUSES, ROOT
 
 HERE = Path(__file__).resolve().parent
 DB = HERE / "endeavor_db.py"
@@ -32,21 +28,22 @@ WRITE_TOOLS = {
     "endeavor_presence_heartbeat", "endeavor_presence_stop",
 }
 SERVER_INSTRUCTIONS = (
-    "ENDMEMEX is shared project memory. At the start of non-trivial work call the read-only bootstrap "
-    "once before planning or implementation, follow its ordered next_actions, then query before "
-    "rediscovering prior work or making high-impact decisions. Bootstrap never writes, initializes, "
-    "starts MiniLM, or backfills embeddings. If database.init_required=true, call endeavor_memory_initialize; "
-    "if embedding.backfill_required=true, call endeavor_memory_embed_backfill; then rerun bootstrap. "
-    "Checkpoint after meaningful implementation, verified tests, decisions, handoffs, and Git commits. "
-    "Use durable records for audit -> resolves:fix -> verifies:verification lifecycles. Never store secrets. "
-    "Successful tools return JSON encoded in text content; errors start [error]. "
+    "ENDMEMEX is shared project memory exposed through seven domain-grouped tools. "
+    "At the start of non-trivial work call endmemex_context(action='bootstrap') once before planning "
+    "or implementation, follow its ordered next_actions, then use endmemex_search(action='query') "
+    "before rediscovering prior work or making high-impact decisions. Bootstrap never writes, "
+    "initializes, starts MiniLM, or backfills embeddings. If database.init_required=true, call "
+    "endmemex_admin(action='initialize'); if embedding.backfill_required=true, call "
+    "endmemex_admin(action='embed_backfill'); then rerun bootstrap. Use "
+    "endmemex_session(action='checkpoint') after meaningful implementation, verified tests, decisions, "
+    "handoffs, and Git commits. Use endmemex_records for durable audit/fix/verification lifecycles. "
+    "Never store secrets. Successful tools return JSON encoded in text content; errors start [error]. "
     "Keep writable SQLite local to one host; use authenticated write_gateway.py for remote mutations. "
-    "Open cited sources before relying on material search results. "
-    "Agent presence is opt-in: call presence_start/presence_heartbeat/presence_stop only when the "
-    "user asks agents to announce work or is coordinating multiple concurrent sessions; otherwise "
-    "do not create those shared-database writes. sync_status shows the last-known write time per machine. "
-    "Readiness is an optional post-bootstrap read-only health preflight for local-host identity, DB health, "
-    "embedding coverage, ANN, tracked-document freshness, and ordered next actions; it never replaces bootstrap."
+    "Open cited sources before relying on material search results. Presence writes remain opt-in: "
+    "use endmemex_presence actions start, heartbeat, or stop only when the user asks agents to announce "
+    "work or is coordinating multiple concurrent sessions. endmemex_context(action='sync_status') "
+    "reports last-known write time per machine. endmemex_context(action='readiness') is an optional "
+    "post-bootstrap read-only health preflight and never replaces bootstrap."
 )
 
 READ_ONLY_ANNOTATIONS = {
@@ -87,7 +84,7 @@ INSTANCE_PROPERTY = {
                    "pid -- omit unless you know you need it.",
 }
 
-TOOLS = [
+_LEGACY_TOOLS = [
     {"name": "endeavor_memory_query", "title": "Search ENDMEMEX", "description": "READ ONLY. Use before rediscovering prior work or making a high-impact project decision. Searches indexed Markdown and current durable records. Inspect cited sources before trusting material results. Returns a JSON array as text; stale=true means open the source because its indexed copy drifted. Do not use it to write a checkpoint.", "annotations": READ_ONLY_ANNOTATIONS, "inputSchema": {"type": "object", "additionalProperties": False, "properties": {
         "query": {"type": "string", "minLength": 1, "description": "Natural-language or keyword search. Use the terms an existing note or record is likely to contain."},
         "project": PROJECT_PROPERTY,
@@ -112,12 +109,12 @@ TOOLS = [
     {"name": "endeavor_memory_pending", "title": "List lifecycle-aware pending ENDMEMEX work", "description": "READ ONLY. Use to discover all pending work without confusing paused handoffs with audits. Returns active/last-known presence, resumable/blocked sessions, and only current unresolved durable records. Historical open records resolved by lifecycle edges are suppressed. Do not silently resume a listed session; ask the user to choose when one or more sessions are resumable.", "annotations": READ_ONLY_ANNOTATIONS, "inputSchema": {"type": "object", "additionalProperties": False, "properties": {
         "project": PROJECT_PROPERTY,
         "all_projects": {"type": "boolean", "description": "Set true to inspect every project. Exactly one of project or all_projects=true is required."},
-    }, "required": [], "oneOf": [{"required": ["project"]}, {"required": ["all_projects"]}]}},
+    }, "required": [], "oneOf": [{"required": ["project"]}, {"required": ["all_projects"], "properties": {"all_projects": {"enum": [True]}}}]}},
     {"name": "endeavor_memory_handoff", "title": "Read ENDMEMEX handoff", "description": "READ ONLY. Use project for an unambiguous project handoff, session after the user selects a specific resumable session, or all_paused=true for the authoritative cross-project resume queue. Returns JSON text with session and checkpoint; both are null when a project has no resumable session, which is normal. Ambiguous projects are rejected instead of silently choosing. Use pack when wider context is needed.", "annotations": READ_ONLY_ANNOTATIONS, "inputSchema": {"type": "object", "additionalProperties": False, "properties": {
         "project": PROJECT_PROPERTY,
         "session": SESSION_PROPERTY,
         "all_paused": {"type": "boolean", "description": "Set true to list every paused session across all projects."},
-    }, "required": [], "oneOf": [{"required": ["project"]}, {"required": ["session"]}, {"required": ["all_paused"]}]}},
+    }, "required": [], "oneOf": [{"required": ["project"]}, {"required": ["session"]}, {"required": ["all_paused"], "properties": {"all_paused": {"enum": [True]}}}]}},
     {"name": "endeavor_memory_timeline", "title": "Read ENDMEMEX checkpoint timeline", "description": "READ ONLY. Use to see who did what across sessions: filterable by project, agent, session status, and session ID. Returns JSON text with records (checkpoint+session fields, files/commands/verification evidence), count, total_matching, truncated, order, filters, and a retention_notice -- results cover only currently-retained checkpoints, never activity_log. checkpoint_status per record is derived (\"current\" = latest checkpoint of its session, \"historical\" = superseded); session_status is the session's active/paused/completed/blocked lifecycle state. Newest-first by default.", "annotations": READ_ONLY_ANNOTATIONS, "inputSchema": {"type": "object", "additionalProperties": False, "properties": {
         "project": PROJECT_PROPERTY,
         "agent": AGENT_PROPERTY,
@@ -176,7 +173,7 @@ TOOLS = [
         "type": {"type": "string", "enum": ["audit", "fix", "verification", "decision", "knowledge"], "description": "Durable record role in the lifecycle."},
         "title": {"type": "string", "minLength": 1, "description": "Concise human-readable claim or finding title."},
         "content": {"type": "string", "minLength": 1, "description": "Durable evidence/decision text; concise, source-backed, and free of secrets."},
-        "status": {"type": "string", "enum": ["open", "current", "resolved", "accepted", "superseded"], "description": "Truth/lifecycle status; omit to use current."},
+        "status": {"type": "string", "enum": list(MEMORY_RECORD_STATUSES), "description": "Truth/lifecycle status; omit to use current."},
         "action_state": {"type": "string", "enum": ["actionable", "deferred", "blocked", "nonactionable", "done"], "description": "Independent work state. Open audit/verification defaults actionable; decisions and knowledge default nonactionable."},
         "source": {"type": "string", "description": "Repo-relative path this record documents"},
         "link": {"type": "string", "pattern": "^(references|resolves|verifies|supersedes|contradicts|duplicates):[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+$", "description": "One typed edge RELATION:TARGET_ID, for example resolves:AUDIT-MEM-001."},
@@ -190,12 +187,14 @@ TOOLS = [
         "type": {"type": "string", "enum": ["audit", "fix", "verification", "decision", "knowledge"]},
         "title": {"type": "string", "minLength": 1},
         "content": {"type": "string", "minLength": 1},
-        "status": {"type": "string", "enum": ["open", "current", "resolved", "accepted", "superseded"]},
+        "status": {"type": "string", "enum": list(MEMORY_RECORD_STATUSES)},
         "action_state": {"type": "string", "enum": ["actionable", "deferred", "blocked", "nonactionable", "done"]},
         "metadata": {"type": "object", "description": "Replacement metadata JSON object."},
         "agent": AGENT_PROPERTY,
         "confirm": CONFIRM_PROPERTY,
-    }, "required": ["id", "agent"]}},
+    }, "required": ["id", "agent"], "anyOf": [
+        {"required": [key]} for key in ("project", "type", "title", "content", "status", "action_state", "metadata")
+    ]}},
     {"name": "endeavor_memory_record_link", "title": "Link ENDMEMEX lifecycle records", "description": "WRITE. Create one typed lifecycle relation between existing durable records. Returns the source record context as JSON text.", "annotations": WRITE_ANNOTATIONS, "inputSchema": {"type": "object", "additionalProperties": False, "properties": {
         "source_id": {"type": "string", "pattern": "^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+$"},
         "relation": {"type": "string", "enum": ["references", "resolves", "verifies", "supersedes", "contradicts", "duplicates"]},
@@ -230,7 +229,7 @@ TOOLS = [
         "agent": AGENT_PROPERTY,
         "confirm": CONFIRM_PROPERTY,
     }, "required": ["event_id", "agent"]}},
-    {"name": "endeavor_presence_start", "title": "Announce active work (ENDMEMEX presence)", "description": "WRITE. Use only when the user explicitly asks agents to announce work or is coordinating multiple concurrent sessions. Announce (machine, agent, project[, instance]) as actively working, so a parallel local agent can see it via endeavor_presence_list instead of duplicating work. Returns the stored presence row as JSON text. Cross-host visibility is separate and best-effort through per-host sidecar files, never live. Once opted in, call once per task/session, not per turn.", "annotations": WRITE_ANNOTATIONS, "inputSchema": {"type": "object", "additionalProperties": False, "properties": {
+    {"name": "endeavor_presence_start", "title": "Announce active work (ENDMEMEX presence)", "description": "WRITE. Use only when the user explicitly asks agents to announce work or is coordinating multiple concurrent sessions. Announce (machine, agent, project[, instance]) as actively working, so a parallel local agent can see it via endmemex_presence(action=list) instead of duplicating work. Returns the stored presence row as JSON text. Cross-host visibility is separate and best-effort through per-host sidecar files, never live. Once opted in, call once per task/session, not per turn.", "annotations": WRITE_ANNOTATIONS, "inputSchema": {"type": "object", "additionalProperties": False, "properties": {
         "agent": AGENT_PROPERTY,
         "project": PROJECT_PROPERTY,
         "task": {"type": "string", "description": "Short free-text of what this process is doing."},
@@ -238,14 +237,14 @@ TOOLS = [
         "session": {"type": "string", "minLength": 1, "description": "Optional ENDMEMEX session ID to associate with this presence row."},
         "confirm": CONFIRM_PROPERTY,
     }, "required": ["project", "agent"]}},
-    {"name": "endeavor_presence_heartbeat", "title": "Refresh ENDMEMEX presence", "description": "WRITE. Only use after an opted-in presence_start. Refresh the (machine, agent, project[, instance]) presence row so it is not shown stale. Returns {\"updated\": bool} as JSON text; false means that identity has no active presence row -- it either never called presence_start or already called presence_stop (a no-op, not an error; a heartbeat never resurrects a stopped row, call presence_start again to resume). Refresh at the checkpoint cadence; do not add a polling loop.", "annotations": WRITE_ANNOTATIONS, "inputSchema": {"type": "object", "additionalProperties": False, "properties": {
+    {"name": "endeavor_presence_heartbeat", "title": "Refresh ENDMEMEX presence", "description": "WRITE. Only use after an opted-in endmemex_presence(action=start). Refresh the (machine, agent, project[, instance]) presence row so it is not shown stale. Returns {\"updated\": bool} as JSON text; false means that identity has no active presence row -- it either never called the start action or already called the stop action (a no-op, not an error; a heartbeat never resurrects a stopped row, call the start action again to resume). Refresh at the checkpoint cadence; do not add a polling loop.", "annotations": WRITE_ANNOTATIONS, "inputSchema": {"type": "object", "additionalProperties": False, "properties": {
         "agent": AGENT_PROPERTY,
         "project": PROJECT_PROPERTY,
         "task": {"type": "string", "description": "Update the task description; omit to just refresh the timestamp."},
         "instance": INSTANCE_PROPERTY,
         "confirm": CONFIRM_PROPERTY,
     }, "required": ["project", "agent"]}},
-    {"name": "endeavor_presence_stop", "title": "Clear ENDMEMEX presence", "description": "WRITE. Stop a presence row created through the opt-in workflow, so it disappears from endeavor_presence_list. Returns {\"updated\": bool} as JSON text. Call at the natural end of that opted-in task/session; a crashed process without a stop call is still handled -- it just shows up flagged stale after 30 minutes rather than disappearing.", "annotations": WRITE_ANNOTATIONS, "inputSchema": {"type": "object", "additionalProperties": False, "properties": {
+    {"name": "endeavor_presence_stop", "title": "Clear ENDMEMEX presence", "description": "WRITE. Stop a presence row created through the opt-in workflow, so it disappears from endmemex_presence(action=list). Returns {\"updated\": bool} as JSON text. Call at the natural end of that opted-in task/session; a crashed process without a stop call is still handled -- it just shows up flagged stale after 30 minutes rather than disappearing.", "annotations": WRITE_ANNOTATIONS, "inputSchema": {"type": "object", "additionalProperties": False, "properties": {
         "agent": AGENT_PROPERTY,
         "project": PROJECT_PROPERTY,
         "instance": INSTANCE_PROPERTY,
@@ -257,7 +256,140 @@ TOOLS = [
     {"name": "endeavor_sync_status", "title": "Check last-known write time per machine", "description": "READ ONLY. Returns JSON text with the last write time/command this host and other hosts have mirrored to their own sync-freshness sidecars. It is informational only: a lower bound on when another host wrote, never a synchronization guarantee or write authorization.", "annotations": READ_ONLY_ANNOTATIONS, "inputSchema": {"type": "object", "additionalProperties": False, "properties": {}, "required": []}},
 ]
 
+_LEGACY_TOOL_BY_NAME = {tool["name"]: tool for tool in _LEGACY_TOOLS}
+
+# Public grouping. The legacy definitions stay internal so each grouped action
+# reuses the already-tested argument schema and CLI translation exactly.
+_GROUP_ACTIONS = {
+    "endmemex_context": {
+        "bootstrap": {"legacy": "endeavor_memory_bootstrap"},
+        "readiness": {"legacy": "endeavor_memory_readiness"},
+        "pack": {"legacy": "endeavor_memory_pack"},
+        "pending": {"legacy": "endeavor_memory_pending"},
+        "handoff": {"legacy": "endeavor_memory_handoff"},
+        "timeline": {"legacy": "endeavor_memory_timeline"},
+        "sync_status": {"legacy": "endeavor_sync_status"},
+    },
+    "endmemex_search": {
+        "query": {"legacy": "endeavor_memory_query"},
+        "record_search": {"legacy": "endeavor_memory_record_search"},
+        "record_show": {"legacy": "endeavor_memory_record_show"},
+    },
+    "endmemex_records": {
+        "add": {"legacy": "endeavor_memory_record_add"},
+        "update": {"legacy": "endeavor_memory_record_update"},
+        "link": {"legacy": "endeavor_memory_record_link"},
+        "feedback": {"legacy": "endeavor_memory_feedback"},
+    },
+    "endmemex_session": {
+        "checkpoint": {"legacy": "endeavor_memory_checkpoint"},
+        "pin": {"legacy": "endeavor_memory_pin_checkpoint", "inject": {"pinned": True}, "omit": {"pinned"}},
+        "unpin": {"legacy": "endeavor_memory_pin_checkpoint", "inject": {"pinned": False}, "omit": {"pinned"}},
+        "close": {"legacy": "endeavor_memory_session_close"},
+    },
+    "endmemex_events": {
+        "poll": {"legacy": "endeavor_memory_event_poll"},
+        "ack": {"legacy": "endeavor_memory_event_ack"},
+    },
+    "endmemex_presence": {
+        "list": {"legacy": "endeavor_presence_list"},
+        "start": {"legacy": "endeavor_presence_start"},
+        "heartbeat": {"legacy": "endeavor_presence_heartbeat"},
+        "stop": {"legacy": "endeavor_presence_stop"},
+    },
+    "endmemex_admin": {
+        "initialize": {"legacy": "endeavor_memory_initialize"},
+        "embed_backfill": {"legacy": "endeavor_memory_embed_backfill"},
+    },
+}
+
+
+def _action_branch(action: str, spec: dict) -> dict:
+    legacy = _LEGACY_TOOL_BY_NAME[spec["legacy"]]
+    schema = copy.deepcopy(legacy["inputSchema"])
+    omit = set(spec.get("omit", ()))
+    properties = {
+        "action": {
+            "type": "string",
+            "enum": [action],
+            "description": f"Select the {action} operation for this grouped ENDMEMEX tool.",
+        }
+    }
+    properties.update({key: value for key, value in schema.get("properties", {}).items() if key not in omit})
+    branch = {
+        "type": "object",
+        "title": action,
+        "description": legacy["description"],
+        "additionalProperties": False,
+        "properties": properties,
+        "required": ["action", *[key for key in schema.get("required", []) if key not in omit]],
+    }
+    for keyword in ("oneOf", "anyOf"):
+        if schema.get(keyword):
+            branch[keyword] = copy.deepcopy(schema[keyword])
+    return branch
+
+
+def _group_tool(name: str, title: str, description: str, annotations: dict) -> dict:
+    return {
+        "name": name,
+        "title": title,
+        "description": description,
+        "annotations": annotations,
+        "inputSchema": {
+            "type": "object",
+            "oneOf": [_action_branch(action, spec) for action, spec in _GROUP_ACTIONS[name].items()],
+        },
+    }
+
+
+TOOLS = [
+    _group_tool(
+        "endmemex_context",
+        "Read ENDMEMEX context and continuity",
+        "READ ONLY. Returns project orientation, readiness, briefings, pending work, handoffs, timeline, or sync status. Actions: bootstrap, readiness, pack, pending, handoff, timeline, sync_status.",
+        READ_ONLY_ANNOTATIONS,
+    ),
+    _group_tool(
+        "endmemex_search",
+        "Search ENDMEMEX memory",
+        "READ ONLY. Returns indexed knowledge or durable-record search/show results. Actions: query, record_search, record_show.",
+        READ_ONLY_ANNOTATIONS,
+    ),
+    _group_tool(
+        "endmemex_records",
+        "Write ENDMEMEX durable records",
+        "WRITE. Returns the result of one durable-record mutation or retrieval-feedback write. Actions: add, update, link, feedback.",
+        WRITE_ANNOTATIONS,
+    ),
+    _group_tool(
+        "endmemex_session",
+        "Manage ENDMEMEX session progress",
+        "WRITE. Returns checkpoint, pin/unpin, or session-close results. Actions: checkpoint, pin, unpin, close.",
+        WRITE_ANNOTATIONS,
+    ),
+    _group_tool(
+        "endmemex_events",
+        "Consume ENDMEMEX durable events",
+        "MIXED. Returns durable event data. Actions: poll (read only) and ack (write, idempotent).",
+        WRITE_ANNOTATIONS,
+    ),
+    _group_tool(
+        "endmemex_presence",
+        "Coordinate ENDMEMEX agent presence",
+        "MIXED, OPT-IN FOR WRITES. Returns presence state. Actions: list (read only), start, heartbeat, stop. Use write actions only when the user explicitly asks agents to announce work or coordinates multiple concurrent sessions.",
+        WRITE_ANNOTATIONS,
+    ),
+    _group_tool(
+        "endmemex_admin",
+        "Initialize or repair ENDMEMEX storage",
+        "WRITE. Returns database initialization/migration or embedding-backfill results. Actions: initialize, embed_backfill. Use only for explicit setup/repair or when bootstrap requests the action.",
+        WRITE_ANNOTATIONS,
+    ),
+]
+
 TOOL_BY_NAME = {tool["name"]: tool for tool in TOOLS}
+
 
 
 def run(args: list[str]) -> str:
@@ -320,8 +452,8 @@ def _validate_value(name: str, value: object, schema: dict) -> str | None:
     return None
 
 
-def validate_arguments(name: str, args: object) -> str | None:
-    tool = TOOL_BY_NAME.get(name)
+def _validate_legacy_arguments(name: str, args: object) -> str | None:
+    tool = _LEGACY_TOOL_BY_NAME.get(name)
     if tool is None:
         return f"unknown Endeavor memory tool: {name}"
     if not isinstance(args, dict):
@@ -357,8 +489,8 @@ def validate_arguments(name: str, args: object) -> str | None:
     return None
 
 
-def call(name: str, args: object) -> str:
-    validation_error = validate_arguments(name, args)
+def _call_legacy(name: str, args: object) -> str:
+    validation_error = _validate_legacy_arguments(name, args)
     if validation_error:
         return f"[error] {validation_error}"
     assert isinstance(args, dict)
@@ -510,6 +642,56 @@ def call(name: str, args: object) -> str:
     if name == "endeavor_sync_status":
         return run(["sync-status", "--json"])
     return "[error] unknown Endeavor memory tool"
+
+
+def _resolve_public_call(name: str, args: object) -> tuple[str | None, dict | None, str | None]:
+    # Keep direct legacy names as non-advertised compatibility aliases for
+    # older automation while tools/list exposes only the seven grouped tools.
+    if name in _LEGACY_TOOL_BY_NAME:
+        if not isinstance(args, dict):
+            return None, None, "arguments must be an object"
+        return name, dict(args), None
+    group = _GROUP_ACTIONS.get(name)
+    if group is None:
+        return None, None, f"unknown Endeavor memory tool: {name}"
+    if not isinstance(args, dict):
+        return None, None, "arguments must be an object"
+    action = args.get("action")
+    if not isinstance(action, str) or action not in group:
+        allowed = ", ".join(group)
+        return None, None, f"action must be one of: {allowed}"
+    spec = group[action]
+    legacy_name = spec["legacy"]
+    legacy_schema = _LEGACY_TOOL_BY_NAME[legacy_name]["inputSchema"]
+    omit = set(spec.get("omit", ()))
+    allowed = set(legacy_schema.get("properties", {})) - omit
+    supplied = set(args) - {"action"}
+    unknown = sorted(supplied - allowed)
+    if unknown:
+        allowed_text = ", ".join(sorted(allowed)) or "(none)"
+        return None, None, (
+            f"unknown argument(s) for {name} action={action}: {', '.join(unknown)}. "
+            f"Allowed arguments: {allowed_text}."
+        )
+    legacy_args = {key: value for key, value in args.items() if key != "action"}
+    legacy_args.update(spec.get("inject", {}))
+    return legacy_name, legacy_args, None
+
+
+def validate_arguments(name: str, args: object) -> str | None:
+    legacy_name, legacy_args, error = _resolve_public_call(name, args)
+    if error:
+        return error
+    assert legacy_name is not None and legacy_args is not None
+    return _validate_legacy_arguments(legacy_name, legacy_args)
+
+
+def call(name: str, args: object) -> str:
+    legacy_name, legacy_args, error = _resolve_public_call(name, args)
+    if error:
+        return f"[error] {error}"
+    assert legacy_name is not None and legacy_args is not None
+    return _call_legacy(legacy_name, legacy_args)
 
 
 class JsonRpcError(Exception):

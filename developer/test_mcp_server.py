@@ -12,14 +12,78 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import mcp_server as mcp
 
+try:
+    from jsonschema import Draft202012Validator
+except ImportError:
+    Draft202012Validator = None
+
+
+def _branch(tool_name: str, action: str) -> dict:
+    return next(
+        branch for branch in mcp.TOOL_BY_NAME[tool_name]["inputSchema"]["oneOf"]
+        if branch["properties"]["action"]["enum"] == [action]
+    )
+
 
 class McpServerContractTest(unittest.TestCase):
+    @unittest.skipUnless(Draft202012Validator, "independent schema oracle requires jsonschema")
+    def test_grouped_schema_and_runtime_agree_on_scope_and_mutation(self):
+        cases = [
+            ("endmemex_context", {"action": "pending", "project": "P"}, True),
+            ("endmemex_context", {"action": "pending", "all_projects": True}, True),
+            ("endmemex_context", {"action": "pending", "all_projects": False}, False),
+            ("endmemex_context", {"action": "pending", "project": "P", "all_projects": False}, True),
+            ("endmemex_context", {"action": "pending", "project": "P", "all_projects": True}, False),
+            ("endmemex_context", {"action": "handoff", "all_paused": False}, False),
+            ("endmemex_context", {"action": "handoff", "all_paused": True}, True),
+            ("endmemex_context", {"action": "handoff", "project": "P", "all_paused": False}, True),
+            ("endmemex_context", {"action": "handoff", "session": "S", "all_paused": False}, True),
+            ("endmemex_context", {"action": "handoff", "project": "P", "session": "S"}, False),
+            ("endmemex_context", {"action": "handoff", "session": "S", "all_paused": True}, False),
+            ("endmemex_records", {"action": "update", "id": "AUDIT-P-1", "agent": "codex"}, False),
+        ]
+        for field, value in {"project": "P", "type": "audit", "title": "T", "content": "C",
+                             "status": "resolved", "action_state": "done", "metadata": {}}.items():
+            cases.append(("endmemex_records", {
+                "action": "update", "id": "AUDIT-P-1", "agent": "codex", field: value,
+            }, True))
+        for name, args, expected in cases:
+            with self.subTest(name=name, args=args):
+                schema = mcp.TOOL_BY_NAME[name]["inputSchema"]
+                Draft202012Validator.check_schema(schema)
+                self.assertEqual(Draft202012Validator(schema).is_valid(args), expected)
+                self.assertEqual(mcp.validate_arguments(name, args) is None, expected)
+
+
+    def test_grouped_scope_schema_requires_true_and_update_requires_mutation(self):
+        for action, flag in (("pending", "all_projects"), ("handoff", "all_paused")):
+            selector = _branch("endmemex_context", action)["oneOf"][-1]
+            self.assertEqual(selector, {"required": [flag], "properties": {flag: {"enum": [True]}}})
+        update = _branch("endmemex_records", "update")
+        self.assertEqual({tuple(option["required"]) for option in update["anyOf"]}, {
+            (key,) for key in ("project", "type", "title", "content", "status", "action_state", "metadata")
+        })
+
+
+    def test_supersession_is_not_a_stored_record_status(self):
+        calls = [
+            ("add", {"project": "P", "type": "audit", "title": "T", "content": "C", "agent": "codex"}),
+            ("update", {"id": "AUDIT-P-1", "agent": "codex"}),
+        ]
+        for action, args in calls:
+            with self.subTest(action=action), mock.patch.object(mcp, "run") as backend:
+                self.assertNotIn("superseded", _branch("endmemex_records", action)["properties"]["status"]["enum"])
+                self.assertTrue(mcp.call("endmemex_records", {"action": action, **args, "status": "superseded"}).startswith("[error]"))
+                backend.assert_not_called()
+
+
     def test_run_uses_current_interpreter_and_a_bounded_timeout(self):
         completed = subprocess.CompletedProcess(["x"], 0, stdout="{}\n", stderr="")
         with mock.patch.object(mcp.subprocess, "run", return_value=completed) as backend:
             self.assertEqual(mcp.run(["query", "cache"]), "{}")
         self.assertEqual(backend.call_args.args[0], [sys.executable, str(mcp.DB), "query", "cache"])
         self.assertEqual(backend.call_args.kwargs["timeout"], mcp.DB_COMMAND_TIMEOUT_S)
+
 
     def test_run_returns_controlled_error_when_backend_times_out(self):
         with mock.patch.object(
@@ -29,6 +93,7 @@ class McpServerContractTest(unittest.TestCase):
                 mcp.run(["query", "cache"]),
                 "[error] endeavor_db command timed out after 60s",
             )
+
 
     def test_run_wraps_launch_and_os_errors_without_changing_timeout_behavior(self):
         failures = (
@@ -44,46 +109,77 @@ class McpServerContractTest(unittest.TestCase):
             self.assertTrue(result.startswith("[error] failed to launch endeavor_db: "))
             self.assertIn(str(failure), result)
 
+
     def test_server_instructions_cover_cross_tool_workflow(self):
         instructions = mcp.SERVER_INSTRUCTIONS
-        self.assertIn("read-only bootstrap", instructions)
+        self.assertIn("endmemex_context(action='bootstrap')", instructions)
         self.assertIn("before planning or implementation", instructions)
-        self.assertIn("endeavor_memory_initialize", instructions)
-        self.assertIn("endeavor_memory_embed_backfill", instructions)
+        self.assertIn("endmemex_admin(action='initialize')", instructions)
+        self.assertIn("endmemex_admin(action='embed_backfill')", instructions)
         self.assertIn("query", instructions)
-        self.assertIn("Checkpoint", instructions)
+        self.assertIn("endmemex_session(action='checkpoint')", instructions)
         self.assertIn("authenticated write_gateway.py", instructions)
         self.assertIn("Never store secrets", instructions)
-        self.assertIn("presence is opt-in", instructions)
+        self.assertIn("Presence writes remain opt-in", instructions)
         self.assertIn("only when the user asks", instructions)
         self.assertNotIn("Call presence_start/presence_heartbeat/presence_stop to announce active work", instructions)
 
-    def test_presence_tool_contract_requires_opt_in(self):
-        descriptions = {
-            tool["name"]: tool["description"]
-            for tool in mcp.TOOLS
-            if tool["name"].startswith("endeavor_presence_")
-        }
-        self.assertIn("Use only when the user explicitly asks", descriptions["endeavor_presence_start"])
-        self.assertIn("opted-in presence_start", descriptions["endeavor_presence_heartbeat"])
-        self.assertIn("opt-in workflow", descriptions["endeavor_presence_stop"])
 
-    def test_every_tool_has_strict_schema_and_annotations(self):
-        self.assertEqual(len(mcp.TOOLS), 25)
+    def test_presence_tool_contract_requires_opt_in(self):
+        tool = mcp.TOOL_BY_NAME["endmemex_presence"]
+        self.assertIn("OPT-IN", tool["description"])
+        self.assertIn("Use only when the user explicitly asks", _branch("endmemex_presence", "start")["description"])
+        self.assertIn("opted-in endmemex_presence(action=start)", _branch("endmemex_presence", "heartbeat")["description"])
+        self.assertIn("opt-in workflow", _branch("endmemex_presence", "stop")["description"])
+
+
+    def test_every_public_tool_is_grouped_strict_and_annotated(self):
+        self.assertEqual(
+            [tool["name"] for tool in mcp.TOOLS],
+            [
+                "endmemex_context", "endmemex_search", "endmemex_records",
+                "endmemex_session", "endmemex_events", "endmemex_presence", "endmemex_admin",
+            ],
+        )
         for tool in mcp.TOOLS:
             with self.subTest(tool=tool["name"]):
-                self.assertFalse(tool["inputSchema"]["additionalProperties"])
                 self.assertIn("readOnlyHint", tool["annotations"])
                 self.assertFalse(tool["annotations"]["destructiveHint"])
                 self.assertIn("Returns", tool["description"])
+                self.assertGreaterEqual(len(tool["inputSchema"]["oneOf"]), 2)
+                for branch in tool["inputSchema"]["oneOf"]:
+                    self.assertFalse(branch["additionalProperties"])
+                    self.assertIn("action", branch["required"])
+                    self.assertEqual(len(branch["properties"]["action"]["enum"]), 1)
+
+
+    def test_public_group_actions_are_exact(self):
+        observed = {
+            tool["name"]: [
+                branch["properties"]["action"]["enum"][0]
+                for branch in tool["inputSchema"]["oneOf"]
+            ]
+            for tool in mcp.TOOLS
+        }
+        self.assertEqual(observed, {
+            "endmemex_context": ["bootstrap", "readiness", "pack", "pending", "handoff", "timeline", "sync_status"],
+            "endmemex_search": ["query", "record_search", "record_show"],
+            "endmemex_records": ["add", "update", "link", "feedback"],
+            "endmemex_session": ["checkpoint", "pin", "unpin", "close"],
+            "endmemex_events": ["poll", "ack"],
+            "endmemex_presence": ["list", "start", "heartbeat", "stop"],
+            "endmemex_admin": ["initialize", "embed_backfill"],
+        })
+
 
     def test_readiness_is_a_read_only_one_call_preflight(self):
-        tool = mcp.TOOL_BY_NAME["endeavor_memory_readiness"]
+        tool = mcp.TOOL_BY_NAME["endmemex_context"]
         self.assertTrue(tool["annotations"]["readOnlyHint"])
-        self.assertIn("never bootstraps", tool["description"])
+        self.assertIn("never bootstraps", _branch("endmemex_context", "readiness")["description"])
         with mock.patch.object(mcp, "run", return_value="{}") as run:
-            self.assertEqual(mcp.call("endeavor_memory_readiness", {"project": "DEMO"}), "{}")
+            self.assertEqual(mcp.call("endmemex_context", {"action": "readiness", "project": "DEMO"}), "{}")
         self.assertEqual(run.call_args.args[0], ["readiness", "--project", "DEMO", "--json"])
+
 
     def test_query_exposes_and_forwards_full_retrieval_scope(self):
         with mock.patch.object(mcp, "run", return_value="[]") as run:
@@ -109,6 +205,7 @@ class McpServerContractTest(unittest.TestCase):
             "--check-stale",
         ])
 
+
     def test_query_checks_staleness_by_default_and_allows_explicit_opt_out(self):
         with mock.patch.object(mcp, "run", return_value="[]") as run:
             mcp.call("endeavor_memory_query", {"query": "cache"})
@@ -116,6 +213,7 @@ class McpServerContractTest(unittest.TestCase):
         self.assertIn("--check-stale", run.call_args_list[0].args[0])
         self.assertNotIn("--check-stale", run.call_args_list[1].args[0])
         self.assertIn("--no-check-stale", run.call_args_list[1].args[0])
+
 
     def test_record_mutation_session_close_and_feedback_have_mcp_parity(self):
         calls = [
@@ -135,7 +233,9 @@ class McpServerContractTest(unittest.TestCase):
                 "useful": True, "note": "used both",
             }),
         ]
-        with mock.patch.object(mcp, "run", return_value="{}") as run:
+        with mock.patch.object(
+            mcp, "run", return_value="{}"
+        ) as run:
             for name, arguments in calls:
                 self.assertEqual(mcp.call(name, arguments), "{}")
         self.assertEqual(run.call_args_list[0].args[0], [
@@ -154,6 +254,7 @@ class McpServerContractTest(unittest.TestCase):
             "--result", "AUDIT-DEMO-1", "--useful", "yes", "--note", "used both",
         ])
 
+
     def test_record_update_requires_a_mutation_and_session_close_requires_one_scope(self):
         self.assertIn("at least one", mcp.call(
             "endeavor_memory_record_update", {"id": "AUDIT-DEMO-1", "agent": "codex"},
@@ -162,8 +263,11 @@ class McpServerContractTest(unittest.TestCase):
             "endeavor_memory_session_close", {"agent": "codex"},
         ))
 
+
     def test_durable_event_poll_and_ack_forward_host_cursor(self):
-        with mock.patch.object(mcp, "run", return_value="{}") as run:
+        with mock.patch.object(
+            mcp, "run", return_value="{}"
+        ) as run:
             mcp.call("endeavor_memory_event_poll", {
                 "after": 12, "project": "DEMO", "limit": 30, "include_acked": True,
             })
@@ -175,6 +279,7 @@ class McpServerContractTest(unittest.TestCase):
         self.assertEqual(run.call_args_list[1].args[0], [
             "event-ack", "19", "--agent", "codex",
         ])
+
 
     def test_record_search_forwards_lifecycle_filters(self):
         with mock.patch.object(mcp, "run", return_value="[]") as run:
@@ -191,8 +296,9 @@ class McpServerContractTest(unittest.TestCase):
             "--type", "audit", "--limit", "12", "--current-only",
         ])
 
+
     def test_pending_requires_one_scope_and_forwards_read_only_command(self):
-        self.assertEqual(len(mcp.TOOL_BY_NAME["endeavor_memory_pending"]["inputSchema"]["oneOf"]), 2)
+        self.assertEqual(len(_branch("endmemex_context", "pending")["oneOf"]), 2)
         with mock.patch.object(mcp, "run", return_value="{}") as run:
             invalid = mcp.call("endeavor_memory_pending", {})
             both = mcp.call("endeavor_memory_pending", {"project": "DEMO", "all_projects": True})
@@ -204,6 +310,7 @@ class McpServerContractTest(unittest.TestCase):
         self.assertEqual(all_projects, "{}")
         self.assertEqual(run.call_args_list[0].args[0], ["pending", "--json", "--project", "DEMO"])
         self.assertEqual(run.call_args_list[1].args[0], ["pending", "--json", "--all-projects"])
+
 
     def test_handoff_requires_one_scope_and_exposes_all_paused_and_session_modes(self):
         with mock.patch.object(mcp, "run", return_value="{}") as run:
@@ -221,8 +328,9 @@ class McpServerContractTest(unittest.TestCase):
         self.assertEqual(run.call_args_list[1].args[0], ["handoff", "--session", "sess-1", "--json"])
         self.assertEqual(run.call_args_list[2].args[0], ["handoff", "--all-paused", "--json"])
 
+
     def test_timeline_forwards_all_filters_and_is_read_only(self):
-        self.assertEqual(mcp.TOOL_BY_NAME["endeavor_memory_timeline"]["annotations"]["readOnlyHint"], True)
+        self.assertEqual(mcp.TOOL_BY_NAME["endmemex_context"]["annotations"]["readOnlyHint"], True)
         self.assertNotIn("endeavor_memory_timeline", mcp.WRITE_TOOLS)
         with mock.patch.object(mcp, "run", return_value="{}") as run:
             result = mcp.call("endeavor_memory_timeline", {
@@ -235,43 +343,13 @@ class McpServerContractTest(unittest.TestCase):
             "--status", "paused", "--session", "sess-1", "--limit", "50", "--oldest-first",
         ])
 
+
     def test_timeline_with_no_filters_forwards_bare_command(self):
         with mock.patch.object(mcp, "run", return_value="{}") as run:
             result = mcp.call("endeavor_memory_timeline", {})
         self.assertEqual(result, "{}")
         self.assertEqual(run.call_args.args[0], ["timeline", "--json"])
 
-    def test_timeline_forwards_without_host_role_gate(self):
-        with mock.patch.object(mcp, "run", return_value="{}") as run:
-            result = mcp.call("endeavor_memory_timeline", {"project": "DEMO"})
-        self.assertEqual(result, "{}")
-        run.assert_called_once()
-
-    def test_bootstrap_is_read_only_and_can_opt_into_pending_context(self):
-        tool = mcp.TOOL_BY_NAME["endeavor_memory_bootstrap"]
-        self.assertTrue(tool["annotations"]["readOnlyHint"])
-        self.assertNotIn("endeavor_memory_bootstrap", mcp.WRITE_TOOLS)
-        with mock.patch.object(mcp, "run", return_value="{}") as run:
-            result = mcp.call("endeavor_memory_bootstrap", {
-                "project": "DEMO", "session": "sess-1", "include_pending": True,
-            })
-        self.assertEqual(result, "{}")
-        self.assertEqual(run.call_args.args[0], [
-            "bootstrap", "--project", "DEMO", "--json", "--session", "sess-1", "--include-pending",
-        ])
-
-    def test_initialize_and_embed_backfill_are_explicit_write_tools(self):
-        initialize = mcp.TOOL_BY_NAME["endeavor_memory_initialize"]
-        backfill = mcp.TOOL_BY_NAME["endeavor_memory_embed_backfill"]
-        self.assertFalse(initialize["annotations"]["readOnlyHint"])
-        self.assertFalse(backfill["annotations"]["readOnlyHint"])
-        self.assertIn("endeavor_memory_initialize", mcp.WRITE_TOOLS)
-        self.assertIn("endeavor_memory_embed_backfill", mcp.WRITE_TOOLS)
-        with mock.patch.object(mcp, "run", return_value="{}") as run:
-            self.assertEqual(mcp.call("endeavor_memory_initialize", {}), "{}")
-            self.assertEqual(mcp.call("endeavor_memory_embed_backfill", {"batch_size": 64}), "{}")
-        self.assertEqual(run.call_args_list[0].args[0], ["init"])
-        self.assertEqual(run.call_args_list[1].args[0], ["embed-backfill", "--batch-size", "64"])
 
     def test_pack_and_checkpoint_forward_explicit_session_identity(self):
         with mock.patch.object(mcp, "run", return_value="{}") as run:
@@ -287,18 +365,38 @@ class McpServerContractTest(unittest.TestCase):
             "--session", "sess-1",
         ])
 
+
+    def test_grouped_public_calls_route_to_existing_cli_translations(self):
+        cases = [
+            ("endmemex_context", {"action": "sync_status"}, ["sync-status", "--json"]),
+            ("endmemex_search", {"action": "record_show", "id": "AUDIT-DEMO-1"}, ["record-show", "AUDIT-DEMO-1"]),
+            ("endmemex_records", {"action": "link", "source_id": "FIX-DEMO-1", "relation": "resolves", "target_id": "AUDIT-DEMO-1", "agent": "codex"}, ["record-link", "FIX-DEMO-1", "resolves", "AUDIT-DEMO-1", "--agent", "codex"]),
+            ("endmemex_session", {"action": "pin", "checkpoint_id": 7, "agent": "codex"}, ["pin-checkpoint", "7", "--agent", "codex"]),
+            ("endmemex_session", {"action": "unpin", "checkpoint_id": 7, "agent": "codex"}, ["unpin-checkpoint", "7", "--agent", "codex"]),
+            ("endmemex_events", {"action": "poll", "after": 3}, ["event-poll", "--json", "--after", "3"]),
+            ("endmemex_presence", {"action": "list", "project": "DEMO"}, ["presence", "--json", "--project", "DEMO"]),
+        ]
+        with mock.patch.object(mcp, "run", return_value="{}") as run:
+            for name, arguments, expected in cases:
+                self.assertEqual(mcp.call(name, arguments), "{}")
+                self.assertEqual(run.call_args.args[0], expected)
+
+
     def test_endeavor_is_a_valid_memory_actor(self):
         self.assertIn("endeavor", mcp.AGENT_PROPERTY["enum"])
-        self.assertIsNone(mcp.validate_arguments("endeavor_memory_checkpoint", {
+        self.assertIsNone(mcp.validate_arguments("endmemex_session", {"action": "checkpoint",
             "project": "DEMO", "agent": "endeavor", "summary": "runtime wrote",
         }))
-        with mock.patch.object(mcp, "run", return_value="{}") as run:
+        with mock.patch.object(
+            mcp, "run", return_value="{}"
+        ) as run:
             self.assertEqual(mcp.call("endeavor_memory_checkpoint", {
                 "project": "DEMO", "agent": "endeavor", "summary": "runtime wrote",
             }), "{}")
         self.assertEqual(run.call_args.args[0], [
             "checkpoint", "--project", "DEMO", "--agent", "endeavor", "--summary", "runtime wrote",
         ])
+
 
     def test_invalid_arguments_fail_before_dispatch(self):
         with mock.patch.object(mcp, "run") as run:
@@ -309,6 +407,9 @@ class McpServerContractTest(unittest.TestCase):
         self.assertIn("semantic must be one of", bad_enum)
         self.assertEqual(bad_budget, "[error] budget must be <= 50000")
         run.assert_not_called()
+
+
+
 
     def test_presence_start_forwards_all_fields(self):
         with mock.patch.object(mcp, "run", return_value="{}") as run:
@@ -321,6 +422,7 @@ class McpServerContractTest(unittest.TestCase):
             "--task", "writing tests", "--instance", "a", "--session", "sess-1",
         ])
 
+
     def test_presence_heartbeat_forwards_task_and_instance(self):
         with mock.patch.object(mcp, "run", return_value='{"updated": true}') as run:
             mcp.call("endeavor_presence_heartbeat", {
@@ -331,6 +433,7 @@ class McpServerContractTest(unittest.TestCase):
             "--task", "still going", "--instance", "a",
         ])
 
+
     def test_presence_heartbeat_omits_task_flag_when_not_provided(self):
         # task=None must mean "just refresh the timestamp" (matches the CLI's
         # own None-vs-empty-string distinction), not "--task ''".
@@ -340,12 +443,14 @@ class McpServerContractTest(unittest.TestCase):
             "presence-heartbeat", "--agent", "claude", "--project", "DEMO",
         ])
 
+
     def test_presence_stop_forwards_instance(self):
         with mock.patch.object(mcp, "run", return_value='{"updated": true}') as run:
             mcp.call("endeavor_presence_stop", {"agent": "claude", "project": "DEMO", "instance": "a"})
         self.assertEqual(run.call_args.args[0], [
             "presence-stop", "--agent", "claude", "--project", "DEMO", "--instance", "a",
         ])
+
 
     def test_presence_list_forwards_optional_project(self):
         with mock.patch.object(mcp, "run", return_value="{}") as run:
@@ -355,6 +460,7 @@ class McpServerContractTest(unittest.TestCase):
             mcp.call("endeavor_presence_list", {"project": "DEMO"})
         self.assertEqual(run.call_args.args[0], ["presence", "--json", "--project", "DEMO"])
 
+
     def test_sync_status_takes_no_arguments(self):
         with mock.patch.object(mcp, "run", return_value="{}") as run:
             result = mcp.call("endeavor_sync_status", {})
@@ -363,28 +469,11 @@ class McpServerContractTest(unittest.TestCase):
         rejected = mcp.call("endeavor_sync_status", {"project": "DEMO"})
         self.assertIn("unknown argument", rejected)
 
-    def test_presence_list_and_sync_status_are_read_only(self):
-        with mock.patch.object(mcp, "run", return_value="{}") as run:
-            result_list = mcp.call("endeavor_presence_list", {})
-            result_status = mcp.call("endeavor_sync_status", {})
-        self.assertEqual(result_list, "{}")
-        self.assertEqual(result_status, "{}")
-        self.assertEqual(run.call_count, 2)
-
-    def test_presence_start_forwards_with_or_without_legacy_confirm(self):
-        with mock.patch.object(mcp, "run", return_value='{"updated": true}') as run:
-            plain = mcp.call("endeavor_presence_start", {"agent": "claude", "project": "DEMO"})
-            confirmed = mcp.call(
-                "endeavor_presence_start", {"agent": "claude", "project": "DEMO", "confirm": True},
-            )
-        self.assertEqual(plain, '{"updated": true}')
-        self.assertEqual(confirmed, '{"updated": true}')
-        self.assertEqual(run.call_count, 2)
 
     def test_tool_failure_sets_mcp_is_error(self):
         request = {
             "jsonrpc": "2.0", "id": 1, "method": "tools/call",
-            "params": {"name": "endeavor_memory_query", "arguments": {}},
+            "params": {"name": "endmemex_search", "arguments": {"action": "query"}},
         }
         stdin = io.StringIO(json.dumps(request) + "\n")
         stdout = io.StringIO()
@@ -392,6 +481,7 @@ class McpServerContractTest(unittest.TestCase):
             mcp.serve()
         result = json.loads(stdout.getvalue())["result"]
         self.assertTrue(result["isError"])
+
 
     def test_unknown_json_rpc_method_returns_standard_error(self):
         request = {"jsonrpc": "2.0", "id": 9, "method": "unknown/method"}
@@ -402,6 +492,7 @@ class McpServerContractTest(unittest.TestCase):
         response = json.loads(stdout.getvalue())
         self.assertEqual(response["id"], 9)
         self.assertEqual(response["error"]["code"], -32601)
+
 
     def test_ping_and_notifications_follow_json_rpc_contract(self):
         requests = [
@@ -416,6 +507,7 @@ class McpServerContractTest(unittest.TestCase):
         responses = [json.loads(line) for line in stdout.getvalue().splitlines()]
         self.assertEqual(responses, [{"jsonrpc": "2.0", "id": 7, "result": {}}])
 
+
     def test_non_object_json_rpc_request_returns_error_and_server_continues(self):
         stdin = io.StringIO('[]\n{"jsonrpc":"2.0","id":1,"method":"initialize"}\n')
         stdout = io.StringIO()
@@ -429,6 +521,35 @@ class McpServerContractTest(unittest.TestCase):
         self.assertIn("JSON object", responses[0]["error"]["message"])
         self.assertEqual(responses[1]["id"], 1)
         self.assertIn("result", responses[1])
+
+
+    def test_bootstrap_is_read_only_and_can_opt_into_pending_context(self):
+        tool = mcp.TOOL_BY_NAME["endmemex_context"]
+        self.assertTrue(tool["annotations"]["readOnlyHint"])
+        self.assertNotIn("endeavor_memory_bootstrap", mcp.WRITE_TOOLS)
+        with mock.patch.object(mcp, "run", return_value="{}") as run:
+            result = mcp.call("endeavor_memory_bootstrap", {
+                "project": "DEMO", "session": "sess-1", "include_pending": True,
+            })
+        self.assertEqual(result, "{}")
+        self.assertEqual(run.call_args.args[0], [
+            "bootstrap", "--project", "DEMO", "--json", "--session", "sess-1", "--include-pending",
+        ])
+
+
+    def test_initialize_and_embed_backfill_are_explicit_write_tools(self):
+        initialize = mcp.TOOL_BY_NAME["endmemex_admin"]
+        backfill = mcp.TOOL_BY_NAME["endmemex_admin"]
+        self.assertFalse(initialize["annotations"]["readOnlyHint"])
+        self.assertFalse(backfill["annotations"]["readOnlyHint"])
+        self.assertIn("endeavor_memory_initialize", mcp.WRITE_TOOLS)
+        self.assertIn("endeavor_memory_embed_backfill", mcp.WRITE_TOOLS)
+        with mock.patch.object(mcp, "run", return_value="{}") as run:
+            self.assertEqual(mcp.call("endeavor_memory_initialize", {}), "{}")
+            self.assertEqual(mcp.call("endeavor_memory_embed_backfill", {"batch_size": 64}), "{}")
+        self.assertEqual(run.call_args_list[0].args[0], ["init"])
+        self.assertEqual(run.call_args_list[1].args[0], ["embed-backfill", "--batch-size", "64"])
+
 
 
 if __name__ == "__main__":

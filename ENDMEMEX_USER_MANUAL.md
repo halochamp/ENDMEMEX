@@ -36,39 +36,39 @@ touch the filesystem, are destructive, or are meant for a human to read).
 
 | Command | Purpose | MCP tool | Details |
 |---|---|---|---|
-| `init` | Create or migrate the database | `endeavor_memory_initialize` | [README §Start a project session](README.md#start-a-project-session) |
+| `init` | Create or migrate the database | `endmemex_admin(action="initialize")` | [README §Start a project session](README.md#start-a-project-session) |
 | `agent-help` | Print a CLI cheat sheet, no DB access | — | — |
-| `bootstrap` | Read-only first-step orientation: database/project map + recency-weighted recent 10 checkpoints + handoff + schema/backfill requirements + doc freshness + hooks + ordered next actions | `endeavor_memory_bootstrap` | [§Session Briefing](#session-briefing-pack) |
-| `readiness` | One read-only preflight: machine role + DB + embeddings + ANN + docs + ordered next actions | `endeavor_memory_readiness` | [§Readiness preflight](#readiness-preflight-readiness) |
-| `pack` | Wider session briefing: handoff + open records + knowledge + activity, budget-bounded | `endeavor_memory_pack` | [§Session Briefing](#session-briefing-pack) |
-| `pending` | Lifecycle-aware pending work (presence + resumable/blocked sessions + open records) | `endeavor_memory_pending` | [README §Inspecting all pending work](README.md#inspecting-all-pending-work--mandatory-procedure) |
+| `bootstrap` | Read-only first-step orientation: database/project map + recency-weighted recent 10 checkpoints + handoff + schema/backfill requirements + doc freshness + hooks + ordered next actions | `endmemex_context(action="bootstrap")` | [§Session Briefing](#session-briefing-pack) |
+| `readiness` | One read-only preflight: machine role + DB + embeddings + ANN + docs + ordered next actions | `endmemex_context(action="readiness")` | [§Readiness preflight](#readiness-preflight-readiness) |
+| `pack` | Wider session briefing: handoff + open records + knowledge + activity, budget-bounded | `endmemex_context(action="pack")` | [§Session Briefing](#session-briefing-pack) |
+| `pending` | Lifecycle-aware pending work (presence + resumable/blocked sessions + open records) | `endmemex_context(action="pending")` | [README §Inspecting all pending work](README.md#inspecting-all-pending-work--mandatory-procedure) |
 | `seed` | Ingest/refresh the bundled ENDMEMEX guides | — | [§Activity Digest](#human-readable-activity-digest) |
 | `ingest` | Ingest or refresh one Markdown document | — | [§Activity Digest](#human-readable-activity-digest) |
 | `activity` | Write/print the human-readable `ACTIVITY.md` digest, or `--follow` it live | — | [§Activity Digest](#human-readable-activity-digest) |
-| `query` | Search Markdown knowledge + current durable records (lexical + optional semantic) | `endeavor_memory_query` | [§Query Knowledge](#query-knowledge) |
+| `query` | Search Markdown knowledge + current durable records (lexical + optional semantic) | `endmemex_search(action="query")` | [§Query Knowledge](#query-knowledge) |
 | `evaluate` | Compare Markdown-only and production unified retrieval (`--pipeline`) | — | [§Semantic Search](#semantic-search-optional-minilm-companion) |
-| `feedback` | Record whether a query result was useful | `endeavor_memory_feedback` | [§Semantic Search](#semantic-search-optional-minilm-companion) |
+| `feedback` | Record whether a query result was useful | `endmemex_records(action="feedback")` | [§Semantic Search](#semantic-search-optional-minilm-companion) |
 | `embed-status` | Embedding coverage + companion diagnostics (never spawns) | — | [§Semantic Search](#semantic-search-optional-minilm-companion) |
 | `embed-diagnose` | Interpreter/dependency/socket diagnosis (never spawns) — required first step before any embedding fix | — | [§Semantic Search](#semantic-search-optional-minilm-companion) |
 | `embed-warm` | Start the MiniLM companion now, optionally `--keep-alive` | — | [§Semantic Search](#semantic-search-optional-minilm-companion) |
 | `embed-cool` | Return a `--keep-alive` companion to its normal 1-hour idle timeout | — | [§Semantic Search](#semantic-search-optional-minilm-companion) |
-| `embed-backfill` | Spawn the companion if needed and embed any missing/stale rows | `endeavor_memory_embed_backfill` | [§Semantic Search](#semantic-search-optional-minilm-companion) |
+| `embed-backfill` | Spawn the companion if needed and embed any missing/stale rows | `endmemex_admin(action="embed_backfill")` | [§Semantic Search](#semantic-search-optional-minilm-companion) |
 | `ann-status` / `ann-build` | Inspect or build the optional per-machine HNSW sidecar | — | [§Semantic Search](#semantic-search-optional-minilm-companion) |
-| `record-add` | Add a durable SQLite-native audit/fix/verification/decision/knowledge record | `endeavor_memory_record_add` | [§SQLite-Native Records](#sqlite-native-records-and-references) |
-| `record-update` | Correct/enrich truth fields or independent action state | `endeavor_memory_record_update` | [§SQLite-Native Records](#sqlite-native-records-and-references) |
-| `record-link` | Link two **already-existing** records after the fact | `endeavor_memory_record_link` | [§SQLite-Native Records](#sqlite-native-records-and-references) |
-| `record-show` | Show a record plus its lifecycle graph (current successor, conflicts) | `endeavor_memory_record_show` | [§SQLite-Native Records](#sqlite-native-records-and-references) |
-| `record-search` | Full-text search durable records, optionally lifecycle-resolved | `endeavor_memory_record_search` | [§SQLite-Native Records](#sqlite-native-records-and-references) |
+| `record-add` | Add a durable SQLite-native audit/fix/verification/decision/knowledge record | `endmemex_records(action="add")` | [§SQLite-Native Records](#sqlite-native-records-and-references) |
+| `record-update` | Correct/enrich truth fields or independent action state | `endmemex_records(action="update")` | [§SQLite-Native Records](#sqlite-native-records-and-references) |
+| `record-link` | Link two **already-existing** records after the fact | `endmemex_records(action="link")` | [§SQLite-Native Records](#sqlite-native-records-and-references) |
+| `record-show` | Show a record plus its lifecycle graph (current successor, conflicts) | `endmemex_search(action="record_show")` | [§SQLite-Native Records](#sqlite-native-records-and-references) |
+| `record-search` | Full-text search durable records, optionally lifecycle-resolved | `endmemex_search(action="record_search")` | [§SQLite-Native Records](#sqlite-native-records-and-references) |
 | `session-start` | Start a shared work session | — | [§Checkpoint Workflow](#shared-session-and-checkpoint-workflow) |
-| `checkpoint` | Record resumable session state (can also auto-start the session) | `endeavor_memory_checkpoint` | [§Checkpoint Workflow](#shared-session-and-checkpoint-workflow) |
-| `pin-checkpoint` / `unpin-checkpoint` | Exempt/restore a checkpoint from sliding-window pruning | `endeavor_memory_pin_checkpoint` | [§Checkpoint Quality Rules](#checkpoint-quality-rules) |
-| `handoff` | Read the latest resumable checkpoint (single session, or `--all-paused` queue) | `endeavor_memory_handoff` | [§Checkpoint Workflow](#shared-session-and-checkpoint-workflow) |
-| `timeline` | Read-only checkpoint-by-checkpoint history across sessions (who did what) | `endeavor_memory_timeline` | [§Checkpoint Timeline](#checkpoint-timeline-who-did-what-read-only) |
-| `session-close` | Mark a session `completed` or `blocked` | `endeavor_memory_session_close` | [§Checkpoint Workflow](#shared-session-and-checkpoint-workflow) |
-| `event-poll` / `event-ack` | Consume durable completion events | `endeavor_memory_event_poll` / `endeavor_memory_event_ack` | [§Remote Write Gateway](#remote-write-gateway-and-durable-events) |
-| `presence-start` / `-heartbeat` / `-stop` | Announce/refresh/clear live "who's working on what" (**opt-in**, see below) | `endeavor_presence_start` / `_heartbeat` / `_stop` | [§Agent Presence](#agent-presence-whos-working-right-now) |
-| `presence` | List active presence rows (this machine live + other machines last-known) | `endeavor_presence_list` | [§Agent Presence](#agent-presence-whos-working-right-now) |
-| `sync-status` | Last-known write time per machine (informational, not a lock) | `endeavor_sync_status` | [§Sync Freshness Signal](#sync-freshness-signal-informational-not-a-lock) |
+| `checkpoint` | Record resumable session state (can also auto-start the session) | `endmemex_session(action="checkpoint")` | [§Checkpoint Workflow](#shared-session-and-checkpoint-workflow) |
+| `pin-checkpoint` / `unpin-checkpoint` | Exempt/restore a checkpoint from sliding-window pruning | `endmemex_session(action="pin"/"unpin")` | [§Checkpoint Quality Rules](#checkpoint-quality-rules) |
+| `handoff` | Read the latest resumable checkpoint (single session, or `--all-paused` queue) | `endmemex_context(action="handoff")` | [§Checkpoint Workflow](#shared-session-and-checkpoint-workflow) |
+| `timeline` | Read-only checkpoint-by-checkpoint history across sessions (who did what) | `endmemex_context(action="timeline")` | [§Checkpoint Timeline](#checkpoint-timeline-who-did-what-read-only) |
+| `session-close` | Mark a session `completed` or `blocked` | `endmemex_session(action="close")` | [§Checkpoint Workflow](#shared-session-and-checkpoint-workflow) |
+| `event-poll` / `event-ack` | Consume durable completion events | `endmemex_events(action="poll")` / `endmemex_events(action="ack")` | [§Remote Write Gateway](#remote-write-gateway-and-durable-events) |
+| `presence-start` / `-heartbeat` / `-stop` | Announce/refresh/clear live "who's working on what" (**opt-in**, see below) | `endmemex_presence(action="start"/"heartbeat"/"stop")` | [§Agent Presence](#agent-presence-whos-working-right-now) |
+| `presence` | List active presence rows (this machine live + other machines last-known) | `endmemex_presence(action="list")` | [§Agent Presence](#agent-presence-whos-working-right-now) |
+| `sync-status` | Last-known write time per machine (informational, not a lock) | `endmemex_context(action="sync_status")` | [§Sync Freshness Signal](#sync-freshness-signal-informational-not-a-lock) |
 | `maintenance` | `VACUUM` + `PRAGMA optimize`, manual-only, `--yes` required | — | [§Database Maintenance](#database-maintenance) |
 | `stats` | Database counts, checkpoint caps, pin warning threshold | — | [§Checkpoint Quality Rules](#checkpoint-quality-rules) |
 | `doctor` | Integrity check: SQLite, FTS identity, embeddings, relation lifecycles | — | [§Semantic Search](#semantic-search-optional-minilm-companion) |
@@ -90,40 +90,23 @@ after a hook-script change — re-run `install-hooks` to pick it up; a running
 git process does not auto-update its own hooks the same way a running server
 doesn't auto-reload edited code.
 
-### MCP tools (25, `endmemex` server)
+### MCP tools (7, `endmemex` server)
 
-Every tool name below is the exact string an MCP client sees (with the
-`mcp__endmemex__` prefix Claude Code adds). Write tools mutate the database
-local to the MCP server process; do not point two hosts at one writable SQLite
-file.
+The public catalog exposes seven domain tools. Each call selects one action;
+write actions mutate only the database local to the server process.
 
-| Tool | R/W | Gated | Maps to |
-|---|---|---|---|
-| `endeavor_memory_query` | read | no | `query` |
-| `endeavor_memory_readiness` | read | no | `readiness` |
-| `endeavor_memory_pack` | read | no | `pack` |
-| `endeavor_memory_pending` | read | no | `pending` |
-| `endeavor_memory_handoff` | read | no | `handoff` |
-| `endeavor_memory_timeline` | read | no | `timeline` |
-| `endeavor_memory_record_show` | read | no | `record-show` |
-| `endeavor_memory_record_search` | read | no | `record-search` |
-| `endeavor_presence_list` | read | no | `presence` |
-| `endeavor_sync_status` | read | no | `sync-status` |
-| `endeavor_memory_bootstrap` | read | no | `bootstrap` |
-| `endeavor_memory_initialize` | write | no | `init` |
-| `endeavor_memory_embed_backfill` | write | no | `embed-backfill` |
-| `endeavor_memory_checkpoint` | write | no | `checkpoint` |
-| `endeavor_memory_pin_checkpoint` | write | no | `pin-checkpoint`/`unpin-checkpoint` |
-| `endeavor_memory_record_add` | write | no | `record-add` |
-| `endeavor_memory_record_update` | write | no | `record-update` |
-| `endeavor_memory_record_link` | write | no | `record-link` |
-| `endeavor_memory_session_close` | write | no | `session-close` |
-| `endeavor_memory_feedback` | write | no | `feedback` |
-| `endeavor_memory_event_poll` | read | no | `event-poll` |
-| `endeavor_memory_event_ack` | write, idempotent | no | `event-ack` |
-| `endeavor_presence_start` | write | **opt-in** | `presence-start` |
-| `endeavor_presence_heartbeat` | write | **opt-in** | `presence-heartbeat` |
-| `endeavor_presence_stop` | write | **opt-in** | `presence-stop` |
+| Tool | Actions | Access |
+|---|---|---|
+| `endmemex_context` | bootstrap, readiness, pack, pending, handoff, timeline, sync_status | read |
+| `endmemex_search` | query, record_search, record_show | read |
+| `endmemex_records` | add, update, link, feedback | write |
+| `endmemex_session` | checkpoint, pin, unpin, close | write |
+| `endmemex_events` | poll, ack | poll reads; ack writes |
+| `endmemex_presence` | list, start, heartbeat, stop | list reads; writes are opt-in |
+| `endmemex_admin` | initialize, embed_backfill | write |
+
+Legacy individual names are not advertised. Internal compatibility aliases
+remain available for older automation; new clients use the grouped catalog.
 
 No MCP tool exists for `session-start`, `seed`, `ingest`, `activity`, `embed-status`,
 `embed-diagnose`, `embed-warm`, `embed-cool`, `ann-*`, `maintenance`, `stats`, `doctor`,
@@ -143,7 +126,7 @@ python3 endeavor_db.py readiness --project <PROJECT>
 It is read-only. It never runs `bootstrap`, starts or backfills
 the embedding companion, builds ANN, changes hooks, or prunes documents.
 `--json` returns the complete report for automation or the matching
-`endeavor_memory_readiness` MCP tool.
+`endmemex_context(action="readiness")` MCP tool.
 
 The report has `overall` (`ready`, `attention`, or `blocked`) plus:
 
@@ -331,7 +314,7 @@ python3 endeavor_db.py query "prompt cache" --check-stale --json
 
 ## Session Briefing (pack)
 
-`bootstrap` is the read-only first ENDMEMEX context action for non-trivial work. It gives orientation and the latest handoff without initializing/migrating SQLite, starting MiniLM, or writing embeddings. Its top-level `database` section reports `schema_current`, `init_required`, and the explicit `next_tool` when initialization/migration is needed. Its top-level `embedding` section reports current coverage, `backfill_required`, and `next_tool=endeavor_memory_embed_backfill` when missing/stale vectors require an explicit write. The top-level `next_actions` array turns those diagnostics plus tracked-document/hook drift into ordered follow-up instructions: initialize first when required, then embedding backfill, tracked-document sync and separate orphan review, and hook repair as applicable. An empty array means no ENDMEMEX maintenance action is required. Perform reported writes only through the local writable owner (or authenticated write gateway for remote mutation), then rerun bootstrap and confirm the requirement cleared.
+`bootstrap` is the read-only first ENDMEMEX context action for non-trivial work. It gives orientation and the latest handoff without initializing/migrating SQLite, starting MiniLM, or writing embeddings. Its top-level `database` section reports `schema_current`, `init_required`, and the explicit `next_tool` when initialization/migration is needed. Its top-level `embedding` section reports current coverage, `backfill_required`, with `next_tool=endmemex_admin` and `next_action=embed_backfill` when missing/stale vectors require an explicit write. The top-level `next_actions` array turns those diagnostics plus tracked-document/hook drift into ordered follow-up instructions: initialize first when required, then embedding backfill, tracked-document sync and separate orphan review, and hook repair as applicable. An empty array means no ENDMEMEX maintenance action is required. Perform reported writes only through the local writable owner (or authenticated write gateway for remote mutation), then rerun bootstrap and confirm the requirement cleared.
 
 Its `orientation.database` section reports whole-database counts;
 `orientation.project_map` lists every project currently represented in
@@ -714,14 +697,14 @@ python3 endeavor_db.py record-add \
   --content "reply body" --link references:<original-id> --agent codex
 ```
 
-**Mark read/handled** (CLI or `endeavor_memory_record_update` MCP tool):
+**Mark read/handled** (CLI or `endmemex_records(action="update")` MCP tool):
 
 ```bash
 python3 endeavor_db.py record-update <id> --status resolved --agent codex
 ```
 
-All of send/check-inbox map directly to the `endeavor_memory_record_add` and
-`endeavor_memory_record_search` MCP tools, so this works identically whether
+All of send/check-inbox map directly to the `endmemex_records(action="add")` and
+`endmemex_search(action="record_search")` MCP tools, so this works identically whether
 an agent uses the CLI or MCP. Still pull-based and asynchronous by design —
 an agent has to think to check its inbox (e.g. once at `bootstrap` time), the
 same way it has to think to call `handoff`; nothing here turns either agent
@@ -864,7 +847,7 @@ more matching checkpoints exist than were returned. Results cover only
 currently-retained checkpoints (the two caps below) and never read
 `activity_log`, which is pruned far more aggressively and is not a source of
 truth for this view. The same filters are exposed to MCP clients as the
-read-only `endeavor_memory_timeline` tool.
+read-only `endmemex_context(action="timeline")` tool.
 
 ## Checkpoint Quality Rules
 
@@ -1045,28 +1028,23 @@ than corrupting anything.
 
 ## MCP Server
 
-`mcp_server.py` is a minimal stdio MCP bridge exposing `endeavor_db.py` as
-tools, for MCP-capable clients instead of shelling out to the CLI directly.
-It is the shared memory surface for both Claude Code and Codex.
-Read-only tools (`endeavor_memory_query` — compact by default,
-`endeavor_memory_pack`, `endeavor_memory_handoff`, `endeavor_memory_record_show`,
-`endeavor_memory_record_search`, `endeavor_presence_list`, `endeavor_sync_status`)
-always run. Write tools (`endeavor_memory_checkpoint`, `endeavor_memory_bootstrap`,
-`endeavor_memory_record_add`, `endeavor_presence_start`, `endeavor_presence_heartbeat`,
-`endeavor_presence_stop`) shell out to the same CLI commands, so they
-inherit the same WAL/`BEGIN IMMEDIATE` concurrency guarantees as two CLI
-processes racing each other.
+`mcp_server.py` is a minimal stdio bridge exposing the seven domain tools
+listed above. Every action reuses the existing CLI translation and SQLite WAL
+concurrency guarantees. Bootstrap is read-only; required initialization and
+embedding writes are separate `endmemex_admin` actions.
 
-The MCP contract is agent-facing rather than name-only: `initialize` returns
-cross-tool workflow instructions; every tool declares read/write annotations,
-strict argument schemas (`additionalProperties: false`), field semantics, and
-its JSON-in-text result contract. Invalid or misspelled arguments return
-`[error]` before CLI dispatch. `endeavor_memory_query` exposes project/category/
-status/module/bug/session filters plus `semantic = auto|on|off`;
-`endeavor_memory_record_search` exposes type, limit, and lifecycle-resolved
-`current_only`. A stale query result means open the cited source before relying
-on it. A normal empty handoff returns null session/checkpoint values, not an
-error.
+`initialize` returns cross-tool workflow instructions. Each tool uses strict,
+action-discriminated schema branches (`additionalProperties: false`) and
+read/write annotations; mixed groups conservatively declare write capability.
+Invalid actions, fields and values return `[error]` before CLI dispatch.
+Query supports project/category/status/module/bug/session filters and
+`semantic=auto|on|off`; record_search supports lifecycle-resolved `current_only`.
+Open stale cited sources before relying on them. Empty handoffs return null
+session/checkpoint values, not an error.
+
+For pending/handoff, false all-scope flags do not select a scope. Updates require
+at least one mutable field. Stored record statuses are open/current/resolved/
+accepted; represent supersession with a `supersedes` relation instead.
 
 The public server has no username- or machine-specific write policy. Apply
 read-only access through the process account, filesystem permissions, or the

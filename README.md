@@ -106,7 +106,8 @@ checkpoint 10. It then returns the resumable handoff (null is a normal empty
 state), read-only database/schema state, embedding coverage, tracked-document
 freshness, hook state, and ordered `next_actions`. `database.init_required` and
 `embedding.backfill_required` tell the agent whether a separate write is needed;
-their `next_tool` fields name the MCP write tool. Bootstrap never initializes or
+their `next_tool` fields name `endmemex_admin` and `next_action` selects
+`initialize` or `embed_backfill`. Bootstrap never initializes or
 migrates SQLite, starts MiniLM, backfills embeddings, or writes ENDMEMEX state.
 Follow `next_actions` in order; use the local writable owner (or authenticated
 write gateway for remote mutation) for any reported write, then rerun bootstrap

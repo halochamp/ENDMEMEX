@@ -1704,9 +1704,10 @@ class EndeavorDatabaseTest(unittest.TestCase):
             data = db.bootstrap(self.conn, "demo")
         self.assertTrue(data["embedding"]["backfill_required"])
         self.assertGreaterEqual(data["embedding"]["pending"], 1)
-        self.assertEqual(data["embedding"]["next_tool"], "endeavor_memory_embed_backfill")
+        self.assertEqual(data["embedding"]["next_tool"], "endmemex_admin")
+        self.assertEqual(data["embedding"]["next_action"], "embed_backfill")
         self.assertEqual(data["next_actions"][0]["code"], "backfill_embeddings")
-        self.assertEqual(data["next_actions"][0]["tool"], "endeavor_memory_embed_backfill")
+        self.assertEqual(data["next_actions"][0]["tool"], "endmemex_admin")
         backfill_call.assert_not_called()
 
     def test_tracked_document_next_actions_share_policy_across_callers(self):
@@ -1892,7 +1893,8 @@ class EndeavorDatabaseTest(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         data = json.loads(stdout.getvalue())
         self.assertTrue(data["database"]["init_required"])
-        self.assertEqual(data["database"]["next_tool"], "endeavor_memory_initialize")
+        self.assertEqual(data["database"]["next_tool"], "endmemex_admin")
+        self.assertEqual(data["database"]["next_action"], "initialize")
         self.assertEqual(data["next_actions"][0]["code"], "initialize_database")
         self.assertFalse(missing.exists())
 
