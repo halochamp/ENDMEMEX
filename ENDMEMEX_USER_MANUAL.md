@@ -1129,90 +1129,75 @@ Use this decision order before reading the implementation details below:
 
 | Target | CLI/provider | Managed write-worker capability | Model guidance |
 |---|---|---|---|
-| `codex` | OpenAI Codex | Workspace-sandboxed edits and commands | Use the exact full ID `gpt-5.6-sol`, `gpt-5.6-terra`, or `gpt-5.6-luna`. |
-| `claude` | Anthropic Claude Code | File edits, but no Bash | Use a full ID such as `claude-sonnet-5`; moving aliases are `fable`, `opus`, `sonnet`, and `haiku`. |
-| `antigravity` | Google Antigravity (`agy`) | File edits, but no `run_command` | Use an exact slug from `agy models`; the verified copy-ready slug is `gemini-3.7-flash-medium`. |
+| `codex` | OpenAI Codex | Workspace-sandboxed edits and commands | Pass an exact full model ID found through live discovery. |
+| `claude` | Anthropic Claude Code | File edits, but no Bash | Pass a full model ID, or a moving alias when determinism is not needed. |
+| `antigravity` | Google Antigravity (`agy`) | File edits, but no `run_command` | Pass an exact slug printed by `agy models`. |
 
-#### Current model names and the hint source of truth
+#### Choosing a model name (no frozen catalog)
 
-**Model catalog updated/verified: 2026-08-30.** The names below are the
-current values checked against the official vendor documentation and the
-installed CLIs in the verified environment. A model name is target-specific:
-for example, `claude-sonnet-5` is a Claude Code model ID, while
-`claude-sonnet-4-6` is an Antigravity (`agy`) slug and must not be swapped
-between targets.
+This manual deliberately does **not** list current model names. Vendors rename,
+retire, and add models faster than documentation is revised, so a list written
+here would be wrong soon after it is written. Treat the model name as a value
+you look up at the moment you need it.
 
-| Target | Exact value to put in `model` | What it is |
-|---|---|---|
-| OpenAI Codex | `gpt-5.6-sol` / `gpt-5.6-terra` / `gpt-5.6-luna` | Official full model IDs. Do not shorten them to `sol`, `terra`, or `luna`. |
-| Claude Code | `claude-fable-5` / `claude-opus-5` / `claude-sonnet-5` / `claude-haiku-4-5-20251001` | Official full Anthropic model IDs. |
-| Claude Code | `fable` / `opus` / `sonnet` / `haiku` | Official Claude Code moving aliases; use full IDs when deterministic selection is required. |
-| Antigravity | `gemini-3.7-flash-medium` | Exact slug verified by a real read-only call on `agy 1.1.22`; refresh with `agy models` if the account/CLI differs. |
+A model name is target-specific. An ID that one CLI accepts may be unknown to
+another, even when the model family has the same name. Never shorten an
+official ID, never guess a name from memory, and never reuse a name across
+targets without checking it against the target CLI.
 
-The verified `agy models` snapshot for `agy 1.1.22` is:
+**How an agent finds the current name** (stop at the first step that gives an
+exact value):
 
-```text
-gemini-3.7-flash-high
-gemini-3.7-flash-medium
-gemini-3.7-flash-low
-gemini-3.6-flash-high
-gemini-3.6-flash-medium
-gemini-3.6-flash-low
-gemini-3.5-flash-high
-gemini-3.5-flash-medium
-gemini-3.5-flash-low
-gemini-3.1-pro-high
-gemini-3.1-pro-low
-claude-sonnet-4-6
-claude-opus-4-6-thinking
-gpt-oss-120b-medium
-```
+1. **Live CLI discovery.** Ask the installed tool. `agy models` prints the exact
+   Antigravity slugs for the current account; `python3 agent_delegate.py
+   diagnose <target>` reports the resolved executable and version; the target
+   CLI's `--help` and its configured default describe the aliases it accepts.
+2. **Search the vendor's official documentation.** Use a web search for the
+   vendor's current model documentation (for example "OpenAI API models",
+   "Claude Code model aliases", "Gemini API models") and read the official
+   page. Prefer the vendor's own domain over third-party summaries, and check
+   the page's date.
+3. **Ask the user** if the live CLI and the official page disagree, or if the
+   account may restrict the model.
+4. **Confirm with one read-only probe** before relying on the value for real
+   work, and report an account or provider blocker separately from a
+   successful response.
 
-For Antigravity, this snapshot is a convenience list, not a permanent
-allowlist: run `agy models` and copy the exact slug printed by the live CLI.
-Headless mode rejects an unknown slug rather than silently selecting another
-model.
+**Choose by role, then look up the name.** Decide what the task needs first:
 
-The live MCP error hint is generated in
-`agent_mcp_server.py`. Use this checklist whenever a vendor changes a model
-name, alias, or slug. The checklist is intentionally explicit because a
-model-name change has runtime, documentation, and contract surfaces.
+| Need | What to look for |
+|---|---|
+| Advisor or reviewer (independent reasoning, read-only) | The strongest reasoning tier the account offers, at low or medium reasoning effort. |
+| Bounded worker (separable, well-specified edits) | A smaller, faster, cheaper tier that is still capable of the task. |
+| Reproducible selection | A full dated or versioned ID. Moving aliases can change meaning without notice. |
+| Quick, non-critical run | An alias, or omit `model` to use the target CLI's configured default. |
 
-**Model-name update checklist**
+The wrapper passes `model` through to the selected CLI; it does not maintain an
+allowlist. The target CLI and authenticated account are the final authority for
+availability, and an unknown model is returned as an ordinary child failure
+rather than silently replaced.
 
-- [ ] Open the vendor's current official model documentation and the local CLI
-  discovery command where applicable (`agy models`). Set `MODEL_CATALOG_DATE`
-  to the verification date.
-- [ ] Run a real, read-only probe for every affected target/model; record
-  whether the model was accepted, the CLI version, and any account/provider
-  blocker. Do not describe an account-blocked probe as a successful response.
-- [ ] Update the runtime source of truth in `agent_mcp_server.py`:
-  `MODEL_CATALOG_DATE`, `CODEX_MODEL_IDS`, `CLAUDE_MODEL_ALIASES`,
-  `CLAUDE_MODEL_IDS`, `AGY_MODEL_SLUGS`, `AGY_RECOMMENDED_MODEL`,
-  `MODEL_SELECTION_GUIDANCE`, and `START_USAGE_EXAMPLES`.
-- [ ] Confirm in that same server file that `START_USAGE_HINT`,
-  `SERVER_INSTRUCTIONS`, the `endeavor_agent_start` tool description, and the
-  `model` schema description consume the updated catalog/examples. Malformed
-  `endeavor_agent_start` arguments receive `START_USAGE_HINT`, so changing
-  only this manual will not update the live error response.
-- [ ] Update the human/agent help mirrors: `endeavor_db.py`
-  (`AGENT_HELP_TEXT`), this manual, and `agent_delegate.py` direct-call
-  examples when those examples change.
-- [ ] Search for stale model literals across `AGENT.md`, `CLAUDE.md`,
-  `AGENT_PROCEDURE.md`, and the source tree with `rg`; update only literals
-  intended to represent the current catalog.
-- [ ] Update catalog/date assertions in
-  `developer/test_agent_mcp_server.py` and any direct-example tests whose
-  expected model values changed.
-- [ ] Regenerate (do not hand-edit)
-  `developer/phase0_golden_contract.json` from the live server contract.
+**Maintainer note — runtime hint constants.** The live MCP error hint is
+generated in `agent_mcp_server.py`. Its dated snapshot constants
+(`MODEL_CATALOG_DATE`, `CODEX_MODEL_IDS`, `CLAUDE_MODEL_ALIASES`,
+`CLAUDE_MODEL_IDS`, `AGY_MODEL_SLUGS`, `AGY_RECOMMENDED_MODEL`,
+`MODEL_SELECTION_GUIDANCE`, `START_USAGE_EXAMPLES`) are a convenience for the
+error response only and are the sole place a dated list lives. Editing this
+manual never changes that response. When a hint becomes stale:
+
+- [ ] Look the names up using the steps above and run a real read-only probe for
+  every changed target; report account-blocked probes separately.
+- [ ] Update the constants in `agent_mcp_server.py` and confirm that
+  `START_USAGE_HINT`, `SERVER_INSTRUCTIONS`, the `endeavor_agent_start` tool
+  description, and the `model` schema description consume them.
+- [ ] Update the help mirror in `endeavor_db.py` (`AGENT_HELP_TEXT`) and any
+  `agent_delegate.py` direct-call examples that changed.
+- [ ] Update the catalog assertions in `developer/test_agent_mcp_server.py`,
+  and regenerate (do not hand-edit) `developer/phase0_golden_contract.json`
+  from the live server contract.
 - [ ] Run the compatibility, ENDMEMEX MCP, and agent-delegation tests, then
-  run `py_compile`, `git diff --check`, the live MCP `initialize`/`tools/list`
-  smoke test, and a malformed `endeavor_agent_start` call. Verify the date,
-  exact model values, examples, operating principles, and error hint all match.
-- [ ] Run the real read-only model probes again after the edits when the
-  catalog or payloads changed, and report successful responses separately from
-  account/provider blockers.
+  `py_compile`, `git diff --check`, the live MCP `initialize`/`tools/list`
+  smoke test, and a malformed `endeavor_agent_start` call.
 - [ ] After changing this tracked manual, run
   `python3 sync_tracked.py ENDMEMEX_USER_MANUAL.md` and checkpoint the material
   verification phase according to the project workflow.
@@ -1220,20 +1205,20 @@ model-name change has runtime, documentation, and contract surfaces.
 #### Copy-ready managed start payloads
 
 Use one of these complete payloads as the `endeavor_agent_start` arguments.
-Only change the prompt and, when needed, the target-specific `model` value.
+Change the prompt and replace `<MODEL_ID_FROM_LIVE_DISCOVERY>` with a value
+found by the steps in
+[Choosing a model name](#choosing-a-model-name-no-frozen-catalog); omit the
+`model` field to use the target CLI's configured default.
 
 ```json
-{"target":"codex","prompt":"Review the current diff; do not edit files.","role":"reviewer","access":"read_only","model":"gpt-5.6-sol","reasoning_effort":"medium","timeout":900}
-{"target":"codex","prompt":"Review the current diff; do not edit files.","role":"reviewer","access":"read_only","model":"gpt-5.6-terra","reasoning_effort":"medium","timeout":900}
-{"target":"codex","prompt":"Review the current diff; do not edit files.","role":"reviewer","access":"read_only","model":"gpt-5.6-luna","reasoning_effort":"medium","timeout":900}
-{"target":"claude","prompt":"Review the current diff; do not edit files.","role":"reviewer","access":"read_only","model":"claude-sonnet-5","reasoning_effort":"medium","timeout":900}
-{"target":"antigravity","prompt":"Review the current diff; do not edit files.","role":"reviewer","access":"read_only","model":"gemini-3.7-flash-medium","reasoning_effort":"medium","timeout":900}
+{"target":"codex","prompt":"Review the current diff; do not edit files.","role":"reviewer","access":"read_only","model":"<MODEL_ID_FROM_LIVE_DISCOVERY>","reasoning_effort":"medium","timeout":900}
+{"target":"claude","prompt":"Review the current diff; do not edit files.","role":"reviewer","access":"read_only","model":"<MODEL_ID_FROM_LIVE_DISCOVERY>","reasoning_effort":"medium","timeout":900}
+{"target":"antigravity","prompt":"Review the current diff; do not edit files.","role":"reviewer","access":"read_only","model":"<SLUG_FROM_agy_models>","reasoning_effort":"medium","timeout":900}
 ```
 
 The wrapper passes `model` through to the selected CLI; it does not maintain
-an allowlist. The target CLI and authenticated account remain the final
-authority for availability. Use the live discovery commands below when the
-installed CLI or account differs from this dated snapshot.
+an allowlist. Use the live discovery commands below when the installed CLI or
+account differs from what you expect.
 
 The server also exposes this short operating contract in
 `initialize.instructions`, so an agent can see it before choosing a tool:
@@ -1256,7 +1241,7 @@ The server also exposes this short operating contract in
 
 If `endeavor_agent_start` receives a missing, unknown, or invalid argument, it
 returns `[error]` followed by a usage hint containing a valid JSON example and
-the target-specific model values. Correct the payload before retrying; do not
+the target-specific model hints. Correct the payload before retrying; do not
 infer that a child run started unless the response contains its `run_id`.
 
 `role: reviewer` and `role: advisor` always force read-only access. A
@@ -1273,7 +1258,7 @@ Arguments:
   "prompt": "Review agent_delegate.py for one concrete issue. Cite file:line evidence; do not edit files.",
   "role": "reviewer",
   "access": "read_only",
-  "model": "gpt-5.6-sol",
+  "model": "<MODEL_ID_FROM_LIVE_DISCOVERY>",
   "reasoning_effort": "medium",
   "timeout": 900
 }
@@ -1388,25 +1373,25 @@ python3 agent_delegate.py codex "summarize schema.sql" \
 
 # Explicit OpenAI Codex model ID (the target CLI/account must make it available)
 python3 agent_delegate.py codex "review this diff" \
-  --sandbox read-only --model gpt-5.6-sol --reasoning-effort high
+  --sandbox read-only --model <CODEX_MODEL_ID> --reasoning-effort high
 
-# Codex -> Claude (claude -p; model defaults to haiku)
+# Codex -> Claude (claude -p; without --model the wrapper uses its built-in default alias, see `claude --help`)
 python3 agent_delegate.py claude "review this diff for bugs" \
-  --model claude-sonnet-5 --allowed-tools Read Grep
+  --model <CLAUDE_MODEL_ID> --allowed-tools Read Grep
 
 # Structured, validated result with one bounded transient retry
 python3 agent_delegate.py claude "return a JSON audit" \
-  --model claude-sonnet-5 --role reviewer --expect-json --min-output-chars 2 \
+  --model <CLAUDE_MODEL_ID> --role reviewer --expect-json --min-output-chars 2 \
   --retries 1 --result-format json
 
 # Claude/Codex -> Antigravity (agy -p; read-only by default).
 # Use `agy models` first and pass a slug available to the current account.
 python3 agent_delegate.py antigravity "summarize schema.sql" \
-  --model gemini-3.7-flash-medium
+  --model <AGY_SLUG>
 
 # Antigravity write worker: file edits auto-apply, shell stays denied
 python3 agent_delegate.py antigravity "append a TODO note to NOTES.md" \
-  --sandbox workspace-write --model gemini-3.7-flash-medium
+  --sandbox workspace-write --model <AGY_SLUG>
 ```
 
 #### Model selection and live discovery
@@ -1414,16 +1399,16 @@ python3 agent_delegate.py antigravity "append a TODO note to NOTES.md" \
 The wrapper does not translate or validate model names; it passes `--model` to
 the target CLI. Availability depends on the installed CLI and authenticated
 account, so do not freeze per-machine defaults or CLI versions into durable
-instructions. The dated exact-value catalog and update checklist are in
-[Current model names and the hint source of truth](#current-model-names-and-the-hint-source-of-truth).
+instructions. How to look up a current name, and the maintainer checklist, are in
+[Choosing a model name](#choosing-a-model-name-no-frozen-catalog).
 
 | Target | Managed MCP with omitted `model` | Direct wrapper with omitted `--model` | Explicit selection |
 |---|---|---|---|
-| Codex | The MCP adds `--isolated`; Codex ignores user config/rules, so its user-configured model is not the managed default. | Uses the Codex CLI configuration. | Use the exact full ID `gpt-5.6-sol`, `gpt-5.6-terra`, or `gpt-5.6-luna`, if accepted by the current CLI/account. |
-| Claude Code | The wrapper explicitly supplies `haiku`. | The wrapper explicitly supplies `haiku`. | Use a full ID such as `claude-sonnet-5`; moving aliases are `fable`, `opus`, `sonnet`, and `haiku`. |
-| Antigravity (`agy`) | No wrapper model default; `agy` selects its configured/default model. MCP isolation uses `--new-project`, but the CLI has no one-run flag to suppress ambient MCP configuration. | No wrapper model default; `agy` selects its configured/default model. | Run `agy models` for the live list, then pass an exact slug reported for the current account; the verified snapshot recommends `gemini-3.7-flash-medium`. |
+| Codex | The MCP adds `--isolated`; Codex ignores user config/rules, so its user-configured model is not the managed default. | Uses the Codex CLI configuration. | Pass an exact full model ID found through live discovery, if accepted by the current CLI/account. |
+| Claude Code | The wrapper explicitly supplies its built-in default alias (shown by `agent_delegate.py claude --help`). | Same built-in default alias. | Pass a full model ID, or a moving alias, found through live discovery. |
+| Antigravity (`agy`) | No wrapper model default; `agy` selects its configured/default model. MCP isolation uses `--new-project`, but the CLI has no one-run flag to suppress ambient MCP configuration. | No wrapper model default; `agy` selects its configured/default model. | Run `agy models` for the live list, then pass an exact slug reported for the current account. |
 
-Run live discovery instead of trusting a dated snapshot:
+Run live discovery instead of trusting any remembered name:
 
 ```bash
 python3 agent_delegate.py diagnose codex
@@ -1441,8 +1426,8 @@ explicit model whenever exact model selection is part of the task contract.
 Sources: [OpenAI API Models](https://developers.openai.com/api/docs/models),
 [OpenAI latest-model guidance](https://developers.openai.com/api/docs/guides/latest-model),
 and [Anthropic Claude Code CLI usage](https://docs.anthropic.com/en/docs/claude-code/cli-usage).
-The wrapper's `haiku` default is an implementation default, not a claim about
-which dated Claude model Anthropic currently maps that alias to.
+The wrapper's built-in Claude default is an implementation default, not a claim
+about which dated model the vendor currently maps that alias to.
 
 Key behavior:
 
@@ -1500,12 +1485,12 @@ Key behavior:
   ambient-MCP-free run.
 - **Future-compatible model selection** — `--model` is a free-form alias/full-ID
   passthrough for all three target CLIs, with no vendor-model allowlist. When
-  omitted, Claude uses the wrapper's `haiku` default, a direct Codex wrapper run
+  omitted, Claude uses the wrapper's built-in default alias, a direct Codex wrapper run
   uses its CLI configuration, and Antigravity uses its own configured/default
   model. An isolated managed Codex run ignores user configuration, so supply an
   explicit model when that choice must be deterministic. `advise` likewise
   accepts arbitrary values through
-  `--worker-model` and `--advisor-model`; `sonnet` and `opus` are only defaults.
+  `--worker-model` and `--advisor-model`; the built-in aliases are only defaults.
   The wrapper deliberately does not maintain a model catalog or preflight model
   availability: the target CLI validates an explicit alias/ID, and an unknown
   model is returned as an ordinary child failure with the normal run artifacts.
@@ -1517,8 +1502,8 @@ Key behavior:
   it becomes Codex's `model_reasoning_effort` configuration or the target
   CLI's `--effort` flag for Claude and Antigravity. When omitted, the wrapper
   explicitly selects `medium` for all three targets; an explicit value is
-  validated by the target CLI. For example, use `--model gpt-5.6-sol` with
-  `--reasoning-effort high` for a read-only Codex advisor.
+  validated by the target CLI. For example, pair a strong reasoning-tier
+  `--model` with `--reasoning-effort high` for a read-only Codex advisor.
 - **Bounded retry** — `--retries N --retry-delay S` retries only timeout and
   recognized transient service/network failures. Authentication, recursion,
   validation, and ordinary child failures are never retried blindly.
@@ -1549,9 +1534,9 @@ child to delegate again (the depth cap still applies):
 
 ```bash
 python3 agent_delegate.py claude "audit module A" \
-  --model sonnet --role reviewer --background
+  --model <CLAUDE_MODEL> --role reviewer --background
 python3 agent_delegate.py claude "audit module B" \
-  --model sonnet --role reviewer --background
+  --model <CLAUDE_MODEL> --role reviewer --background
 
 python3 agent_delegate.py status <RUN_ID> --json
 python3 agent_delegate.py wait <RUN_ID> --timeout 900 --json
@@ -1565,7 +1550,7 @@ advisor-group cancellation to the active worker/advisor, and escalates from
 SIGTERM to SIGKILL after a bounded grace period. A pre-spawn cancellation may
 briefly report `cancel_pending` until the manager reaches its safe point.
 
-### Worker + advisor (wrapper defaults: `sonnet` → `opus`)
+### Worker + advisor (wrapper defaults: a worker alias, then a stronger advisor alias)
 
 The advisor command keeps role attribution explicit and runs the configured
 models as sibling children of the parent (not nested delegation). The example
@@ -1573,13 +1558,13 @@ shows the defaults, but both model arguments are free-form passthrough values:
 
 ```bash
 python3 agent_delegate.py advise "audit ENDMEMEX for concrete bugs" \
-  --worker-model sonnet --advisor-model opus \
+  --worker-model <WORKER_MODEL> --advisor-model <ADVISOR_MODEL> \
   --allowed-tools Read Grep Glob --result-format json
 ```
 
-The configured worker (`sonnet` alias by default) performs the bounded task
-first. Its artifact is passed to the configured advisor (`opus` alias by
-default) with a read-only
+The configured worker (a built-in alias by default) performs the bounded task
+first. Its artifact is passed to the configured advisor (a stronger built-in
+alias by default) with a read-only
 `accept`/`reject`/`needs-evidence` review contract. The group envelope contains
 both run IDs and full attribution. The parent agent remains responsible for
 reproduction, decisions, edits, and verification; model votes never replace
