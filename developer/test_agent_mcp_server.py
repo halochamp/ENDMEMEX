@@ -45,26 +45,34 @@ class AgentMcpServerContractTest(unittest.TestCase):
         self.assertIn(mcp.AGENT_OPERATING_PRINCIPLES, mcp.START_USAGE_HINT)
         self.assertIn(mcp.AGENT_OPERATING_PRINCIPLES, mcp.TOOL_BY_NAME["endeavor_agent_start"]["description"])
 
-    def test_model_catalog_exposes_copy_ready_values_for_each_target(self):
-        self.assertEqual(mcp.MODEL_CATALOG_DATE, "2026-08-30")
-        self.assertEqual(
-            mcp.CODEX_MODEL_IDS,
-            ("gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"),
-        )
-        self.assertEqual(
-            mcp.CLAUDE_MODEL_IDS,
-            ("claude-fable-5", "claude-opus-5", "claude-sonnet-5", "claude-haiku-4-5-20251001"),
-        )
-        self.assertEqual(
-            mcp.CLAUDE_MODEL_ALIASES,
-            ("fable", "opus", "sonnet", "haiku"),
-        )
-        self.assertIn("gemini-3.7-flash-medium", mcp.AGY_MODEL_SLUGS)
-        self.assertEqual(mcp.AGY_RECOMMENDED_MODEL, "gemini-3.7-flash-medium")
+    def test_server_contract_carries_no_frozen_model_names(self):
+        # Model names go stale; the contract must tell the agent how to look one up.
+        import json
+        import re
+        stale = re.compile(r"gpt-\d|claude-[a-z]|gemini-\d|gpt-oss|\bagy 1\.\d", re.I)
+        start = mcp.TOOL_BY_NAME["endeavor_agent_start"]
+        surfaces = {
+            "MODEL_SELECTION_GUIDANCE": mcp.MODEL_SELECTION_GUIDANCE,
+            "START_USAGE_HINT": mcp.START_USAGE_HINT,
+            "SERVER_INSTRUCTIONS": mcp.SERVER_INSTRUCTIONS,
+            "start description": start["description"],
+            "model schema": start["inputSchema"]["properties"]["model"]["description"],
+        }
+        for name, text in surfaces.items():
+            with self.subTest(surface=name):
+                self.assertIsNone(stale.search(text), stale.search(text))
+        self.assertIn("agy models", mcp.MODEL_SELECTION_GUIDANCE)
+        self.assertIn("official model documentation", mcp.MODEL_SELECTION_GUIDANCE)
         for target, example in mcp.START_USAGE_EXAMPLES.items():
             with self.subTest(target=target):
-                self.assertIn(f'"target": "{target}"', example)
-                self.assertIn('"model": "', example)
+                payload = json.loads(example)
+                self.assertEqual(payload["target"], target)
+                # runnable as-is: no placeholder or stale model value is sent
+                self.assertNotIn("model", payload)
+                self.assertIsNone(stale.search(example))
+        for gone in ("MODEL_CATALOG_DATE", "CODEX_MODEL_IDS", "CLAUDE_MODEL_IDS",
+                     "CLAUDE_MODEL_ALIASES", "AGY_MODEL_SLUGS", "AGY_RECOMMENDED_MODEL"):
+            self.assertFalse(hasattr(mcp, gone), gone)
 
     def test_start_schema_accepts_antigravity_target(self):
         self.assertEqual(

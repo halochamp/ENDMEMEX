@@ -3555,25 +3555,15 @@ one cold/self-contained task, role=worker|reviewer|advisor, and access=read_only
 by default. Retain run_id, poll endeavor_agent_status, relay only new progress,
 and let the parent verify the terminal result. workspace_write is explicit,
 worker-only, and Claude/Antigravity write workers have no shell.
-MCP start example:
+MCP start example (add a "model" only after looking up a current name):
   {"target": "codex", "prompt": "Review the current diff; do not edit files.",
-   "role": "reviewer", "access": "read_only", "model": "gpt-5.6-sol",
+   "role": "reviewer", "access": "read_only",
    "reasoning_effort": "medium", "timeout": 900}
-Model catalog updated/verified: 2026-08-30.
-  Codex full IDs: gpt-5.6-sol | gpt-5.6-terra | gpt-5.6-luna
-  Claude Code full IDs: claude-fable-5 | claude-opus-5 |
-    claude-sonnet-5 | claude-haiku-4-5-20251001
-  Claude Code moving aliases: fable | opus | sonnet | haiku
-  Antigravity copy-ready slug verified on agy 1.1.22:
-    gemini-3.7-flash-medium (run `agy models` when the live list differs)
-Copy-ready Claude payload:
-  {"target": "claude", "prompt": "Review the current diff; do not edit files.",
-   "role": "reviewer", "access": "read_only", "model": "claude-sonnet-5",
-   "reasoning_effort": "medium", "timeout": 900}
-Copy-ready Antigravity payload:
-  {"target": "antigravity", "prompt": "Review the current diff; do not edit files.",
-   "role": "reviewer", "access": "read_only", "model": "gemini-3.7-flash-medium",
-   "reasoning_effort": "medium", "timeout": 900}
+Model names: none are listed here because they change often and differ per
+  target. Omit "model" for the target CLI's configured default, or look one up:
+  `agy models` (Antigravity), the CLI's --help / `agent_delegate.py diagnose
+  <target>`, then the vendor's official model docs via web search. Use a full ID
+  when determinism matters; never guess or shorten a name.
 Short server contract: delegate only with user authorization; give the cold
 child one bounded self-contained task; keep reviewers/advisors read-only;
 never include secrets; retain run_id and poll status for new progress; the
@@ -3581,15 +3571,15 @@ parent owns commands and final verification; use ENDMEMEX bootstrap/query and
 checkpoint/handoff for non-trivial or multi-phase work.
 If the start payload is malformed, the server returns [error] plus this example
 and the allowed target/role/access values. The live error-hint source of truth
-is agent_mcp_server.py: update MODEL_CATALOG_DATE, the model tuples,
-MODEL_SELECTION_GUIDANCE, and START_USAGE_EXAMPLES there; then mirror the
-copy-ready values in this help text and ENDMEMEX_USER_MANUAL.md, regenerate
+is agent_mcp_server.py (MODEL_SELECTION_GUIDANCE and START_USAGE_EXAMPLES);
+it carries no model catalog. If you edit it, mirror the wording in this help
+text and ENDMEMEX_USER_MANUAL.md, regenerate
 developer/phase0_golden_contract.json, and run the compatibility tests.
 
 Direct one-shot fallback when the managed MCP is unavailable (child starts
 cold; nested delegation is refused):
   python3 agent_delegate.py codex "<task>"
-  python3 agent_delegate.py claude "<task>" --model sonnet
+  python3 agent_delegate.py claude "<task>" --model <alias-or-full-id>
   python3 agent_delegate.py antigravity "<task>" --model <agy-model-slug>
   python3 agent_delegate.py diagnose codex|claude|antigravity
   (full guide: ENDMEMEX_USER_MANUAL.md §Agent MCP Server and §Cross-Agent Delegation)

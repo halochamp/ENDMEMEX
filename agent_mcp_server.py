@@ -41,55 +41,17 @@ START_HISTORY = RUNS_DIR.parent / ".agent_mcp_start_history.json"
 RUN_ID_PATTERN = "^[A-Za-z0-9][A-Za-z0-9_-]{7,127}$"
 LATEST_PROTOCOL = "2025-03-26"
 SUPPORTED_PROTOCOLS = {"2024-11-05", LATEST_PROTOCOL}
-MODEL_CATALOG_DATE = "2026-08-30"
-CODEX_MODEL_IDS = (
-    "gpt-5.6-sol",
-    "gpt-5.6-terra",
-    "gpt-5.6-luna",
-)
-CLAUDE_MODEL_ALIASES = (
-    "fable",
-    "opus",
-    "sonnet",
-    "haiku",
-)
-CLAUDE_MODEL_IDS = (
-    "claude-fable-5",
-    "claude-opus-5",
-    "claude-sonnet-5",
-    "claude-haiku-4-5-20251001",
-)
-# Exact slugs returned by `agy models` in the verified environment (agy 1.1.22).
-# Antigravity availability is account/CLI-dependent, so the live command stays
-# authoritative when its output differs from this snapshot.
-AGY_MODEL_SLUGS = (
-    "gemini-3.7-flash-high",
-    "gemini-3.7-flash-medium",
-    "gemini-3.7-flash-low",
-    "gemini-3.6-flash-high",
-    "gemini-3.6-flash-medium",
-    "gemini-3.6-flash-low",
-    "gemini-3.5-flash-high",
-    "gemini-3.5-flash-medium",
-    "gemini-3.5-flash-low",
-    "gemini-3.1-pro-high",
-    "gemini-3.1-pro-low",
-    "claude-sonnet-4-6",
-    "claude-opus-4-6-thinking",
-    "gpt-oss-120b-medium",
-)
-AGY_RECOMMENDED_MODEL = "gemini-3.7-flash-medium"
-
+# Model names change faster than this file is revised, so no catalog is kept
+# here: the guidance tells the agent how to look a current value up instead.
 MODEL_SELECTION_GUIDANCE = (
-    f"Model catalog updated/verified {MODEL_CATALOG_DATE}: Codex full model IDs are "
-    "gpt-5.6-sol, gpt-5.6-terra, "
-    "and gpt-5.6-luna (do not shorten them to sol/terra/luna); Claude Code "
-    "deterministic full IDs are claude-fable-5, claude-opus-5, "
-    "claude-sonnet-5, and claude-haiku-4-5-20251001, while its documented "
-    "moving aliases are fable, opus, sonnet, and haiku; Antigravity uses an "
-    f"exact agy slug, with {AGY_RECOMMENDED_MODEL} verified on agy 1.1.22. "
-    "Run `agy models` and copy its exact slug if the live account/CLI list differs; "
-    "do not use an Antigravity display name as a slug."
+    "Model names change often and are specific to each target CLI, so this server "
+    "lists none. Omit `model` to use the target CLI's configured default, or look "
+    "up a current exact value before pinning one: run `agy models` for Antigravity, "
+    "check the installed CLI's `--help` and `agent_delegate.py diagnose <target>`, "
+    "or search the vendor's official model documentation and use the full ID when "
+    "determinism matters (moving aliases can change meaning). Never shorten an "
+    "official ID, never guess a name from memory, and do not reuse a name across "
+    "targets; an unknown name fails as an ordinary child run."
 )
 
 AGENT_OPERATING_PRINCIPLES = (
@@ -109,21 +71,12 @@ AGENT_OPERATING_PRINCIPLES = (
 )
 
 START_USAGE_EXAMPLES = {
-    "codex": (
-        '{"target": "codex", "prompt": "Review the current diff; do not edit files.", '
-        '"role": "reviewer", "access": "read_only", "model": "gpt-5.6-sol", '
+    target: (
+        f'{{"target": "{target}", "prompt": "Review the current diff; do not edit files.", '
+        '"role": "reviewer", "access": "read_only", '
         '"reasoning_effort": "medium", "timeout": 900}'
-    ),
-    "claude": (
-        '{"target": "claude", "prompt": "Review the current diff; do not edit files.", '
-        '"role": "reviewer", "access": "read_only", "model": "claude-sonnet-5", '
-        '"reasoning_effort": "medium", "timeout": 900}'
-    ),
-    "antigravity": (
-        '{"target": "antigravity", "prompt": "Review the current diff; do not edit files.", '
-        '"role": "reviewer", "access": "read_only", "model": "gemini-3.7-flash-medium", '
-        '"reasoning_effort": "medium", "timeout": 900}'
-    ),
+    )
+    for target in ("codex", "claude", "antigravity")
 }
 START_USAGE_EXAMPLE = START_USAGE_EXAMPLES["codex"]
 START_USAGE_HINT = (

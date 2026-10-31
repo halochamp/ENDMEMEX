@@ -1177,24 +1177,22 @@ allowlist. The target CLI and authenticated account are the final authority for
 availability, and an unknown model is returned as an ordinary child failure
 rather than silently replaced.
 
-**Maintainer note — runtime hint constants.** The live MCP error hint is
-generated in `agent_mcp_server.py`. Its dated snapshot constants
-(`MODEL_CATALOG_DATE`, `CODEX_MODEL_IDS`, `CLAUDE_MODEL_ALIASES`,
-`CLAUDE_MODEL_IDS`, `AGY_MODEL_SLUGS`, `AGY_RECOMMENDED_MODEL`,
-`MODEL_SELECTION_GUIDANCE`, `START_USAGE_EXAMPLES`) are a convenience for the
-error response only and are the sole place a dated list lives. Editing this
-manual never changes that response. When a hint becomes stale:
+**Maintainer note — no catalog in code either.** The live MCP error hint is
+generated in `agent_mcp_server.py` from `MODEL_SELECTION_GUIDANCE` and
+`START_USAGE_EXAMPLES`. Neither contains a model name: the guidance tells the
+agent how to look one up, and the examples omit `model` so they run as written.
+`developer/test_agent_mcp_server.py` fails if a vendor model literal is added
+to any server-visible text, so a rename at a vendor needs no change here. Only
+edit these when the *lookup procedure* changes:
 
-- [ ] Look the names up using the steps above and run a real read-only probe for
-  every changed target; report account-blocked probes separately.
-- [ ] Update the constants in `agent_mcp_server.py` and confirm that
-  `START_USAGE_HINT`, `SERVER_INSTRUCTIONS`, the `endeavor_agent_start` tool
-  description, and the `model` schema description consume them.
-- [ ] Update the help mirror in `endeavor_db.py` (`AGENT_HELP_TEXT`) and any
-  `agent_delegate.py` direct-call examples that changed.
-- [ ] Update the catalog assertions in `developer/test_agent_mcp_server.py`,
-  and regenerate (do not hand-edit) `developer/phase0_golden_contract.json`
-  from the live server contract.
+- [ ] Update `MODEL_SELECTION_GUIDANCE` / `START_USAGE_EXAMPLES` in
+  `agent_mcp_server.py`, and confirm that `START_USAGE_HINT`,
+  `SERVER_INSTRUCTIONS`, the `endeavor_agent_start` tool description, and the
+  `model` schema description still consume them.
+- [ ] Mirror the wording in `endeavor_db.py` (`AGENT_HELP_TEXT`) and in this
+  manual.
+- [ ] Regenerate (do not hand-edit) the `agent_mcp_contract` section of
+  `developer/phase0_golden_contract.json` from the live server contract.
 - [ ] Run the compatibility, ENDMEMEX MCP, and agent-delegation tests, then
   `py_compile`, `git diff --check`, the live MCP `initialize`/`tools/list`
   smoke test, and a malformed `endeavor_agent_start` call.
@@ -1205,15 +1203,14 @@ manual never changes that response. When a hint becomes stale:
 #### Copy-ready managed start payloads
 
 Use one of these complete payloads as the `endeavor_agent_start` arguments.
-Change the prompt and replace `<MODEL_ID_FROM_LIVE_DISCOVERY>` with a value
-found by the steps in
-[Choosing a model name](#choosing-a-model-name-no-frozen-catalog); omit the
-`model` field to use the target CLI's configured default.
+They omit `model`, so the run uses the target CLI's configured default. To pin
+a model, add a `"model"` field with a value found by the steps in
+[Choosing a model name](#choosing-a-model-name-no-frozen-catalog).
 
 ```json
-{"target":"codex","prompt":"Review the current diff; do not edit files.","role":"reviewer","access":"read_only","model":"<MODEL_ID_FROM_LIVE_DISCOVERY>","reasoning_effort":"medium","timeout":900}
-{"target":"claude","prompt":"Review the current diff; do not edit files.","role":"reviewer","access":"read_only","model":"<MODEL_ID_FROM_LIVE_DISCOVERY>","reasoning_effort":"medium","timeout":900}
-{"target":"antigravity","prompt":"Review the current diff; do not edit files.","role":"reviewer","access":"read_only","model":"<SLUG_FROM_agy_models>","reasoning_effort":"medium","timeout":900}
+{"target":"codex","prompt":"Review the current diff; do not edit files.","role":"reviewer","access":"read_only","reasoning_effort":"medium","timeout":900}
+{"target":"claude","prompt":"Review the current diff; do not edit files.","role":"reviewer","access":"read_only","reasoning_effort":"medium","timeout":900}
+{"target":"antigravity","prompt":"Review the current diff; do not edit files.","role":"reviewer","access":"read_only","reasoning_effort":"medium","timeout":900}
 ```
 
 The wrapper passes `model` through to the selected CLI; it does not maintain
@@ -1258,7 +1255,6 @@ Arguments:
   "prompt": "Review agent_delegate.py for one concrete issue. Cite file:line evidence; do not edit files.",
   "role": "reviewer",
   "access": "read_only",
-  "model": "<MODEL_ID_FROM_LIVE_DISCOVERY>",
   "reasoning_effort": "medium",
   "timeout": 900
 }
